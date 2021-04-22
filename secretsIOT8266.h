@@ -16,3 +16,5 @@
 
 #define IFTTT_KEY "cFLymB4JT9tlODsKLFn9TA"
 
+#define NONE 1
+

@@ -41,11 +41,9 @@ void myIOT2::start_services(cb_func funct, char *ssid, char *password, char *mqt
 	{
 		time2Reset_noNetwork = (1000 * 60L) * noNetwork_reset;
 	}
-	start_EEPROM_eADR();
-
 	if (useBootClockLog && WiFi.isConnected())
 	{
-		get_bootclockLOG(0);
+		start_EEPROM_eADR();
 		update_bootclockLOG();
 	}
 }
@@ -144,35 +142,40 @@ void myIOT2::start_network_services()
 }
 bool myIOT2::network_looper()
 {
-	if (WiFi.status() == WL_CONNECTED)
-	{ // wifi is ok
-		if (mqttClient.connected())
-		{ // mqtt is good
+	const byte time_retry_mqtt = 5;
+	if (WiFi.status() == WL_CONNECTED) /* wifi is ok */
+	{
+		if (mqttClient.connected()) /* MQTT is OK */
+		{
 			mqttClient.loop();
 			noNetwork_Clock = 0;
 			return 1;
 		}
-		else
-		{ // not connected mqtt
-			if (subscribeMQTT())
-			{ // succeed to reconnect
-				mqttClient.loop();
-				noNetwork_Clock = 0;
-				return 1;
-			}
-			else
-			{ // failed to reconnect
-				if (noNetwork_Clock == 0)
-				{ // first time fail MQTT
-					noNetwork_Clock = millis();
+		else /* Not connected mqtt*/
+		{
+			if (noNetwork_Clock == 0 || millis() - noNetwork_Clock > 1000 * time_retry_mqtt)
+			{
+				if (subscribeMQTT()) /* succeed to reconnect */
+				{
+					mqttClient.loop();
+					noNetwork_Clock = 0;
+					Serial.println("reconnect mqtt - succeed");
+					return 1;
 				}
-
-				return 0;
+				else
+				{
+					if (noNetwork_Clock == 0)
+					{
+						noNetwork_Clock = millis();
+						Serial.println("first_clock MQTT");
+					}
+					return 0;
+				}
 			}
 		}
 	}
-	else
-	{ // no WIFI
+	else /* No WiFi*/
+	{
 		if (millis() > noNetwork_Clock + retryConnectWiFi)
 		{
 			if (!startWifi(_ssid, _wifi_pwd))
@@ -180,12 +183,13 @@ bool myIOT2::network_looper()
 				if (noNetwork_Clock == 0)
 				{ // first time when NO NETWORK ?
 					noNetwork_Clock = millis();
-					return 0;
+					Serial.println("no-wifi, first clock");
 				}
+				return 0;
 			}
 			else
 			{ // reconnect succeeded
-				noNetwork_Clock = 0;
+				Serial.println("reconnect wifi");
 				return 1;
 			}
 		}
@@ -202,18 +206,27 @@ void myIOT2::start_clock()
 	int failcount;
 #if isESP8266
 	if (startNTP())
-	{ //NTP Succeed
+	{
+		NTP_OK = true;
 		get_timeStamp();
+	}
+#elif isESP32
+	startNTP_32();
+	getTime_32();
+	if (year(epoch_time) != 1970)
+	{
+		NTP_OK = true;
+		getTimeStamp_32(bootTime);
+	}
+#endif
+	if (NTP_OK)
+	{ //NTP Succeed
 		strcpy(bootTime, timeStamp);
 		failcount = (int)EEPROMReadlong(NTP_eADR);
 		if (failcount != 0)
 		{
 			EEPROMWritelong(NTP_eADR, 0);
 		}
-		// else
-		// {
-		// 	EEPROMWritelong(NTP_eADR, 0);
-		// }
 	}
 	else
 	{
@@ -227,23 +240,9 @@ void myIOT2::start_clock()
 			else
 			{
 				EEPROMWritelong(NTP_eADR, failcount + 1);
-				NTP_OK = false;
 			}
 		}
 	}
-#elif isESP32
-	startNTP_32();
-	getTimeStamp_32(bootTime);
-	if (year(epoch_time) != 1970)
-	{
-		NTP_OK = true;
-	}
-	else
-	{
-		NTP_OK = false;
-	}
-
-#endif
 }
 bool myIOT2::startNTP()
 {
@@ -320,9 +319,10 @@ void myIOT2::convert_epoch2clock(long t1, long t2, char *time_str, char *days_st
 	minutes = (int)((time_delta - days * sec2days - hours * sec2hours) / sec2minutes);
 	seconds = (int)(time_delta - days * sec2days - hours * sec2hours - minutes * sec2minutes);
 
-	sprintf(days_str, "%02d days", days);
+	sprintf(days_str, "%01dd", days);
 	sprintf(time_str, "%02d:%02d:%02d", hours, minutes, seconds);
 }
+
 // ~~~~~~~ NTP & Clock ESP32 ~~~~~~~~
 void myIOT2::startNTP_32(const int gmtOffset_sec, const int daylightOffset_sec, const char *ntpServer)
 {
@@ -334,21 +334,15 @@ void myIOT2::getTime_32()
 {
 #if isESP32
 	// getting time in ESP32 sometimes failed due to clock race. some delays were used as commented out here
-	// int a = 0;
-	// while (a < 3)
-	// {
 	if (getLocalTime(&timeinfo))
 	{
 		delay(100);
-		time(&epoch_time); // update system clock
-						   // }
-						   // a++;
+		time(&epoch_time);
 	}
 #endif
 }
 void myIOT2::getTimeStamp_32(char ret_timeStamp[25])
 {
-	getTime_32();
 	createDateStamp_32(&timeinfo, ret_timeStamp);
 }
 struct tm *myIOT2::convEpoch_32(time_t in_time)
@@ -367,135 +361,131 @@ void myIOT2::startMQTT()
 	bool stat = false;
 	createTopics();
 	// Select MQTT server
-	if (Ping.ping(_mqtt_server, 2))
+	if (useAltermqttServer == false)
 	{
 		mqttClient.setServer(_mqtt_server, 1883);
-		stat = true;
-		useAltermqttServer = false;
-		if (useSerial)
-		{
-			Serial.print("MQTT SERVER: ");
-			Serial.println(_mqtt_server);
-		}
-	}
-	else if (Ping.ping(_mqtt_server2), 5)
-	{
-		mqttClient.setServer(_mqtt_server2, 1883);
-		if (useSerial)
-		{
-			Serial.println("Connected to MQTT SERVER2: ");
-			Serial.println(_mqtt_server2);
-		}
-		useAltermqttServer = true;
-		stat = true;
+		Serial.print("MQTT SERVER: ");
+		Serial.println(_mqtt_server);
 	}
 	else
 	{
-		mqttClient.setServer(MQTT_SERVER3, 1883);
-		if (useSerial)
+		if (Ping.ping(_mqtt_server, 2))
 		{
-			Serial.println("Connected to EXTERNAL MQTT SERVER: ");
-			Serial.println(MQTT_SERVER3);
+			mqttClient.setServer(_mqtt_server, 1883);
+			stat = true;
+			useAltermqttServer = false;
+			if (useSerial)
+			{
+				Serial.print("MQTT SERVER: ");
+				Serial.println(_mqtt_server);
+			}
 		}
-		useAltermqttServer = true;
-		stat = true;
+		else if (Ping.ping(_mqtt_server2), 5)
+		{
+			mqttClient.setServer(_mqtt_server2, 1883);
+			if (useSerial)
+			{
+				Serial.println("Connected to >>>>>>>>> MQTT SERVER2 <<<<<<<<<<<: ");
+				Serial.println(_mqtt_server2);
+			}
+			useAltermqttServer = true;
+			stat = true;
+		}
+		else
+		{
+			mqttClient.setServer(MQTT_SERVER3, 1883);
+			if (useSerial)
+			{
+				Serial.println("Connected to >>>>>>>>> EXTERNAL MQTT SERVER <<<<<<<<<<: ");
+				Serial.println(MQTT_SERVER3);
+			}
+			useAltermqttServer = true;
+			stat = true;
+		}
 	}
 	// Set callback function
-	if (stat)
-	{
-		mqttClient.setCallback(std::bind(&myIOT2::callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-		subscribeMQTT();
-	}
-	else
-	{
-		if (useSerial)
-		{
-			Serial.println("Not connected to MQTT server");
-		}
-	}
+	// if (stat)
+	// {
+	mqttClient.setCallback(std::bind(&myIOT2::callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+	subscribeMQTT();
+	// }
+	// if()
+	// {
+	// 	if (useSerial)
+	// 	{
+	// 		Serial.println("Not connected to MQTT server");
+	// 	}
+	// }
 }
 bool myIOT2::subscribeMQTT()
 {
 	if (!mqttClient.connected())
 	{
-		long now = millis();
-		if (noNetwork_Clock > 0 && now - noNetwork_Clock > 60000L)
+		if (useSerial)
 		{
-			return 0;
+			Serial.print("Attempting MQTT connection...");
 		}
-		else if (now - lastReconnectAttempt > 2000)
+		// Attempt to connect
+		char tempname[15];
+#if isESP8266
+		sprintf(tempname, "ESP_%s", String(ESP.getChipId()).c_str());
+#elif isESP32
+		uint64_t chipid = ESP.getEfuseMac();
+		sprintf(tempname, "ESP32_%04X", (uint16_t)(chipid >> 32));
+#endif
+		if (mqttClient.connect(tempname, _mqtt_user, _mqtt_pwd, _availTopic, 0, true, "offline"))
 		{
-			lastReconnectAttempt = now;
+			// Connecting sequence
+			for (int i = 0; i < sizeof(topicArry) / sizeof(char *); i++)
+			{
+				if (strcmp(topicArry[i], "") != 0)
+				{
+					mqttClient.subscribe(topicArry[i]);
+				}
+			}
+			if (useextTopic)
+			{
+				uint8_t x = sizeof(extTopic) / sizeof(char *);
+				for (int i = 0; i < x; i++)
+				{
+					if (extTopic[i] != nullptr)
+					{
+						mqttClient.subscribe(extTopic[i]);
+					}
+				}
+			}
 			if (useSerial)
 			{
-				Serial.println("have wifi, entering MQTT connection");
-				Serial.print("Attempting MQTT connection...");
+				Serial.println("connected");
 			}
-			// Attempt to connect
-			char tempname[15];
-#if isESP8266
-			sprintf(tempname, "ESP_%s", String(ESP.getChipId()).c_str());
-#elif isESP32
-			uint64_t chipid = ESP.getEfuseMac();
-			sprintf(tempname, "ESP32_%04X", (uint16_t)(chipid >> 32));
-#endif
-			if (mqttClient.connect(tempname, _mqtt_user, _mqtt_pwd, _availTopic, 0, true, "offline"))
+			if (firstRun)
 			{
-				// Connecting sequence
-				for (int i = 0; i < sizeof(topicArry) / sizeof(char *); i++)
+				pub_log("<< PowerON Boot >>");
+				if (!useResetKeeper)
 				{
-					if (strcmp(topicArry[i], "") != 0)
-					{
-						mqttClient.subscribe(topicArry[i]);
-					}
-				}
-				if (useextTopic)
-				{
-					uint8_t x = sizeof(extTopic) / sizeof(char *);
-					for (int i = 0; i < x; i++)
-					{
-						if (extTopic[i] != nullptr)
-						{
-							mqttClient.subscribe(extTopic[i]);
-						}
-					}
-				}
-				if (useSerial)
-				{
-					Serial.println("connected");
-				}
-				if (firstRun)
-				{
-					pub_log("<< PowerON Boot >>");
-					if (!useResetKeeper)
-					{
-						firstRun = false;
-						mqtt_detect_reset = 0;
-						notifyOnline();
-					}
-					// else
-					// { // using reset keeper
-					// 	mqttClient.publish(_availTopic, "resetKeeper", true);
-					// }
-				}
-				else
-				{ // not first run
+					firstRun = false;
+					mqtt_detect_reset = 0;
 					notifyOnline();
 				}
-				return 1;
+				// else
+				// { // using reset keeper
+				// 	mqttClient.publish(_availTopic, "resetKeeper", true);
+				// }
 			}
 			else
-			{ // fail to connect MQTT
-				if (useSerial)
-				{
-					Serial.print("failed, rc=");
-					Serial.println(mqttClient.state());
-				}
-				return 0;
+			{ // not first run
+				notifyOnline();
 			}
+			lastReconnectAttempt = 0;
+			return 1;
 		}
 		else
-		{
+		{ // fail to connect MQTT
+			if (useSerial)
+			{
+				Serial.print("failed, rc=");
+				Serial.println(mqttClient.state());
+			}
 			return 0;
 		}
 	}
@@ -794,7 +784,6 @@ void myIOT2::pub_sms(JsonDocument &sms)
 	output.toCharArray(sms_char, len);
 
 	_pub_generic(_smsTopic, sms_char, false, "", true);
-	// write_log(sms_char, 0);
 }
 void myIOT2::pub_email(String &inmsg, char *name)
 {
@@ -804,13 +793,6 @@ void myIOT2::pub_email(String &inmsg, char *name)
 	inmsg.toCharArray(email_char, len);
 	_pub_generic(_emailTopic, email_char, false, name, true);
 	write_log(email_char, 0);
-
-	// int len = output.length() + 1;
-	// char email_char[len];
-	// output.toCharArray(email_char, len);
-
-	// _pub_generic(_emailTopic, email_char, false, name, true);
-	// write_log(email_char, 0);
 }
 void myIOT2::pub_email(JsonDocument &email)
 {
@@ -828,14 +810,9 @@ void myIOT2::msgSplitter(const char *msg_in, int max_msgSize, char *prefix, char
 {
 	char tmp[280];
 
-	// if (strlen(prefix) + strlen(msg_in) > max_msgSize)
-	// {
-	Serial.println("BIG SMG");
 	int max_chunk = max_msgSize - strlen(prefix) - strlen(split_msg);
 	int num = ceil((float)strlen(msg_in) / max_chunk);
 	int pre_len;
-	Serial.print("NUM CHUNKS: ");
-	Serial.println(num);
 
 	for (int k = 0; k < num; k++)
 	{
@@ -849,18 +826,8 @@ void myIOT2::msgSplitter(const char *msg_in, int max_msgSize, char *prefix, char
 		if (mqttClient.connected() == true)
 		{
 			mqttClient.publish(_msgTopic, tmp);
-			Serial.println(tmp);
 		}
 	}
-	// }
-	// else
-	// {
-	// 	if (mqttClient.connected() == true)
-	// 	{
-	// 		sprintf(tmp, "%s %s", prefix, msg_in);
-	// 		mqttClient.publish(_msgTopic, tmp);
-	// 	}
-	// }
 }
 int myIOT2::inline_read(char *inputstr)
 {
@@ -966,16 +933,7 @@ char *myIOT2::export_fPars(char *filename, JsonDocument &DOC, int JSIZE)
 		return ret;
 	}
 }
-void myIOT2::start_EEPROM_eADR()
-{
-	EEPROM.begin(120);
-	NTP_eADR = _start_eADR;
 
-	for (int i = 0; i < bootlog_len; i++)
-	{
-		_prevBootclock_eADR[i] = _start_eADR + 4 * (i + 1);
-	}
-}
 void myIOT2::update_bootclockLOG()
 {
 	byte S = sizeof(_prevBootclock_eADR) / sizeof(_prevBootclock_eADR[0]);
@@ -1000,13 +958,15 @@ long myIOT2::get_bootclockLOG(int x)
 {
 	return EEPROMReadlong(_prevBootclock_eADR[x]);
 }
+
 // ~~~~~~ Reset and maintability ~~~~~~
 void myIOT2::sendReset(char *header)
 {
 	char temp[150];
 
 	sprintf(temp, "[%s] - Reset sent", header);
-
+	write_log(temp, 0);
+	flog.writeNow();
 	if (useSerial)
 	{
 		Serial.println(temp);
@@ -1135,6 +1095,17 @@ void myIOT2::startWDT()
 }
 
 // ~~~~~~  EEPROM ~~~~~~
+void myIOT2::start_EEPROM_eADR()
+{
+	const int StartEEPROM_ADDRESS = 120;
+	EEPROM.begin(StartEEPROM_ADDRESS);
+	NTP_eADR = _start_eADR;
+
+	for (int i = 0; i < bootlog_len; i++)
+	{
+		_prevBootclock_eADR[i] = _start_eADR + 4 * (i + 1);
+	}
+}
 void myIOT2::EEPROMWritelong(int address, long value)
 {
 	byte four = (value & 0xFF);
