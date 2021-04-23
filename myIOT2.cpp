@@ -937,7 +937,7 @@ char *myIOT2::export_fPars(char *filename, JsonDocument &DOC, int JSIZE)
 void myIOT2::update_bootclockLOG()
 {
 	byte S = sizeof(_prevBootclock_eADR) / sizeof(_prevBootclock_eADR[0]);
-	long n;
+	time_t n;
 #if isESP8266
 	n = now();
 #elif isESP32

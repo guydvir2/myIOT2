@@ -96,7 +96,7 @@ public:
     bool useDebug = false;
     bool useBootClockLog = false;
     byte debug_level = 0; // 0- All, 1- system states; 2- log only
-    static const byte bootlog_len = 3; // nubmer of boot clock records
+    static const byte bootlog_len = 10; // nubmer of boot clock records
     // ~~~~~~~~~~~~~~~~~~~~~~~~~
 
     const char *ver = "iot_v0.9";
@@ -118,7 +118,7 @@ public:
 
     bool NTP_OK = false;
     byte mqtt_detect_reset = 2;
-    int noNetwork_reset = 30; // minutes
+    byte noNetwork_reset = 30; // minutes
 
     static const int MaxTopicLength = 64; //topics
     char prefixTopic[MaxTopicLength];
@@ -144,8 +144,8 @@ private:
     const long retryConnectWiFi = (1000 * 60) * 1;     // 1 minuter between fail Wifi reconnect reties
 
     long time2Reset_noNetwork = (1000 * 60L) * noNetwork_reset; // minutues pass without any network
-    volatile int wdtResetCounter = 0;
-    const int wdtMaxRetries = 60; //seconds to bITE
+    volatile byte wdtResetCounter = 0;
+    const byte wdtMaxRetries = 60; //seconds to bITE
     long noNetwork_Clock = 0;     // clock
     long allowOTA_clock = 0;      // clock
     long lastReconnectAttempt = 0;
