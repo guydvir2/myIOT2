@@ -138,7 +138,7 @@ private:
     cb_func ext_mqtt;
 
     // time interval parameters
-    const int clockUpdateInt = 60 * 60 * 5;           // seconds to update NTP
+    const int clockUpdateInt = 60 * 60 ;           // seconds to update NTP
     const int WIFItimeOut = (1000 * 60) * 1 / 4;      // 30 sec try to connect WiFi
     const int OTA_upload_interval = (1000 * 60) * 10; // 10 minute to try OTA
     const long retryConnectWiFi = (1000 * 60) * 1;     // 1 minuter between fail Wifi reconnect reties

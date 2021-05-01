@@ -90,7 +90,7 @@ bool myIOT2::startWifi(char *ssid, char *password)
 	}
 	WiFi.mode(WIFI_OFF); // <---- NEW
 	WiFi.mode(WIFI_STA);
-	WiFi.disconnect();
+	WiFi.disconnect(true);
 	WiFi.begin(ssid, password);
 	WiFi.setAutoReconnect(true); // <-- BACK
 
@@ -110,12 +110,12 @@ bool myIOT2::startWifi(char *ssid, char *password)
 		if (useSerial)
 		{
 			Serial.println("no wifi detected");
+			Serial.printf("\nConnection status: %d\n", WiFi.status());
 		}
 		if (noNetwork_Clock == 0)
 		{
 			noNetwork_Clock = millis();
 		}
-		WiFi.disconnect(true); // <--- NEW in case of stuck wifi
 		return 0;
 	}
 
@@ -159,7 +159,10 @@ bool myIOT2::network_looper()
 				{
 					mqttClient.loop();
 					noNetwork_Clock = 0;
-					Serial.println("reconnect mqtt - succeed");
+					if (useSerial)
+					{
+						Serial.println("reconnect mqtt - succeed");
+					}
 					return 1;
 				}
 				else
@@ -167,7 +170,10 @@ bool myIOT2::network_looper()
 					if (noNetwork_Clock == 0)
 					{
 						noNetwork_Clock = millis();
-						Serial.println("first_clock MQTT");
+						if (useSerial)
+						{
+							Serial.println("first_clock MQTT");
+						}
 					}
 					return 0;
 				}
@@ -183,13 +189,19 @@ bool myIOT2::network_looper()
 				if (noNetwork_Clock == 0)
 				{ // first time when NO NETWORK ?
 					noNetwork_Clock = millis();
-					Serial.println("no-wifi, first clock");
+					if (useSerial)
+					{
+						Serial.println("no-wifi, first clock");
+					}
 				}
 				return 0;
 			}
 			else
 			{ // reconnect succeeded
-				Serial.println("reconnect wifi");
+				if (useSerial)
+				{
+					Serial.println("reconnect wifi");
+				}
 				return 1;
 			}
 		}
@@ -203,11 +215,10 @@ bool myIOT2::network_looper()
 // ~~~~~~~ NTP & Clock ESP8266 ~~~~~~~~
 void myIOT2::start_clock()
 {
-	int failcount;
+	static byte failcount = 0;
 #if isESP8266
 	if (startNTP())
 	{
-		NTP_OK = true;
 		get_timeStamp();
 	}
 #elif isESP32
@@ -222,24 +233,20 @@ void myIOT2::start_clock()
 	if (NTP_OK)
 	{ //NTP Succeed
 		strcpy(bootTime, timeStamp);
-		failcount = (int)EEPROMReadlong(NTP_eADR);
-		if (failcount != 0)
-		{
-			EEPROMWritelong(NTP_eADR, 0);
-		}
 	}
 	else
 	{
 		if (resetFailNTP)
 		{
-			failcount = (int)EEPROMReadlong(NTP_eADR);
+			// failcount = (int)EEPROMReadlong(NTP_eADR);
 			if (failcount > 3)
 			{
 				sendReset("NTP");
 			}
 			else
 			{
-				EEPROMWritelong(NTP_eADR, failcount + 1);
+				// EEPROMWritelong(NTP_eADR, failcount + 1);
+				failcount++;
 			}
 		}
 	}
@@ -249,25 +256,28 @@ bool myIOT2::startNTP()
 #if isESP8266
 	byte x = 0;
 	byte retries = 5;
-	int delay_tries = 300;
 	char *NTPserver = "pool.ntp.org";
 
 	NTP.begin(NTPserver, 2, true);
-	delay(delay_tries);
+	NTP.setInterval(5, clockUpdateInt);
+	delay(300);
 	time_t t = now();
 
 	while (x < retries && year(t) == 1970)
 	{
 		NTP.begin(NTPserver, 2, true);
-		delay(delay_tries * (1.2 * (x + 1)));
+		delay(300);
 		t = now();
-		x += 1;
+		x++;
 	}
-	if (x < retries && year(t) != 1970)
+	if (year(t) != 1970)
 	{
-		NTP.setInterval(5, clockUpdateInt);
 		NTP_OK = true;
 		return 1;
+	}
+	else
+	{
+		return 0;
 	}
 
 #endif
@@ -364,8 +374,11 @@ void myIOT2::startMQTT()
 	if (useAltermqttServer == false)
 	{
 		mqttClient.setServer(_mqtt_server, 1883);
-		Serial.print("MQTT SERVER: ");
-		Serial.println(_mqtt_server);
+		if (useSerial)
+		{
+			Serial.print("MQTT SERVER: ");
+			Serial.println(_mqtt_server);
+		}
 	}
 	else
 	{
@@ -408,14 +421,6 @@ void myIOT2::startMQTT()
 	// {
 	mqttClient.setCallback(std::bind(&myIOT2::callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 	subscribeMQTT();
-	// }
-	// if()
-	// {
-	// 	if (useSerial)
-	// 	{
-	// 		Serial.println("Not connected to MQTT server");
-	// 	}
-	// }
 }
 bool myIOT2::subscribeMQTT()
 {
@@ -644,7 +649,10 @@ void myIOT2::callback(char *topic, byte *payload, unsigned int length)
 			{
 				flog.readline(a, m);
 				pub_debug(m);
-				Serial.println(m);
+				if (useSerial)
+				{
+					Serial.println(m);
+				}
 				delay(20);
 			}
 			pub_msg("debug_log: extracted");
@@ -902,7 +910,10 @@ bool myIOT2::read_fPars(char *filename, String &defs, JsonDocument &DOC, int JSI
 	}
 	else
 	{
+		if (useSerial)
+		{
 		Serial.printf("\nfile %s not found", filename);
+		}
 		deserializeJson(DOC, defs);
 		return 0;
 	}
@@ -929,7 +940,10 @@ char *myIOT2::export_fPars(char *filename, JsonDocument &DOC, int JSIZE)
 	}
 	else
 	{
+		if (useSerial)
+		{
 		Serial.printf("\nfile %s read NOT-OK", filename);
+		}
 		return ret;
 	}
 }
@@ -951,7 +965,10 @@ void myIOT2::update_bootclockLOG()
 
 	for (int i = 0; i < S; i++)
 	{
+		if (useSerial)
+		{
 		Serial.println(EEPROMReadlong(_prevBootclock_eADR[i]));
+		}
 	}
 }
 long myIOT2::get_bootclockLOG(int x)
