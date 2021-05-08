@@ -99,7 +99,7 @@ public:
     static const byte bootlog_len = 10; // nubmer of boot clock records
     // ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    const char *ver = "iot_v0.9";
+    const char *ver = "iot_v0.91";
     static const byte num_param = 6;
     char inline_param[num_param][20]; //values from user
 
@@ -138,17 +138,17 @@ private:
     cb_func ext_mqtt;
 
     // time interval parameters
-    const int clockUpdateInt = 60 * 60 ;           // seconds to update NTP
-    const int WIFItimeOut = (1000 * 60) * 1 / 4;      // 30 sec try to connect WiFi
-    const int OTA_upload_interval = (1000 * 60) * 10; // 10 minute to try OTA
-    const long retryConnectWiFi = (1000 * 60) * 1;     // 1 minuter between fail Wifi reconnect reties
+    const unsigned int clockUpdateInt = 60 * 60 ;           // seconds to update NTP
+    const unsigned int WIFItimeOut = (1000 * 60) * 1 / 4;      // 30 sec try to connect WiFi
+    const unsigned int OTA_upload_interval = (1000 * 60) * 10; // 10 minute to try OTA
+    const unsigned long retryConnectWiFi = (1000 * 60) * 1;     // 1 minuter between fail Wifi reconnect reties
 
-    long time2Reset_noNetwork = (1000 * 60L) * noNetwork_reset; // minutues pass without any network
+    unsigned long time2Reset_noNetwork = (1000 * 60UL) * noNetwork_reset; // minutues pass without any network
     volatile byte wdtResetCounter = 0;
     const byte wdtMaxRetries = 60; //seconds to bITE
-    long noNetwork_Clock = 0;     // clock
-    long allowOTA_clock = 0;      // clock
-    long lastReconnectAttempt = 0;
+    unsigned long noNetwork_Clock = 0;     // clock
+    unsigned long allowOTA_clock = 0;      // clock
+    unsigned long lastReconnectAttempt = 0;
     // ############################
 
     //MQTT broker parameters
