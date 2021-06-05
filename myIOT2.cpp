@@ -129,6 +129,7 @@ bool myIOT2::startWifi(char *ssid, char *password)
 			Serial.print("IP address: ");
 			Serial.println(WiFi.localIP());
 		}
+		noNetwork_Clock = 0;
 		return 1;
 	}
 }
@@ -143,6 +144,7 @@ void myIOT2::start_network_services()
 bool myIOT2::network_looper()
 {
 	const byte time_retry_mqtt = 5;
+	unsigned long _lastReco_try = 0;
 	if (WiFi.status() == WL_CONNECTED) /* wifi is ok */
 	{
 		if (mqttClient.connected()) /* MQTT is OK */
@@ -153,12 +155,23 @@ bool myIOT2::network_looper()
 		}
 		else /* Not connected mqtt*/
 		{
-			if (noNetwork_Clock == 0 || millis() - noNetwork_Clock > 1000 * time_retry_mqtt)
+			if (noNetwork_Clock == 0 || millis() - _lastReco_try > 1000 * time_retry_mqtt)
 			{
+				_lastReco_try = millis();
 				if (subscribeMQTT()) /* succeed to reconnect */
 				{
 					mqttClient.loop();
+					if (noNetwork_Clock != 0)
+					{
+						int not_con_period = (int)((millis() - noNetwork_Clock) / 1000UL) if (not_con_period > 30)
+						{
+							char b[50];
+							sprintf(b, "MQTT reconnect after %d sec", not_con_period);
+							pub_log(b);
+						}
+					}
 					noNetwork_Clock = 0;
+					_lastReco_try = 0;
 					if (useSerial)
 					{
 						Serial.println("reconnect mqtt - succeed");
@@ -178,6 +191,11 @@ bool myIOT2::network_looper()
 					return 0;
 				}
 			}
+			else
+			{
+				return 0;
+			}
+			return 0;
 		}
 	}
 	else /* No WiFi*/
@@ -202,6 +220,10 @@ bool myIOT2::network_looper()
 				{
 					Serial.println("reconnect wifi");
 				}
+				char b[50];
+				sprintf(b, "WiFi reconnect after %d sec", (int)((millis() - noNetwork_Clock) / 1000UL));
+				pub_log(b);
+				noNetwork_Clock = 0;
 				return 1;
 			}
 		}
@@ -912,7 +934,7 @@ bool myIOT2::read_fPars(char *filename, String &defs, JsonDocument &DOC, int JSI
 	{
 		if (useSerial)
 		{
-		Serial.printf("\nfile %s not found", filename);
+			Serial.printf("\nfile %s not found", filename);
 		}
 		deserializeJson(DOC, defs);
 		return 0;
@@ -942,7 +964,7 @@ char *myIOT2::export_fPars(char *filename, JsonDocument &DOC, int JSIZE)
 	{
 		if (useSerial)
 		{
-		Serial.printf("\nfile %s read NOT-OK", filename);
+			Serial.printf("\nfile %s read NOT-OK", filename);
 		}
 		return ret;
 	}
@@ -967,7 +989,7 @@ void myIOT2::update_bootclockLOG()
 	{
 		if (useSerial)
 		{
-		Serial.println(EEPROMReadlong(_prevBootclock_eADR[i]));
+			Serial.println(EEPROMReadlong(_prevBootclock_eADR[i]));
 		}
 	}
 }
@@ -1046,54 +1068,54 @@ void myIOT2::startOTA()
 	// MD5(admin) = 21232f297a57a5a743894a0e4a801fc3
 	// ArduinoOTA.setPasswordHash("21232f297a57a5a743894a0e4a801fc3");
 
-	ArduinoOTA.onStart([]() {
-		String type;
-		if (ArduinoOTA.getCommand() == U_FLASH)
-		{
-			type = "sketch";
-		}
-		else
-		{ // U_SPIFFS
-			type = "filesystem";
-		}
+	ArduinoOTA.onStart([]()
+					   {
+						   String type;
+						   if (ArduinoOTA.getCommand() == U_FLASH)
+						   {
+							   type = "sketch";
+						   }
+						   else
+						   { // U_SPIFFS
+							   type = "filesystem";
+						   }
 
-		// NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-		//    if (useSerial) {
-		// Serial.println("Start updating " + type);
-		//    }
-		// Serial.end();
-	});
+						   // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+						   //    if (useSerial) {
+						   // Serial.println("Start updating " + type);
+						   //    }
+						   // Serial.end();
+					   });
 	if (useSerial)
 	{ // for debug
-		ArduinoOTA.onEnd([]() {
-			Serial.println("\nEnd");
-		});
-		ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-			Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-		});
-		ArduinoOTA.onError([](ota_error_t error) {
-			Serial.printf("Error[%u]: ", error);
-			if (error == OTA_AUTH_ERROR)
-			{
-				Serial.println("Auth Failed");
-			}
-			else if (error == OTA_BEGIN_ERROR)
-			{
-				Serial.println("Begin Failed");
-			}
-			else if (error == OTA_CONNECT_ERROR)
-			{
-				Serial.println("Connect Failed");
-			}
-			else if (error == OTA_RECEIVE_ERROR)
-			{
-				Serial.println("Receive Failed");
-			}
-			else if (error == OTA_END_ERROR)
-			{
-				Serial.println("End Failed");
-			}
-		});
+		ArduinoOTA.onEnd([]()
+						 { Serial.println("\nEnd"); });
+		ArduinoOTA.onProgress([](unsigned int progress, unsigned int total)
+							  { Serial.printf("Progress: %u%%\r", (progress / (total / 100))); });
+		ArduinoOTA.onError([](ota_error_t error)
+						   {
+							   Serial.printf("Error[%u]: ", error);
+							   if (error == OTA_AUTH_ERROR)
+							   {
+								   Serial.println("Auth Failed");
+							   }
+							   else if (error == OTA_BEGIN_ERROR)
+							   {
+								   Serial.println("Begin Failed");
+							   }
+							   else if (error == OTA_CONNECT_ERROR)
+							   {
+								   Serial.println("Connect Failed");
+							   }
+							   else if (error == OTA_RECEIVE_ERROR)
+							   {
+								   Serial.println("Receive Failed");
+							   }
+							   else if (error == OTA_END_ERROR)
+							   {
+								   Serial.println("End Failed");
+							   }
+						   });
 		// ArduinoOTA.begin();
 		// Serial.println("Ready");
 		// Serial.print("IP address: ");
