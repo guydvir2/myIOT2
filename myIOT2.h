@@ -95,11 +95,11 @@ public:
     bool useAltermqttServer = false;
     bool useDebug = false;
     bool useBootClockLog = false;
-    byte debug_level = 0; // 0- All, 1- system states; 2- log only
-    static const byte bootlog_len = 10; // nubmer of boot clock records
+    byte debug_level = 0;               // 0- All, 1- system states; 2- log only
+    static const byte bootlog_len = 3; // nubmer of boot clock records
     // ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    const char *ver = "iot_v0.92";
+    const char *ver = "iot_v0.93";
     static const byte num_param = 6;
     char inline_param[num_param][20]; //values from user
 
@@ -138,16 +138,16 @@ private:
     cb_func ext_mqtt;
 
     // time interval parameters
-    const unsigned int clockUpdateInt = 60 * 60 ;           // seconds to update NTP
+    const unsigned int clockUpdateInt = 60 * 60;               // seconds to update NTP
     const unsigned int WIFItimeOut = (1000 * 60) * 1 / 4;      // 30 sec try to connect WiFi
     const unsigned int OTA_upload_interval = (1000 * 60) * 10; // 10 minute to try OTA
-    const unsigned long retryConnectWiFi = (1000 * 60) * 1;     // 1 minuter between fail Wifi reconnect reties
+    const unsigned long retryConnectWiFi = (1000 * 60) * 1;    // 1 minuter between fail Wifi reconnect reties
 
     unsigned long time2Reset_noNetwork = (1000 * 60UL) * noNetwork_reset; // minutues pass without any network
     volatile byte wdtResetCounter = 0;
-    const byte wdtMaxRetries = 60;         //seconds to bITE
-    unsigned long noNetwork_Clock = 0;     // clock
-    unsigned long allowOTA_clock = 0;      // clock
+    const byte wdtMaxRetries = 60;     //seconds to bITE
+    unsigned long noNetwork_Clock = 0; // clock
+    unsigned long allowOTA_clock = 0;  // clock
     unsigned long lastReconnectAttempt = 0;
     // ############################
 
@@ -183,8 +183,8 @@ private:
     char bootTime[50];
     bool firstRun = true;
     byte _start_eADR = 100;
-    int8_t NTP_eADR;
-    int8_t _prevBootclock_eADR[bootlog_len];
+    uint8_t NTP_eADR;
+    uint8_t _prevBootclock_eADR[bootlog_len];
 
     // ~~~~~~~~~~~~~~WIFI ~~~~~~~~~~~~~~~~~~~~~
     bool startWifi(char *ssid, char *password);
@@ -213,9 +213,10 @@ private:
     void acceptOTA();
     void start_EEPROM_eADR();
     void update_bootclockLOG();
+    void _post_boot_check();
 
-    // ~~~~~~~ EEPROM  ~~~~~~~~~~~~~~~~~~~~~~~~
-    void EEPROMWritelong(int address, long value);
+        // ~~~~~~~ EEPROM  ~~~~~~~~~~~~~~~~~~~~~~~~
+        void EEPROMWritelong(int address, long value);
     long EEPROMReadlong(long address);
 };
 // void watchdog_timer_triggered_helper(myIOT2 *watchdog)

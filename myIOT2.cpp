@@ -47,6 +47,27 @@ void myIOT2::start_services(cb_func funct, char *ssid, char *password, char *mqt
 		update_bootclockLOG();
 	}
 }
+void myIOT2::_post_boot_check()
+{
+	static bool checkAgain = true;
+	if (checkAgain)
+	{
+		if (mqtt_detect_reset != 2)
+		{
+			char a[30];
+			checkAgain = false;
+			if (mqtt_detect_reset == 0)
+			{
+				sprintf(a, "Boot Type: [%s]", "Normal Boot");
+			}
+			else if (mqtt_detect_reset == 1)
+			{
+				sprintf(a, "Boot Type: [%s]", "Quick Reboot");
+			}
+			pub_log(a);
+		}
+	}
+}
 void myIOT2::looper()
 {
 	wdtResetCounter = 0; //reset WDT watchDog
@@ -75,6 +96,7 @@ void myIOT2::looper()
 	{
 		flog.looper(60);
 	}
+	_post_boot_check();
 }
 
 // ~~~~~~~ Wifi functions ~~~~~~~
@@ -163,7 +185,8 @@ bool myIOT2::network_looper()
 					mqttClient.loop();
 					if (noNetwork_Clock != 0)
 					{
-						int not_con_period = (int)((millis() - noNetwork_Clock) / 1000UL) if (not_con_period > 30)
+						int not_con_period = (int)((millis() - noNetwork_Clock) / 1000UL);
+						if (not_con_period > 30)
 						{
 							char b[50];
 							sprintf(b, "MQTT reconnect after %d sec", not_con_period);
@@ -619,8 +642,8 @@ void myIOT2::callback(char *topic, byte *payload, unsigned int length)
 	}
 	else if (strcmp(incoming_msg, "ver") == 0)
 	{
-		sprintf(msg, "ver: IOTlib: [%s], WDT: [%d], OTA: [%d], SERIAL: [%d], ResetKeeper[%d], FailNTP[%d], useDebugLog[%d] debugLog_VER[%s], no-networkReset[%d]",
-				ver, useWDT, useOTA, useSerial, useResetKeeper, resetFailNTP, useDebug, "flog.VeR", useNetworkReset);
+		sprintf(msg, "ver: IOTlib: [%s], WDT: [%d], OTA: [%d], SERIAL: [%d], ResetKeeper[%d], FailNTP[%d], useDebugLog[%d] debugLog_VER[%s], no-networkReset[%d], useBootLog[%d]",
+				ver, useWDT, useOTA, useSerial, useResetKeeper, resetFailNTP, useDebug, "flog.VeR", useNetworkReset, useBootClockLog);
 		pub_msg(msg);
 	}
 	else if (strcmp(incoming_msg, "help") == 0)
@@ -628,7 +651,7 @@ void myIOT2::callback(char *topic, byte *payload, unsigned int length)
 		sprintf(msg,
 				"Help: Commands #1 - [status, boot, reset, ip, ota, ver,ver2, help, help2, MCU_type]");
 		pub_msg(msg);
-		sprintf(msg, "Help: Commands #2 - [flash_format, debug_log, del_log, show_log]");
+		sprintf(msg, "Help: Commands #2 - [flash_format, debug_log, del_log, show_log, show_bootLog]");
 		pub_msg(msg);
 	}
 	else if (strcmp(incoming_msg, "MCU_type") == 0)
@@ -700,6 +723,33 @@ void myIOT2::callback(char *topic, byte *payload, unsigned int length)
 		{
 			flog.delog();
 			pub_msg("debug_log: file deleted");
+		}
+	}
+	else if (strcmp(incoming_msg, "show_bootLog") == 0)
+	{
+		if (useBootClockLog)
+		{
+			char t[240];
+			sprintf(t, "BootLog: {");
+			for (int i = 0; i < bootlog_len; i++)
+			{
+				if (get_bootclockLOG(i) > 0)
+				{
+					if (i != 0)
+					{
+						strcat(t, "; ");
+					}
+					get_timeStamp(get_bootclockLOG(i));
+					strcat(t, timeStamp);
+				}
+			}
+			strcat(t, "}");
+			pub_log(t);
+			pub_msg("BootLog: Extracted");
+		}
+		else
+		{
+			pub_msg("BootLog: Not supported");
 		}
 	}
 
@@ -985,13 +1035,13 @@ void myIOT2::update_bootclockLOG()
 	}
 	EEPROMWritelong(_prevBootclock_eADR[0], n);
 
-	for (int i = 0; i < S; i++)
-	{
-		if (useSerial)
-		{
-			Serial.println(EEPROMReadlong(_prevBootclock_eADR[i]));
-		}
-	}
+	// for (int i = 0; i < S; i++)
+	// {
+	// 	if (useSerial)
+	// 	{
+	// 		Serial.println(EEPROMReadlong(_prevBootclock_eADR[i]));
+	// 	}
+	// }
 }
 long myIOT2::get_bootclockLOG(int x)
 {
@@ -1136,8 +1186,8 @@ void myIOT2::startWDT()
 // ~~~~~~  EEPROM ~~~~~~
 void myIOT2::start_EEPROM_eADR()
 {
-	const int StartEEPROM_ADDRESS = 120;
-	EEPROM.begin(StartEEPROM_ADDRESS);
+	const int EEPROM_SIZE = 256;
+	EEPROM.begin(EEPROM_SIZE);
 	NTP_eADR = _start_eADR;
 
 	for (int i = 0; i < bootlog_len; i++)
