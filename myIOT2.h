@@ -96,7 +96,7 @@ public:
     bool useDebug = false;
     bool useBootClockLog = false;
     byte debug_level = 0;               // 0- All, 1- system states; 2- log only
-    static const byte bootlog_len = 3; // nubmer of boot clock records
+    static const byte bootlog_len = 10; // nubmer of boot clock records
     // ~~~~~~~~~~~~~~~~~~~~~~~~~
 
     const char *ver = "iot_v0.93";

@@ -1035,13 +1035,13 @@ void myIOT2::update_bootclockLOG()
 	}
 	EEPROMWritelong(_prevBootclock_eADR[0], n);
 
-	// for (int i = 0; i < S; i++)
-	// {
-	// 	if (useSerial)
-	// 	{
-	// 		Serial.println(EEPROMReadlong(_prevBootclock_eADR[i]));
-	// 	}
-	// }
+	for (int i = 0; i < S; i++)
+	{
+		if (useSerial)
+		{
+			Serial.println(EEPROMReadlong(_prevBootclock_eADR[i]));
+		}
+	}
 }
 long myIOT2::get_bootclockLOG(int x)
 {
