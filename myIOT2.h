@@ -52,7 +52,7 @@ public:
     flashLOG clklog;
 
     myIOT2();
-    void start_services(cb_func funct, char *ssid = SSID_ID, char *password = PASS_WIFI, char *mqtt_user = MQTT_USER, char *mqtt_passw = MQTT_PASS, char *mqtt_broker = MQTT_SERVER1, int log_ents = 10, int log_len = 250);
+    void start_services(cb_func funct, char *ssid = SSID_ID, char *password = PASS_WIFI, char *mqtt_user = MQTT_USER, char *mqtt_passw = MQTT_PASS, char *mqtt_broker = MQTT_SERVER1, int log_ents = 50, int log_len = 250);
     void looper();
     void startOTA();
     void get_timeStamp(time_t t = 0);
@@ -182,10 +182,8 @@ private:
 
     // holds informamtion
     char bootTime[50];
+    char AvailState[20];
     bool firstRun = true;
-    byte _start_eADR = 100;
-    uint8_t NTP_eADR;
-    uint8_t _prevBootclock_eADR[bootlog_len];
 
     // ~~~~~~~~~~~~~~WIFI ~~~~~~~~~~~~~~~~~~~~~
     bool startWifi(char *ssid, char *password);
@@ -206,7 +204,7 @@ private:
     void callback(char *topic, byte *payload, unsigned int length);
     void msgSplitter(const char *msg_in, int max_msgSize, char *prefix, char *split_msg);
     void firstRun_ResetKeeper(char *msg);
-    void write_log(char *inmsg, int x);
+    void write_log(char *inmsg, int x, char* topic="_deviceName");
     void _pub_generic(char *topic, char *inmsg, bool retain = false, char *devname = "", bool bare = false);
 
     // ~~~~~~~ Services  ~~~~~~~~~~~~~~~~~~~~~~~~

@@ -520,11 +520,8 @@ bool myIOT2::subscribeMQTT()
 					firstRun = false;
 					mqtt_detect_reset = 0;
 					notifyOnline();
+					Serial.println("A");
 				}
-				// else
-				// { // using reset keeper
-				// 	mqttClient.publish(_availTopic, "resetKeeper", true);
-				// }
 			}
 			else
 			{ // not first run
@@ -619,6 +616,10 @@ void myIOT2::callback(char *topic, byte *payload, unsigned int length)
 	if (strcmp(topic, _availTopic) == 0 && useResetKeeper && firstRun)
 	{
 		firstRun_ResetKeeper(incoming_msg);
+	}
+	else if (strcmp(topic, _availTopic) == 0)
+	{
+		strcpy(AvailState, incoming_msg);
 	}
 
 	if (strcmp(incoming_msg, "boot") == 0)
@@ -747,12 +748,12 @@ void myIOT2::callback(char *topic, byte *payload, unsigned int length)
 				time_t tmptime = atol(m);
 				get_timeStamp(tmptime);
 				strcat(t, timeStamp);
+				// pub_log(timeStamp);
 			}
 			strcat(t, "}");
 			Serial.println(t);
-			pub_log(t);
-			// pub_msg("BootLog: Extracted");
-			pub_msg(t);
+			pub_debug(t);
+			pub_msg("BootLog: Extracted");
 		}
 		else
 		{
@@ -810,28 +811,28 @@ void myIOT2::_pub_generic(char *topic, char *inmsg, bool retain, char *devname, 
 void myIOT2::pub_msg(char *inmsg)
 {
 	_pub_generic(_msgTopic, inmsg);
-	write_log(inmsg, 0);
+	write_log(inmsg, 0, _msgTopic);
 }
 void myIOT2::pub_noTopic(char *inmsg, char *Topic)
 {
 	_pub_generic(Topic, inmsg, false, "", true);
-	write_log(inmsg, 0);
+	write_log(inmsg, 0, Topic);
 }
 void myIOT2::pub_state(char *inmsg, byte i)
 {
 	char *st[] = {_stateTopic, _stateTopic2};
 	mqttClient.publish(st[i], inmsg, true);
-	write_log(inmsg, 2);
+	write_log(inmsg, 2, st[i]);
 }
 void myIOT2::pub_log(char *inmsg)
 {
 	_pub_generic(_logTopic, inmsg);
-	write_log(inmsg, 1);
+	write_log(inmsg, 1, _logTopic);
 }
 void myIOT2::pub_ext(char *inmsg, char *name, bool retain, byte i)
 {
 	_pub_generic(extTopic[i], inmsg, retain, name);
-	write_log(inmsg, 0);
+	write_log(inmsg, 0, extTopic[i]);
 }
 void myIOT2::pub_debug(char *inmsg)
 {
@@ -853,12 +854,12 @@ void myIOT2::pub_sms(String &inmsg, char *name)
 	char sms_char[len];
 	inmsg.toCharArray(sms_char, len);
 	_pub_generic(_smsTopic, sms_char, false, name, true);
-	write_log(sms_char, 0);
+	write_log(sms_char, 0, _smsTopic);
 }
 void myIOT2::pub_sms(char *inmsg, char *name)
 {
 	_pub_generic(_smsTopic, inmsg, false, name, true);
-	write_log(inmsg, 0);
+	write_log(inmsg, 0, _smsTopic);
 }
 void myIOT2::pub_sms(JsonDocument &sms)
 {
@@ -878,7 +879,7 @@ void myIOT2::pub_email(String &inmsg, char *name)
 	char email_char[len];
 	inmsg.toCharArray(email_char, len);
 	_pub_generic(_emailTopic, email_char, false, name, true);
-	write_log(email_char, 0);
+	write_log(email_char, 0, _emailTopic);
 }
 void myIOT2::pub_email(JsonDocument &email)
 {
@@ -890,7 +891,7 @@ void myIOT2::pub_email(JsonDocument &email)
 	output.toCharArray(email_char, len);
 
 	_pub_generic(_emailTopic, email_char, false, "", true);
-	write_log(email_char, 0);
+	write_log(email_char, 0, _emailTopic);
 }
 void myIOT2::msgSplitter(const char *msg_in, int max_msgSize, char *prefix, char *split_msg)
 {
@@ -931,12 +932,16 @@ int myIOT2::inline_read(char *inputstr)
 }
 void myIOT2::notifyOnline()
 {
-	mqttClient.publish(_availTopic, "online", true);
-	write_log("online", 2);
+	if (strcmp(AvailState, "online") != 0)
+	{
+		mqttClient.publish(_availTopic, "online", true);
+		write_log("online", 2, _availTopic);
+	}
 }
 void myIOT2::notifyOffline()
 {
 	mqttClient.publish(_availTopic, "offline", true);
+	write_log("offline", 2, _availTopic);
 }
 void myIOT2::firstRun_ResetKeeper(char *msg)
 {
@@ -959,14 +964,14 @@ void myIOT2::clear_ExtTopicbuff()
 }
 
 // ~~~~~~~~~~ Data Storage ~~~~~~~~~
-void myIOT2::write_log(char *inmsg, int x)
+void myIOT2::write_log(char *inmsg, int x, char *topic)
 {
 	char a[strlen(inmsg) + 100];
 
 	if (useDebug && debug_level <= x)
 	{
 		get_timeStamp();
-		sprintf(a, ">>%s<< [%s] %s", timeStamp, _deviceName, inmsg);
+		sprintf(a, ">>%s<< [%s] %s", timeStamp, topic, inmsg);
 		flog.write(a);
 
 		if (x >= 1) /* system events are written immdietly */
@@ -1042,12 +1047,6 @@ void myIOT2::update_bootclockLOG()
 #endif
 	sprintf(clk_char, "%d", n);
 	clklog.write(clk_char, true);
-}
-long myIOT2::get_bootclockLOG(int x)
-{
-	// char t[20];
-	// clklog.readline()
-	return EEPROMReadlong(_prevBootclock_eADR[x]);
 }
 
 // ~~~~~~ Reset and maintability ~~~~~~
@@ -1218,4 +1217,10 @@ void myIOT2::startWDT()
 // 	long one = EEPROM.read(address + 3);
 
 // 	return ((four << 0) & 0xFF) + ((three << 8) & 0xFFFF) + ((two << 16) & 0xFFFFFF) + ((one << 24) & 0xFFFFFFFF);
+// }
+// long myIOT2::get_bootclockLOG(int x)
+// {
+// 	// char t[20];
+// 	// clklog.readline()
+// 	return EEPROMReadlong(_prevBootclock_eADR[x]);
 // }
