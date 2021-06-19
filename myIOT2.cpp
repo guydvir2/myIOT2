@@ -6,7 +6,7 @@
 #endif
 
 // ~~~~~~ myIOT2 CLASS ~~~~~~~~~~~ //
-myIOT2::myIOT2() : mqttClient(espClient), flog("/myIOTlog.txt")
+myIOT2::myIOT2() : mqttClient(espClient), flog("/myIOTlog.txt"), clklog("/clkLOG.txt")
 {
 }
 void myIOT2::start_services(cb_func funct, char *ssid, char *password, char *mqtt_user, char *mqtt_passw, char *mqtt_broker, int log_ents, int log_len)
@@ -43,7 +43,7 @@ void myIOT2::start_services(cb_func funct, char *ssid, char *password, char *mqt
 	}
 	if (useBootClockLog && WiFi.isConnected())
 	{
-		start_EEPROM_eADR();
+		clklog.start(10, 13);
 		update_bootclockLOG();
 	}
 }
@@ -94,7 +94,11 @@ void myIOT2::looper()
 	}
 	if (useDebug)
 	{
-		flog.looper(60);
+		flog.looper(10);
+	}
+	if (useBootClockLog)
+	{
+		clklog.looper(10);
 	}
 	_post_boot_check();
 }
@@ -729,23 +733,26 @@ void myIOT2::callback(char *topic, byte *payload, unsigned int length)
 	{
 		if (useBootClockLog)
 		{
-			char t[240];
+			const int lsize = clklog.getnumlines();
+			char t[lsize * 23 + 20];
 			sprintf(t, "BootLog: {");
-			for (int i = 0; i < bootlog_len; i++)
+			for (int i = 0; i < lsize; i++)
 			{
-				if (get_bootclockLOG(i) > 0)
+				if (i != 0)
 				{
-					if (i != 0)
-					{
-						strcat(t, "; ");
-					}
-					get_timeStamp(get_bootclockLOG(i));
-					strcat(t, timeStamp);
+					strcat(t, "; ");
 				}
+				char m[20];
+				clklog.readline(i, m);
+				time_t tmptime = atol(m);
+				get_timeStamp(tmptime);
+				strcat(t, timeStamp);
 			}
 			strcat(t, "}");
+			Serial.println(t);
 			pub_log(t);
-			pub_msg("BootLog: Extracted");
+			// pub_msg("BootLog: Extracted");
+			pub_msg(t);
 		}
 		else
 		{
@@ -853,7 +860,6 @@ void myIOT2::pub_sms(char *inmsg, char *name)
 	_pub_generic(_smsTopic, inmsg, false, name, true);
 	write_log(inmsg, 0);
 }
-
 void myIOT2::pub_sms(JsonDocument &sms)
 {
 	String output;
@@ -962,6 +968,11 @@ void myIOT2::write_log(char *inmsg, int x)
 		get_timeStamp();
 		sprintf(a, ">>%s<< [%s] %s", timeStamp, _deviceName, inmsg);
 		flog.write(a);
+
+		if (x >= 1) /* system events are written immdietly */
+		{
+			flog.writeNow();
+		}
 	}
 }
 bool myIOT2::read_fPars(char *filename, String &defs, JsonDocument &DOC, int JSIZE)
@@ -1022,29 +1033,20 @@ char *myIOT2::export_fPars(char *filename, JsonDocument &DOC, int JSIZE)
 
 void myIOT2::update_bootclockLOG()
 {
-	byte S = sizeof(_prevBootclock_eADR) / sizeof(_prevBootclock_eADR[0]);
+	char clk_char[20];
 	time_t n;
 #if isESP8266
 	n = now();
 #elif isESP32
 	n = epoch_time;
 #endif
-	for (int i = S - 1; i > 0; i--)
-	{
-		EEPROMWritelong(_prevBootclock_eADR[i], EEPROMReadlong(_prevBootclock_eADR[i - 1]));
-	}
-	EEPROMWritelong(_prevBootclock_eADR[0], n);
-
-	for (int i = 0; i < S; i++)
-	{
-		if (useSerial)
-		{
-			Serial.println(EEPROMReadlong(_prevBootclock_eADR[i]));
-		}
-	}
+	sprintf(clk_char, "%d", n);
+	clklog.write(clk_char, true);
 }
 long myIOT2::get_bootclockLOG(int x)
 {
+	// char t[20];
+	// clklog.readline()
 	return EEPROMReadlong(_prevBootclock_eADR[x]);
 }
 
@@ -1183,37 +1185,37 @@ void myIOT2::startWDT()
 #endif
 }
 
-// ~~~~~~  EEPROM ~~~~~~
-void myIOT2::start_EEPROM_eADR()
-{
-	const int EEPROM_SIZE = 256;
-	EEPROM.begin(EEPROM_SIZE);
-	NTP_eADR = _start_eADR;
+// // ~~~~~~  EEPROM ~~~~~~ Stop USAGE
+// void myIOT2::start_EEPROM_eADR()
+// {
+// 	const int EEPROM_SIZE = 256;
+// 	EEPROM.begin(EEPROM_SIZE);
+// 	NTP_eADR = _start_eADR;
 
-	for (int i = 0; i < bootlog_len; i++)
-	{
-		_prevBootclock_eADR[i] = _start_eADR + 4 * (i + 1);
-	}
-}
-void myIOT2::EEPROMWritelong(int address, long value)
-{
-	byte four = (value & 0xFF);
-	byte three = ((value >> 8) & 0xFF);
-	byte two = ((value >> 16) & 0xFF);
-	byte one = ((value >> 24) & 0xFF);
+// 	for (int i = 0; i < bootlog_len; i++)
+// 	{
+// 		_prevBootclock_eADR[i] = _start_eADR + 4 * (i + 1);
+// 	}
+// }
+// void myIOT2::EEPROMWritelong(int address, long value)
+// {
+// 	byte four = (value & 0xFF);
+// 	byte three = ((value >> 8) & 0xFF);
+// 	byte two = ((value >> 16) & 0xFF);
+// 	byte one = ((value >> 24) & 0xFF);
 
-	EEPROM.write(address, four);
-	EEPROM.write(address + 1, three);
-	EEPROM.write(address + 2, two);
-	EEPROM.write(address + 3, one);
-	EEPROM.commit();
-}
-long myIOT2::EEPROMReadlong(long address)
-{
-	long four = EEPROM.read(address);
-	long three = EEPROM.read(address + 1);
-	long two = EEPROM.read(address + 2);
-	long one = EEPROM.read(address + 3);
+// 	EEPROM.write(address, four);
+// 	EEPROM.write(address + 1, three);
+// 	EEPROM.write(address + 2, two);
+// 	EEPROM.write(address + 3, one);
+// 	EEPROM.commit();
+// }
+// long myIOT2::EEPROMReadlong(long address)
+// {
+// 	long four = EEPROM.read(address);
+// 	long three = EEPROM.read(address + 1);
+// 	long two = EEPROM.read(address + 2);
+// 	long one = EEPROM.read(address + 3);
 
-	return ((four << 0) & 0xFF) + ((three << 8) & 0xFFFF) + ((two << 16) & 0xFFFFFF) + ((one << 24) & 0xFFFFFFFF);
-}
+// 	return ((four << 0) & 0xFF) + ((three << 8) & 0xFFFF) + ((two << 16) & 0xFFFFFF) + ((one << 24) & 0xFFFFFFFF);
+// }

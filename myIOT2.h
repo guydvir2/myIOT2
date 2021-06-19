@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include "secretsIOT8266.h"
-#include <EEPROM.h>
+// #include <EEPROM.h>
 #include <Ticker.h> //WDT
 #include <TimeLib.h>
 #include <PubSubClient.h>
@@ -49,9 +49,10 @@ public:
     Ticker wdt;
 #endif
     flashLOG flog;
+    flashLOG clklog;
 
     myIOT2();
-    void start_services(cb_func funct, char *ssid = SSID_ID, char *password = PASS_WIFI, char *mqtt_user = MQTT_USER, char *mqtt_passw = MQTT_PASS, char *mqtt_broker = MQTT_SERVER1, int log_ents = 50, int log_len = 250);
+    void start_services(cb_func funct, char *ssid = SSID_ID, char *password = PASS_WIFI, char *mqtt_user = MQTT_USER, char *mqtt_passw = MQTT_PASS, char *mqtt_broker = MQTT_SERVER1, int log_ents = 10, int log_len = 250);
     void looper();
     void startOTA();
     void get_timeStamp(time_t t = 0);
@@ -215,8 +216,8 @@ private:
     void update_bootclockLOG();
     void _post_boot_check();
 
-        // ~~~~~~~ EEPROM  ~~~~~~~~~~~~~~~~~~~~~~~~
-        void EEPROMWritelong(int address, long value);
+    // ~~~~~~~ EEPROM  ~~~~~~~~~~~~~~~~~~~~~~~~
+    void EEPROMWritelong(int address, long value);
     long EEPROMReadlong(long address);
 };
 // void watchdog_timer_triggered_helper(myIOT2 *watchdog)
