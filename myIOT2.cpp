@@ -1055,7 +1055,7 @@ void myIOT2::sendReset(char *header)
 	char temp[150];
 
 	sprintf(temp, "[%s] - Reset sent", header);
-	write_log(temp, 0);
+	write_log(temp, 0,_deviceName);
 	flog.writeNow();
 	if (useSerial)
 	{
