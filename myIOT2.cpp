@@ -520,7 +520,6 @@ bool myIOT2::subscribeMQTT()
 					firstRun = false;
 					mqtt_detect_reset = 0;
 					notifyOnline();
-					Serial.println("A");
 				}
 			}
 			else
@@ -621,6 +620,7 @@ void myIOT2::callback(char *topic, byte *payload, unsigned int length)
 	{
 		strcpy(AvailState, incoming_msg);
 	}
+
 
 	if (strcmp(incoming_msg, "boot") == 0)
 	{
@@ -937,6 +937,10 @@ void myIOT2::notifyOnline()
 		mqttClient.publish(_availTopic, "online", true);
 		write_log("online", 2, _availTopic);
 	}
+	else
+	{
+		Serial.println("DON:T KNOW");
+	}
 }
 void myIOT2::notifyOffline()
 {
@@ -1055,7 +1059,7 @@ void myIOT2::sendReset(char *header)
 	char temp[150];
 
 	sprintf(temp, "[%s] - Reset sent", header);
-	write_log(temp, 0,_deviceName);
+	write_log(temp, 0, _deviceName);
 	flog.writeNow();
 	if (useSerial)
 	{
