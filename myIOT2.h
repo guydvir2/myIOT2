@@ -3,7 +3,6 @@
 
 #include <Arduino.h>
 #include "secretsIOT8266.h"
-// #include <EEPROM.h>
 #include <Ticker.h> //WDT
 #include <TimeLib.h>
 #include <PubSubClient.h>
@@ -63,7 +62,6 @@ public:
 
     void sendReset(char *header);
     void notifyOnline();
-    void notifyOffline();
     void pub_state(char *inmsg, byte i = 0);
     void pub_msg(char *inmsg);
     void pub_noTopic(char *inmsg, char *Topic);
@@ -100,7 +98,7 @@ public:
     static const byte bootlog_len = 10; // nubmer of boot clock records
     // ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    const char *ver = "iot_v0.93";
+    const char *ver = "iot_v0.94";
     static const byte num_param = 6;
     char inline_param[num_param][20]; //values from user
 
@@ -155,7 +153,6 @@ private:
     //MQTT broker parameters
     char *_mqtt_server;
     char *_mqtt_server2 = MQTT_SERVER2;
-    // char* mqtt_server2 = "broker.hivemq.com";
     char *_mqtt_user = "";
     char *_mqtt_pwd = "";
 
@@ -182,7 +179,7 @@ private:
 
     // holds informamtion
     char bootTime[50];
-    char AvailState[20];
+    // char AvailState[20];
     bool firstRun = true;
 
     // ~~~~~~~~~~~~~~WIFI ~~~~~~~~~~~~~~~~~~~~~
@@ -204,19 +201,19 @@ private:
     void callback(char *topic, byte *payload, unsigned int length);
     void msgSplitter(const char *msg_in, int max_msgSize, char *prefix, char *split_msg);
     void firstRun_ResetKeeper(char *msg);
-    void write_log(char *inmsg, int x, char* topic="_deviceName");
+    void write_log(char *inmsg, int x, char *topic = "_deviceName");
     void _pub_generic(char *topic, char *inmsg, bool retain = false, char *devname = "", bool bare = false);
 
     // ~~~~~~~ Services  ~~~~~~~~~~~~~~~~~~~~~~~~
     void startWDT();
     void acceptOTA();
-    void start_EEPROM_eADR();
     void update_bootclockLOG();
     void _post_boot_check();
 
     // ~~~~~~~ EEPROM  ~~~~~~~~~~~~~~~~~~~~~~~~
-    void EEPROMWritelong(int address, long value);
-    long EEPROMReadlong(long address);
+    // void start_EEPROM_eADR();
+    // void EEPROMWritelong(int address, long value);
+    // long EEPROMReadlong(long address);
 };
 // void watchdog_timer_triggered_helper(myIOT2 *watchdog)
 // {

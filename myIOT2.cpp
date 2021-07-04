@@ -94,11 +94,11 @@ void myIOT2::looper()
 	}
 	if (useDebug)
 	{
-		flog.looper(10);
+		flog.looper(45);
 	}
 	if (useBootClockLog)
 	{
-		clklog.looper(10);
+		clklog.looper(60);
 	}
 	_post_boot_check();
 }
@@ -616,10 +616,10 @@ void myIOT2::callback(char *topic, byte *payload, unsigned int length)
 	{
 		firstRun_ResetKeeper(incoming_msg);
 	}
-	else if (strcmp(topic, _availTopic) == 0)
-	{
-		strcpy(AvailState, incoming_msg);
-	}
+	// else if (strcmp(topic, _availTopic) == 0)
+	// {
+	// 	strcpy(AvailState, incoming_msg);
+	// }
 
 
 	if (strcmp(incoming_msg, "boot") == 0)
@@ -748,10 +748,8 @@ void myIOT2::callback(char *topic, byte *payload, unsigned int length)
 				time_t tmptime = atol(m);
 				get_timeStamp(tmptime);
 				strcat(t, timeStamp);
-				// pub_log(timeStamp);
 			}
 			strcat(t, "}");
-			Serial.println(t);
 			pub_debug(t);
 			pub_msg("BootLog: Extracted");
 		}
@@ -932,20 +930,11 @@ int myIOT2::inline_read(char *inputstr)
 }
 void myIOT2::notifyOnline()
 {
-	if (strcmp(AvailState, "online") != 0)
-	{
+	// if (strcmp(AvailState, "online") != 0)
+	// {
 		mqttClient.publish(_availTopic, "online", true);
 		write_log("online", 2, _availTopic);
-	}
-	else
-	{
-		Serial.println("DON:T KNOW");
-	}
-}
-void myIOT2::notifyOffline()
-{
-	mqttClient.publish(_availTopic, "offline", true);
-	write_log("offline", 2, _availTopic);
+	// }
 }
 void myIOT2::firstRun_ResetKeeper(char *msg)
 {
@@ -978,10 +967,10 @@ void myIOT2::write_log(char *inmsg, int x, char *topic)
 		sprintf(a, ">>%s<< [%s] %s", timeStamp, topic, inmsg);
 		flog.write(a);
 
-		if (x >= 1) /* system events are written immdietly */
-		{
-			flog.writeNow();
-		}
+		// if (x >= 1) /* system events are written immdietly */
+		// {
+		// 	flog.writeNow();
+		// }
 	}
 }
 bool myIOT2::read_fPars(char *filename, String &defs, JsonDocument &DOC, int JSIZE)
@@ -1059,8 +1048,8 @@ void myIOT2::sendReset(char *header)
 	char temp[150];
 
 	sprintf(temp, "[%s] - Reset sent", header);
-	write_log(temp, 0, _deviceName);
-	flog.writeNow();
+	write_log(temp, 2, _deviceName);
+	// flog.writeNow();
 	if (useSerial)
 	{
 		Serial.println(temp);
