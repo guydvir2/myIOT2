@@ -170,7 +170,7 @@ void myIOT2::start_network_services()
 bool myIOT2::network_looper()
 {
 	const byte time_retry_mqtt = 5;
-	unsigned long _lastReco_try = 0;
+	static unsigned long _lastReco_try = 0;
 	if (WiFi.status() == WL_CONNECTED) /* wifi is ok */
 	{
 		if (mqttClient.connected()) /* MQTT is OK */
@@ -227,7 +227,7 @@ bool myIOT2::network_looper()
 	}
 	else /* No WiFi*/
 	{
-		if (millis() > noNetwork_Clock + retryConnectWiFi)
+		if (millis() > noNetwork_Clock + retryConnectWiFi && millis() > _lastReco_try + retryConnectWiFi)
 		{
 			if (!startWifi(_ssid, _wifi_pwd))
 			{ // failed to reconnect ?
@@ -239,6 +239,14 @@ bool myIOT2::network_looper()
 						Serial.println("no-wifi, first clock");
 					}
 				}
+				else
+				{
+					if (useSerial)
+					{
+						Serial.println("no-wifi, retry");
+					}
+				}
+				_lastReco_try = millis();
 				return 0;
 			}
 			else
@@ -251,6 +259,7 @@ bool myIOT2::network_looper()
 				sprintf(b, "WiFi reconnect after %d sec", (int)((millis() - noNetwork_Clock) / 1000UL));
 				pub_log(b);
 				noNetwork_Clock = 0;
+				_lastReco_try = 0;
 				return 1;
 			}
 		}
@@ -526,7 +535,7 @@ bool myIOT2::subscribeMQTT()
 			{ // not first run
 				notifyOnline();
 			}
-			lastReconnectAttempt = 0;
+			// lastReconnectAttempt = 0;
 			return 1;
 		}
 		else
@@ -620,7 +629,6 @@ void myIOT2::callback(char *topic, byte *payload, unsigned int length)
 	// {
 	// 	strcpy(AvailState, incoming_msg);
 	// }
-
 
 	if (strcmp(incoming_msg, "boot") == 0)
 	{
@@ -932,8 +940,8 @@ void myIOT2::notifyOnline()
 {
 	// if (strcmp(AvailState, "online") != 0)
 	// {
-		mqttClient.publish(_availTopic, "online", true);
-		write_log("online", 2, _availTopic);
+	mqttClient.publish(_availTopic, "online", true);
+	write_log("online", 2, _availTopic);
 	// }
 }
 void myIOT2::firstRun_ResetKeeper(char *msg)
@@ -975,7 +983,7 @@ void myIOT2::write_log(char *inmsg, int x, char *topic)
 }
 bool myIOT2::read_fPars(char *filename, String &defs, JsonDocument &DOC, int JSIZE)
 {
-	myJSON param_on_flash(filename, true, JSIZE);
+	myJSON param_on_flash(filename, false, JSIZE);
 	param_on_flash.start();
 
 	if (param_on_flash.file_exists())

@@ -98,7 +98,7 @@ public:
     static const byte bootlog_len = 10; // nubmer of boot clock records
     // ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    const char *ver = "iot_v0.94";
+    const char *ver = "iot_v0.95";
     static const byte num_param = 6;
     char inline_param[num_param][20]; //values from user
 
@@ -147,7 +147,7 @@ private:
     const byte wdtMaxRetries = 60;     //seconds to bITE
     unsigned long noNetwork_Clock = 0; // clock
     unsigned long allowOTA_clock = 0;  // clock
-    unsigned long lastReconnectAttempt = 0;
+    // unsigned long lastReconnectAttempt = 0;
     // ############################
 
     //MQTT broker parameters
