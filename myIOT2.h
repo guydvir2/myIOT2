@@ -58,15 +58,15 @@ public:
     void getTime_32();
     void return_clock(char ret_tuple[20]);
     void return_date(char ret_tuple[20]);
-    bool checkInternet(char *externalSite = "www.google.com", byte pings = 1);
+    bool checkInternet(char *externalSite = "www.google.com", uint8 pings = 1);
 
     void sendReset(char *header);
     void notifyOnline();
-    void pub_state(char *inmsg, byte i = 0);
+    void pub_state(char *inmsg, uint8 i = 0);
     void pub_msg(char *inmsg);
     void pub_noTopic(char *inmsg, char *Topic);
     void pub_log(char *inmsg);
-    void pub_ext(char *inmsg, char *name = "", bool retain = false, byte i = 0);
+    void pub_ext(char *inmsg, char *name = "", bool retain = false, uint8 i = 0);
     void pub_debug(char *inmsg);
     void pub_sms(String &inmsg, char *name = "");
     void pub_sms(char *inmsg, char *name = "");
@@ -94,12 +94,12 @@ public:
     bool useAltermqttServer = false;
     bool useDebug = false;
     bool useBootClockLog = false;
-    byte debug_level = 0;               // 0- All, 1- system states; 2- log only
-    static const byte bootlog_len = 10; // nubmer of boot clock records
+    uint8 debug_level = 0;               // 0- All, 1- system states; 2- log only
+    static const uint8 bootlog_len = 10; // nubmer of boot clock records
     // ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    const char *ver = "iot_v0.95";
-    static const byte num_param = 6;
+    const char *ver = "iot_v0.96";
+    static const uint8 num_param = 6;
     char inline_param[num_param][20]; //values from user
 
     struct MQTT_msg
@@ -116,8 +116,8 @@ public:
     // ~~~~~~~~~~~~~~~~~
 
     bool NTP_OK = false;
-    byte mqtt_detect_reset = 2;
-    byte noNetwork_reset = 30; // minutes
+    uint8 mqtt_detect_reset = 2;
+    uint8 noNetwork_reset = 30; // minutes
 
     static const int MaxTopicLength = 64; //topics
     char prefixTopic[MaxTopicLength];
@@ -143,8 +143,8 @@ private:
     const unsigned long retryConnectWiFi = (1000 * 60) * 1;    // 1 minuter between fail Wifi reconnect reties
 
     unsigned long time2Reset_noNetwork = (1000 * 60UL) * noNetwork_reset; // minutues pass without any network
-    volatile byte wdtResetCounter = 0;
-    const byte wdtMaxRetries = 60;     //seconds to bITE
+    volatile uint8 wdtResetCounter = 0;
+    const uint8 wdtMaxRetries = 60;     //seconds to bITE
     unsigned long noNetwork_Clock = 0; // clock
     unsigned long allowOTA_clock = 0;  // clock
     // unsigned long lastReconnectAttempt = 0;
@@ -198,7 +198,7 @@ private:
     void startMQTT();
     bool subscribeMQTT();
     void createTopics();
-    void callback(char *topic, byte *payload, unsigned int length);
+    void callback(char *topic, uint8 *payload, unsigned int length);
     void msgSplitter(const char *msg_in, int max_msgSize, char *prefix, char *split_msg);
     void firstRun_ResetKeeper(char *msg);
     void write_log(char *inmsg, int x, char *topic = "_deviceName");

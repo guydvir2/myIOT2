@@ -169,7 +169,7 @@ void myIOT2::start_network_services()
 }
 bool myIOT2::network_looper()
 {
-	const byte time_retry_mqtt = 5;
+	const uint8 time_retry_mqtt = 5;
 	static unsigned long _lastReco_try = 0;
 	if (WiFi.status() == WL_CONNECTED) /* wifi is ok */
 	{
@@ -273,7 +273,7 @@ bool myIOT2::network_looper()
 // ~~~~~~~ NTP & Clock ESP8266 ~~~~~~~~
 void myIOT2::start_clock()
 {
-	static byte failcount = 0;
+	static uint8 failcount = 0;
 #if isESP8266
 	if (startNTP())
 	{
@@ -312,8 +312,8 @@ void myIOT2::start_clock()
 bool myIOT2::startNTP()
 {
 #if isESP8266
-	byte x = 0;
-	byte retries = 5;
+	uint8 x = 0;
+	uint8 retries = 5;
 	char *NTPserver = "pool.ntp.org";
 
 	NTP.begin(NTPserver, 2, true);
@@ -364,16 +364,16 @@ void myIOT2::return_date(char ret_tuple[20])
 	time_t t = now();
 	sprintf(ret_tuple, "%02d-%02d-%02d", year(t), month(t), day(t));
 }
-bool myIOT2::checkInternet(char *externalSite, byte pings)
+bool myIOT2::checkInternet(char *externalSite, uint8 pings)
 {
 	return Ping.ping(externalSite, pings);
 }
 void myIOT2::convert_epoch2clock(long t1, long t2, char *time_str, char *days_str)
 {
-	byte days = 0;
-	byte hours = 0;
-	byte minutes = 0;
-	byte seconds = 0;
+	uint8 days = 0;
+	uint8 hours = 0;
+	uint8 minutes = 0;
+	uint8 seconds = 0;
 
 	int sec2minutes = 60;
 	int sec2hours = (sec2minutes * 60);
@@ -583,7 +583,7 @@ void myIOT2::createTopics()
 	snprintf(_stateTopic2, MaxTopicLength, "%s/State_2", _deviceName);
 	snprintf(_availTopic, MaxTopicLength, "%s/Avail", _deviceName);
 }
-void myIOT2::callback(char *topic, byte *payload, unsigned int length)
+void myIOT2::callback(char *topic, uint8 *payload, unsigned int length)
 {
 	char incoming_msg[max_mqtt_msg];
 	char msg[100];
@@ -781,7 +781,7 @@ void myIOT2::_pub_generic(char *topic, char *inmsg, bool retain, char *devname, 
 	int lenhdr = 0;
 	int lenmsg = strlen(inmsg);
 	const int mqtt_defsize = mqttClient.getBufferSize();
-	const byte mqtt_overhead_size = 23;
+	const uint8 mqtt_overhead_size = 23;
 
 	if (!bare)
 	{
@@ -824,7 +824,7 @@ void myIOT2::pub_noTopic(char *inmsg, char *Topic)
 	_pub_generic(Topic, inmsg, false, "", true);
 	write_log(inmsg, 0, Topic);
 }
-void myIOT2::pub_state(char *inmsg, byte i)
+void myIOT2::pub_state(char *inmsg, uint8 i)
 {
 	char *st[] = {_stateTopic, _stateTopic2};
 	mqttClient.publish(st[i], inmsg, true);
@@ -835,7 +835,7 @@ void myIOT2::pub_log(char *inmsg)
 	_pub_generic(_logTopic, inmsg);
 	write_log(inmsg, 1, _logTopic);
 }
-void myIOT2::pub_ext(char *inmsg, char *name, bool retain, byte i)
+void myIOT2::pub_ext(char *inmsg, char *name, bool retain, uint8 i)
 {
 	_pub_generic(extTopic[i], inmsg, retain, name);
 	write_log(inmsg, 0, extTopic[i]);
@@ -1199,10 +1199,10 @@ void myIOT2::startWDT()
 // }
 // void myIOT2::EEPROMWritelong(int address, long value)
 // {
-// 	byte four = (value & 0xFF);
-// 	byte three = ((value >> 8) & 0xFF);
-// 	byte two = ((value >> 16) & 0xFF);
-// 	byte one = ((value >> 24) & 0xFF);
+// 	uint8 four = (value & 0xFF);
+// 	uint8 three = ((value >> 8) & 0xFF);
+// 	uint8 two = ((value >> 16) & 0xFF);
+// 	uint8 one = ((value >> 24) & 0xFF);
 
 // 	EEPROM.write(address, four);
 // 	EEPROM.write(address + 1, three);
