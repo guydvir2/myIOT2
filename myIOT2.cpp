@@ -169,7 +169,7 @@ void myIOT2::start_network_services()
 }
 bool myIOT2::network_looper()
 {
-	const uint8 time_retry_mqtt = 5;
+	const uint8_t time_retry_mqtt = 5;
 	static unsigned long _lastReco_try = 0;
 	if (WiFi.status() == WL_CONNECTED) /* wifi is ok */
 	{
@@ -273,84 +273,19 @@ bool myIOT2::network_looper()
 // ~~~~~~~ NTP & Clock ESP8266 ~~~~~~~~
 void myIOT2::start_clock()
 {
-	static uint8 failcount = 0;
-#if isESP8266
-	if (startNTP())
-	{
-		get_timeStamp();
-	}
-#elif isESP32
-	startNTP_32();
-	getTime_32();
-	if (year(epoch_time) != 1970)
-	{
-		NTP_OK = true;
-		getTimeStamp_32(bootTime);
-	}
-#endif
-	if (NTP_OK)
-	{ //NTP Succeed
-		strcpy(bootTime, timeStamp);
-	}
-	else
-	{
-		if (resetFailNTP)
-		{
-			// failcount = (int)EEPROMReadlong(NTP_eADR);
-			if (failcount > 3)
-			{
-				sendReset("NTP");
-			}
-			else
-			{
-				// EEPROMWritelong(NTP_eADR, failcount + 1);
-				failcount++;
-			}
-		}
-	}
+	startNTP();
+	#if isESP32
+		getTime_32();
+	#endif
+	getTimeStamp_32(bootTime);
 }
 bool myIOT2::startNTP()
 {
-#if isESP8266
-	uint8 x = 0;
-	uint8 retries = 5;
-	char *NTPserver = "pool.ntp.org";
-
-	NTP.begin(NTPserver, 2, true);
-	NTP.setInterval(5, clockUpdateInt);
-	delay(300);
-	time_t t = now();
-
-	while (x < retries && year(t) == 1970)
-	{
-		NTP.begin(NTPserver, 2, true);
-		delay(300);
-		t = now();
-		x++;
-	}
-	if (year(t) != 1970)
-	{
-		NTP_OK = true;
-		return 1;
-	}
-	else
-	{
-		return 0;
-	}
-
-#endif
+	startNTP_32();
 }
 void myIOT2::get_timeStamp(time_t t)
 {
-#if isESP8266
-	if (t == 0)
-	{
-		t = now();
-	}
-	sprintf(timeStamp, "%02d-%02d-%02d %02d:%02d:%02d", year(t), month(t), day(t), hour(t), minute(t), second(t));
-#elif isESP32
 	getTimeStamp_32(timeStamp);
-#endif
 }
 void myIOT2::return_clock(char ret_tuple[20])
 {
@@ -364,16 +299,16 @@ void myIOT2::return_date(char ret_tuple[20])
 	time_t t = now();
 	sprintf(ret_tuple, "%02d-%02d-%02d", year(t), month(t), day(t));
 }
-bool myIOT2::checkInternet(char *externalSite, uint8 pings)
+bool myIOT2::checkInternet(char *externalSite, uint8_t pings)
 {
 	return Ping.ping(externalSite, pings);
 }
 void myIOT2::convert_epoch2clock(long t1, long t2, char *time_str, char *days_str)
 {
-	uint8 days = 0;
-	uint8 hours = 0;
-	uint8 minutes = 0;
-	uint8 seconds = 0;
+	uint8_t days = 0;
+	uint8_t hours = 0;
+	uint8_t minutes = 0;
+	uint8_t seconds = 0;
 
 	int sec2minutes = 60;
 	int sec2hours = (sec2minutes * 60);
@@ -394,9 +329,14 @@ void myIOT2::convert_epoch2clock(long t1, long t2, char *time_str, char *days_st
 // ~~~~~~~ NTP & Clock ESP32 ~~~~~~~~
 void myIOT2::startNTP_32(const int gmtOffset_sec, const int daylightOffset_sec, const char *ntpServer)
 {
-#if isESP32
 	configTime(gmtOffset_sec, daylightOffset_sec, ntpServer); //configuring time offset and an NTP server
-#endif
+	time_t now = time(nullptr);								  // before getting clock
+	while (now < 1627735850)
+	{
+		delay(20);
+		now = time(nullptr);
+	}
+	epoch_time = now;
 }
 void myIOT2::getTime_32()
 {
@@ -411,17 +351,18 @@ void myIOT2::getTime_32()
 }
 void myIOT2::getTimeStamp_32(char ret_timeStamp[25])
 {
-	createDateStamp_32(&timeinfo, ret_timeStamp);
+	struct tm *t = convEpoch_32(time(nullptr));
+	sprintf(ret_timeStamp, "%04d-%02d-%02d %02d:%02d:%02d", t->tm_year + 1900, t->tm_mon + 1, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
 }
 struct tm *myIOT2::convEpoch_32(time_t in_time)
 {
 	struct tm *convTime = localtime(&in_time); //gmtime
 	return convTime;
 }
-void myIOT2::createDateStamp_32(struct tm *t, char retChar[30])
-{
-	sprintf(retChar, "%04d-%02d-%02d %02d:%02d:%02d", t->tm_year + 1900, t->tm_mon + 1, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
-}
+// void myIOT2::createDateStamp_32(struct tm *t, char retChar[30])
+// {
+// 	sprintf(retChar, "%04d-%02d-%02d %02d:%02d:%02d", t->tm_year + 1900, t->tm_mon + 1, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
+// }
 
 // ~~~~~~~ MQTT functions ~~~~~~~
 void myIOT2::startMQTT()
@@ -583,7 +524,7 @@ void myIOT2::createTopics()
 	snprintf(_stateTopic2, MaxTopicLength, "%s/State_2", _deviceName);
 	snprintf(_availTopic, MaxTopicLength, "%s/Avail", _deviceName);
 }
-void myIOT2::callback(char *topic, uint8 *payload, unsigned int length)
+void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 {
 	char incoming_msg[max_mqtt_msg];
 	char msg[100];
@@ -781,7 +722,7 @@ void myIOT2::_pub_generic(char *topic, char *inmsg, bool retain, char *devname, 
 	int lenhdr = 0;
 	int lenmsg = strlen(inmsg);
 	const int mqtt_defsize = mqttClient.getBufferSize();
-	const uint8 mqtt_overhead_size = 23;
+	const uint8_t mqtt_overhead_size = 23;
 
 	if (!bare)
 	{
@@ -824,7 +765,7 @@ void myIOT2::pub_noTopic(char *inmsg, char *Topic)
 	_pub_generic(Topic, inmsg, false, "", true);
 	write_log(inmsg, 0, Topic);
 }
-void myIOT2::pub_state(char *inmsg, uint8 i)
+void myIOT2::pub_state(char *inmsg, uint8_t i)
 {
 	char *st[] = {_stateTopic, _stateTopic2};
 	mqttClient.publish(st[i], inmsg, true);
@@ -835,7 +776,7 @@ void myIOT2::pub_log(char *inmsg)
 	_pub_generic(_logTopic, inmsg);
 	write_log(inmsg, 1, _logTopic);
 }
-void myIOT2::pub_ext(char *inmsg, char *name, bool retain, uint8 i)
+void myIOT2::pub_ext(char *inmsg, char *name, bool retain, uint8_t i)
 {
 	_pub_generic(extTopic[i], inmsg, retain, name);
 	write_log(inmsg, 0, extTopic[i]);
@@ -1041,11 +982,11 @@ void myIOT2::update_bootclockLOG()
 {
 	char clk_char[20];
 	time_t n;
-#if isESP8266
-	n = now();
-#elif isESP32
+	// #if isESP8266
+	// 	n = now();
+	// #elif isESP32
 	n = epoch_time;
-#endif
+	// #endif
 	sprintf(clk_char, "%d", n);
 	clklog.write(clk_char, true);
 }
@@ -1199,10 +1140,10 @@ void myIOT2::startWDT()
 // }
 // void myIOT2::EEPROMWritelong(int address, long value)
 // {
-// 	uint8 four = (value & 0xFF);
-// 	uint8 three = ((value >> 8) & 0xFF);
-// 	uint8 two = ((value >> 16) & 0xFF);
-// 	uint8 one = ((value >> 24) & 0xFF);
+// 	uint8_t four = (value & 0xFF);
+// 	uint8_t three = ((value >> 8) & 0xFF);
+// 	uint8_t two = ((value >> 16) & 0xFF);
+// 	uint8_t one = ((value >> 24) & 0xFF);
 
 // 	EEPROM.write(address, four);
 // 	EEPROM.write(address + 1, three);
