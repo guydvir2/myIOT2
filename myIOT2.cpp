@@ -274,19 +274,12 @@ bool myIOT2::network_looper()
 void myIOT2::start_clock()
 {
 	startNTP();
-	#if isESP32
-		getTime_32();
-	#endif
-	getTimeStamp_32(bootTime);
+	_getTimestamp(bootTime);
 }
-bool myIOT2::startNTP()
-{
-	startNTP_32();
-}
-void myIOT2::get_timeStamp(time_t t)
-{
-	getTimeStamp_32(timeStamp);
-}
+// void myIOT2::get_timeStamp(time_t t)
+// {
+// 	_getTimestamp(timeStamp);
+// }
 void myIOT2::return_clock(char ret_tuple[20])
 {
 	// ESP8266 only
@@ -326,8 +319,8 @@ void myIOT2::convert_epoch2clock(long t1, long t2, char *time_str, char *days_st
 	sprintf(time_str, "%02d:%02d:%02d", hours, minutes, seconds);
 }
 
-// ~~~~~~~ NTP & Clock ESP32 ~~~~~~~~
-void myIOT2::startNTP_32(const int gmtOffset_sec, const int daylightOffset_sec, const char *ntpServer)
+// ~~~~~~~ NTP & Clock ~~~~~~~~
+void myIOT2::startNTP(const int gmtOffset_sec, const int daylightOffset_sec, const char *ntpServer)
 {
 	configTime(gmtOffset_sec, daylightOffset_sec, ntpServer); //configuring time offset and an NTP server
 	time_t now = time(nullptr);								  // before getting clock
@@ -336,33 +329,17 @@ void myIOT2::startNTP_32(const int gmtOffset_sec, const int daylightOffset_sec, 
 		delay(20);
 		now = time(nullptr);
 	}
-	epoch_time = now;
 }
-void myIOT2::getTime_32()
+void myIOT2::_getTimestamp(char ret_timeStamp[25], time_t t)
 {
-#if isESP32
-	// getting time in ESP32 sometimes failed due to clock race. some delays were used as commented out here
-	if (getLocalTime(&timeinfo))
+	if (t == 0)
 	{
-		delay(100);
-		time(&epoch_time);
+		t = time(nullptr);
 	}
-#endif
+
+	struct tm *tm = localtime(&t);
+	sprintf(ret_timeStamp, "%04d-%02d-%02d %02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
 }
-void myIOT2::getTimeStamp_32(char ret_timeStamp[25])
-{
-	struct tm *t = convEpoch_32(time(nullptr));
-	sprintf(ret_timeStamp, "%04d-%02d-%02d %02d:%02d:%02d", t->tm_year + 1900, t->tm_mon + 1, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
-}
-struct tm *myIOT2::convEpoch_32(time_t in_time)
-{
-	struct tm *convTime = localtime(&in_time); //gmtime
-	return convTime;
-}
-// void myIOT2::createDateStamp_32(struct tm *t, char retChar[30])
-// {
-// 	sprintf(retChar, "%04d-%02d-%02d %02d:%02d:%02d", t->tm_year + 1900, t->tm_mon + 1, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
-// }
 
 // ~~~~~~~ MQTT functions ~~~~~~~
 void myIOT2::startMQTT()
@@ -695,7 +672,7 @@ void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 				char m[20];
 				clklog.readline(i, m);
 				time_t tmptime = atol(m);
-				get_timeStamp(tmptime);
+				_getTimestamp(timeStamp, tmptime);
 				strcat(t, timeStamp);
 			}
 			strcat(t, "}");
@@ -726,7 +703,7 @@ void myIOT2::_pub_generic(char *topic, char *inmsg, bool retain, char *devname, 
 
 	if (!bare)
 	{
-		get_timeStamp();
+		_getTimestamp(timeStamp);
 		if (strcmp(devname, "") == 0)
 		{
 			sprintf(header, "[%s] [%s] ", timeStamp, _deviceName);
@@ -811,7 +788,7 @@ void myIOT2::pub_sms(char *inmsg, char *name)
 void myIOT2::pub_sms(JsonDocument &sms)
 {
 	String output;
-	get_timeStamp();
+	_getTimestamp(timeStamp);
 	serializeJson(sms, output);
 	int len = output.length() + 1;
 	char sms_char[len];
@@ -831,7 +808,7 @@ void myIOT2::pub_email(String &inmsg, char *name)
 void myIOT2::pub_email(JsonDocument &email)
 {
 	String output;
-	get_timeStamp();
+	_getTimestamp(timeStamp);
 	serializeJson(email, output);
 	int len = output.length() + 1;
 	char email_char[len];
@@ -912,7 +889,7 @@ void myIOT2::write_log(char *inmsg, int x, char *topic)
 
 	if (useDebug && debug_level <= x)
 	{
-		get_timeStamp();
+		_getTimestamp(timeStamp);
 		sprintf(a, ">>%s<< [%s] %s", timeStamp, topic, inmsg);
 		flog.write(a);
 
@@ -981,13 +958,13 @@ char *myIOT2::export_fPars(char *filename, JsonDocument &DOC, int JSIZE)
 void myIOT2::update_bootclockLOG()
 {
 	char clk_char[20];
-	time_t n;
+	// time_t n;
 	// #if isESP8266
 	// 	n = now();
 	// #elif isESP32
-	n = epoch_time;
+	// n = epoch_time;
 	// #endif
-	sprintf(clk_char, "%d", n);
+	sprintf(clk_char, "%d", time(nullptr));
 	clklog.write(clk_char, true);
 }
 
@@ -998,7 +975,6 @@ void myIOT2::sendReset(char *header)
 
 	sprintf(temp, "[%s] - Reset sent", header);
 	write_log(temp, 2, _deviceName);
-	// flog.writeNow();
 	if (useSerial)
 	{
 		Serial.println(temp);

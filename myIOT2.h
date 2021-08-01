@@ -54,8 +54,6 @@ public:
     void start_services(cb_func funct, char *ssid = SSID_ID, char *password = PASS_WIFI, char *mqtt_user = MQTT_USER, char *mqtt_passw = MQTT_PASS, char *mqtt_broker = MQTT_SERVER1, int log_ents = 50, int log_len = 250);
     void looper();
     void startOTA();
-    void get_timeStamp(time_t t = 0);
-    void getTime_32();
     void return_clock(char ret_tuple[20]);
     void return_date(char ret_tuple[20]);
     bool checkInternet(char *externalSite = "www.google.com", uint8_t pings = 1);
@@ -88,7 +86,7 @@ public:
     bool useOTA = true;
     bool extDefine = false; // must to set to true in order to use EXtMQTT
     bool useResetKeeper = false;
-    bool resetFailNTP = false;
+    bool resetFailNTP = false; // not needed any more
     bool useextTopic = false;
     bool useNetworkReset = true; // allow reset due to no-network timeout
     bool useAltermqttServer = false;
@@ -98,7 +96,7 @@ public:
     static const uint8_t bootlog_len = 10; // nubmer of boot clock records
     // ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    const char *ver = "iot_v0.96";
+    const char *ver = "iot_v1.0";
     static const uint8_t num_param = 6;
     char inline_param[num_param][20]; //values from user
 
@@ -110,12 +108,7 @@ public:
     };
     MQTT_msg extTopic_msg;
 
-    // ~~~Clock ESP32~~~
-    struct tm timeinfo;
-    time_t epoch_time;
-    // ~~~~~~~~~~~~~~~~~
 
-    bool NTP_OK = false;
     uint8_t mqtt_detect_reset = 2;
     uint8_t noNetwork_reset = 30; // minutes
 
@@ -144,10 +137,9 @@ private:
 
     unsigned long time2Reset_noNetwork = (1000 * 60UL) * noNetwork_reset; // minutues pass without any network
     volatile uint8_t wdtResetCounter = 0;
-    const uint8_t wdtMaxRetries = 60;     //seconds to bITE
+    const uint8_t wdtMaxRetries = 60;  //seconds to bITE
     unsigned long noNetwork_Clock = 0; // clock
     unsigned long allowOTA_clock = 0;  // clock
-    // unsigned long lastReconnectAttempt = 0;
     // ############################
 
     //MQTT broker parameters
@@ -179,20 +171,16 @@ private:
 
     // holds informamtion
     char bootTime[50];
-    // char AvailState[20];
     bool firstRun = true;
 
     // ~~~~~~~~~~~~~~WIFI ~~~~~~~~~~~~~~~~~~~~~
     bool startWifi(char *ssid, char *password);
-    bool startNTP();
     void start_clock();
     bool network_looper();
     void start_network_services();
 
-    struct tm *convEpoch_32(time_t in_time);
-    void getTimeStamp_32(char ret_timeStamp[25]);
-    void createDateStamp_32(struct tm *t, char retChar[30]);
-    void startNTP_32(const int gmtOffset_sec = 2 * 3600, const int daylightOffset_sec = 3600, const char *ntpServer = "pool.ntp.org");
+    void _getTimestamp(char ret_timeStamp[25], time_t t = 0);
+    void startNTP(const int gmtOffset_sec = 2 * 3600, const int daylightOffset_sec = 3600, const char *ntpServer = "pool.ntp.org");
 
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     void startMQTT();
