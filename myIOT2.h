@@ -40,7 +40,7 @@ typedef void (*cb_func)(char msg1[50]);
 
 class myIOT2
 {
-public:
+public: /* Classes */
     WiFiClient espClient;
     PubSubClient mqttClient;
     WiFiManager wm;
@@ -50,37 +50,9 @@ public:
     flashLOG flog;
     flashLOG clklog;
 
-    myIOT2();
-    void start_services(cb_func funct, char *ssid = SSID_ID, char *password = PASS_WIFI, char *mqtt_user = MQTT_USER, char *mqtt_passw = MQTT_PASS, char *mqtt_broker = MQTT_SERVER1, int log_ents = 50, int log_len = 250);
-    void looper();
-    void startOTA();
-    void return_clock(char ret_tuple[20]);
-    void return_date(char ret_tuple[20]);
-    bool checkInternet(char *externalSite = "www.google.com", uint8_t pings = 1);
+public: /* Variables */
 
-    void sendReset(char *header);
-    void notifyOnline();
-    void pub_state(char *inmsg, uint8_t i = 0);
-    void pub_msg(char *inmsg);
-    void pub_noTopic(char *inmsg, char *Topic);
-    void pub_log(char *inmsg);
-    void pub_ext(char *inmsg, char *name = "", bool retain = false, uint8_t i = 0);
-    void pub_debug(char *inmsg);
-    void pub_sms(String &inmsg, char *name = "");
-    void pub_sms(char *inmsg, char *name = "");
-    void pub_sms(JsonDocument &sms);
-    void pub_email(String &inmsg, char *name = "");
-    void pub_email(JsonDocument &email);
-    void clear_ExtTopicbuff();
-    long get_bootclockLOG(int x);
-    void convert_epoch2clock(long t1, long t2, char *time_str, char *days_str);
-
-    int inline_read(char *inputstr);
-    void feedTheDog();
-    bool read_fPars(char *filename, String &defs, JsonDocument &DOC, int JSIZE = 500);
-    char *export_fPars(char *filename, JsonDocument &DOC, int JSIZE = 500);
-
-    // ~~~~~~ Services ~~~~~~~~~
+ // ~~~~~~ Services ~~~~~~~~~
     bool useSerial = false;
     bool useWDT = true;
     bool useOTA = true;
@@ -108,7 +80,6 @@ public:
     };
     MQTT_msg extTopic_msg;
 
-
     uint8_t mqtt_detect_reset = 2;
     uint8_t noNetwork_reset = 30; // minutes
 
@@ -123,6 +94,7 @@ public:
 
     char timeStamp[20];
     char *myIOT_paramfile = "/myIOT_param.json";
+
 
 private:
     char *_ssid;
@@ -173,14 +145,46 @@ private:
     char bootTime[50];
     bool firstRun = true;
 
+public: /* Functions */
+    myIOT2();
+    void start_services(cb_func funct, char *ssid = SSID_ID, char *password = PASS_WIFI, char *mqtt_user = MQTT_USER, char *mqtt_passw = MQTT_PASS, char *mqtt_broker = MQTT_SERVER1, int log_ents = 50, int log_len = 250);
+    void looper();
+    void startOTA();
+    void return_clock(char ret_tuple[20]);
+    void return_date(char ret_tuple[20]);
+    bool checkInternet(char *externalSite = "www.google.com", uint8_t pings = 1);
+
+    void sendReset(char *header);
+    void notifyOnline();
+    void pub_state(char *inmsg, uint8_t i = 0);
+    void pub_msg(char *inmsg);
+    void pub_noTopic(char *inmsg, char *Topic);
+    void pub_log(char *inmsg);
+    void pub_ext(char *inmsg, char *name = "", bool retain = false, uint8_t i = 0);
+    void pub_debug(char *inmsg);
+    void pub_sms(String &inmsg, char *name = "");
+    void pub_sms(char *inmsg, char *name = "");
+    void pub_sms(JsonDocument &sms);
+    void pub_email(String &inmsg, char *name = "");
+    void pub_email(JsonDocument &email);
+    void clear_ExtTopicbuff();
+    long get_bootclockLOG(int x);
+    void convert_epoch2clock(long t1, long t2, char *time_str, char *days_str);
+
+    int inline_read(char *inputstr);
+    bool read_fPars(char *filename, String &defs, JsonDocument &DOC, int JSIZE = 500);
+    char *export_fPars(char *filename, JsonDocument &DOC, int JSIZE = 500);
+
+private: /* Functions */
+
+
     // ~~~~~~~~~~~~~~WIFI ~~~~~~~~~~~~~~~~~~~~~
     bool startWifi(char *ssid, char *password);
     void start_clock();
     bool network_looper();
     void start_network_services();
-
     void _getTimestamp(char ret_timeStamp[25], time_t t = 0);
-    void startNTP(const int gmtOffset_sec = 2 * 3600, const int daylightOffset_sec = 3600, const char *ntpServer = "pool.ntp.org");
+    void _startNTP(const int gmtOffset_sec = 2 * 3600, const int daylightOffset_sec = 3600, const char *ntpServer = "pool.ntp.org");
 
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     void startMQTT();
@@ -194,9 +198,10 @@ private:
 
     // ~~~~~~~ Services  ~~~~~~~~~~~~~~~~~~~~~~~~
     void startWDT();
-    void acceptOTA();
+    void _acceptOTA();
     void update_bootclockLOG();
     void _post_boot_check();
+    void _feedTheDog();
 
     // ~~~~~~~ EEPROM  ~~~~~~~~~~~~~~~~~~~~~~~~
     // void start_EEPROM_eADR();
@@ -205,6 +210,6 @@ private:
 };
 // void watchdog_timer_triggered_helper(myIOT2 *watchdog)
 // {
-//     watchdog->feedTheDog();
+//     watchdog->_feedTheDog();
 // }
 #endif

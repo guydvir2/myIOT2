@@ -73,7 +73,7 @@ void myIOT2::looper()
 	wdtResetCounter = 0; //reset WDT watchDog
 	if (useOTA)
 	{
-		acceptOTA();
+		_acceptOTA();
 	}
 	if (network_looper() == 0)
 	{
@@ -270,16 +270,32 @@ bool myIOT2::network_looper()
 	}
 }
 
-// ~~~~~~~ NTP & Clock ESP8266 ~~~~~~~~
+// ~~~~~~~ NTP & Clock  ~~~~~~~~
 void myIOT2::start_clock()
 {
-	startNTP();
+	_startNTP();
 	_getTimestamp(bootTime);
 }
-// void myIOT2::get_timeStamp(time_t t)
-// {
-// 	_getTimestamp(timeStamp);
-// }
+void myIOT2::_startNTP(const int gmtOffset_sec, const int daylightOffset_sec, const char *ntpServer)
+{
+	configTime(gmtOffset_sec, daylightOffset_sec, ntpServer); //configuring time offset and an NTP server
+	time_t now = time(nullptr);								  // before getting clock
+	while (now < 1627735850)
+	{
+		delay(20);
+		now = time(nullptr);
+	}
+}
+void myIOT2::_getTimestamp(char ret_timeStamp[25], time_t t)
+{
+	if (t == 0)
+	{
+		t = time(nullptr);
+	}
+
+	struct tm *tm = localtime(&t);
+	sprintf(ret_timeStamp, "%04d-%02d-%02d %02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+}
 void myIOT2::return_clock(char ret_tuple[20])
 {
 	// ESP8266 only
@@ -317,28 +333,6 @@ void myIOT2::convert_epoch2clock(long t1, long t2, char *time_str, char *days_st
 
 	sprintf(days_str, "%01dd", days);
 	sprintf(time_str, "%02d:%02d:%02d", hours, minutes, seconds);
-}
-
-// ~~~~~~~ NTP & Clock ~~~~~~~~
-void myIOT2::startNTP(const int gmtOffset_sec, const int daylightOffset_sec, const char *ntpServer)
-{
-	configTime(gmtOffset_sec, daylightOffset_sec, ntpServer); //configuring time offset and an NTP server
-	time_t now = time(nullptr);								  // before getting clock
-	while (now < 1627735850)
-	{
-		delay(20);
-		now = time(nullptr);
-	}
-}
-void myIOT2::_getTimestamp(char ret_timeStamp[25], time_t t)
-{
-	if (t == 0)
-	{
-		t = time(nullptr);
-	}
-
-	struct tm *tm = localtime(&t);
-	sprintf(ret_timeStamp, "%04d-%02d-%02d %02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
 }
 
 // ~~~~~~~ MQTT functions ~~~~~~~
@@ -899,6 +893,12 @@ void myIOT2::write_log(char *inmsg, int x, char *topic)
 		// }
 	}
 }
+void myIOT2::update_bootclockLOG()
+{
+	char clk_char[20];
+	sprintf(clk_char, "%d", time(nullptr));
+	clklog.write(clk_char, true);
+}
 bool myIOT2::read_fPars(char *filename, String &defs, JsonDocument &DOC, int JSIZE)
 {
 	myJSON param_on_flash(filename, false, JSIZE);
@@ -955,19 +955,6 @@ char *myIOT2::export_fPars(char *filename, JsonDocument &DOC, int JSIZE)
 	}
 }
 
-void myIOT2::update_bootclockLOG()
-{
-	char clk_char[20];
-	// time_t n;
-	// #if isESP8266
-	// 	n = now();
-	// #elif isESP32
-	// n = epoch_time;
-	// #endif
-	sprintf(clk_char, "%d", time(nullptr));
-	clklog.write(clk_char, true);
-}
-
 // ~~~~~~ Reset and maintability ~~~~~~
 void myIOT2::sendReset(char *header)
 {
@@ -990,7 +977,7 @@ void myIOT2::sendReset(char *header)
 	ESP.restart();
 #endif
 }
-void myIOT2::feedTheDog()
+void myIOT2::_feedTheDog()
 {
 	wdtResetCounter++;
 #if isEPS8266
@@ -1002,7 +989,7 @@ void myIOT2::feedTheDog()
 
 #endif
 }
-void myIOT2::acceptOTA()
+void myIOT2::_acceptOTA()
 {
 	if (millis() - allowOTA_clock <= OTA_upload_interval)
 	{
@@ -1096,9 +1083,9 @@ void myIOT2::startOTA()
 void myIOT2::startWDT()
 {
 #if isESP8266
-	wdt.attach(1, std::bind(&myIOT2::feedTheDog, this)); // Start WatchDog
+	wdt.attach(1, std::bind(&myIOT2::_feedTheDog, this)); // Start WatchDog
 #elif isESP32
-	// wdt.attach(1,feedTheDog); // Start WatchDog
+	// wdt.attach(1,_feedTheDog); // Start WatchDog
 #endif
 }
 
