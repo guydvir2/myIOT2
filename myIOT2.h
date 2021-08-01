@@ -51,8 +51,7 @@ public: /* Classes */
     flashLOG clklog;
 
 public: /* Variables */
-
- // ~~~~~~ Services ~~~~~~~~~
+        // ~~~~~~ Services ~~~~~~~~~
     bool useSerial = false;
     bool useWDT = true;
     bool useOTA = true;
@@ -94,7 +93,6 @@ public: /* Variables */
 
     char timeStamp[20];
     char *myIOT_paramfile = "/myIOT_param.json";
-
 
 private:
     char *_ssid;
@@ -176,8 +174,6 @@ public: /* Functions */
     char *export_fPars(char *filename, JsonDocument &DOC, int JSIZE = 500);
 
 private: /* Functions */
-
-
     // ~~~~~~~~~~~~~~WIFI ~~~~~~~~~~~~~~~~~~~~~
     bool startWifi(char *ssid, char *password);
     void start_clock();
