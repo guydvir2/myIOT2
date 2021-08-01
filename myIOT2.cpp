@@ -44,7 +44,7 @@ void myIOT2::start_services(cb_func funct, char *ssid, char *password, char *mqt
 	if (useBootClockLog && WiFi.isConnected())
 	{
 		clklog.start(10, 13);
-		update_bootclockLOG();
+		_update_bootclockLOG();
 	}
 }
 void myIOT2::_post_boot_check()
@@ -811,43 +811,6 @@ void myIOT2::pub_email(JsonDocument &email)
 	_pub_generic(_emailTopic, email_char, false, "", true);
 	write_log(email_char, 0, _emailTopic);
 }
-void myIOT2::msgSplitter(const char *msg_in, int max_msgSize, char *prefix, char *split_msg)
-{
-	char tmp[280];
-
-	int max_chunk = max_msgSize - strlen(prefix) - strlen(split_msg);
-	int num = ceil((float)strlen(msg_in) / max_chunk);
-	int pre_len;
-
-	for (int k = 0; k < num; k++)
-	{
-		sprintf(tmp, "%s %s%d: ", prefix, split_msg, k);
-		pre_len = strlen(tmp);
-		for (int i = 0; i < max_chunk; i++)
-		{
-			tmp[i + pre_len] = (char)msg_in[i + k * max_chunk];
-			tmp[i + 1 + pre_len] = '\0';
-		}
-		if (mqttClient.connected() == true)
-		{
-			mqttClient.publish(_msgTopic, tmp);
-		}
-	}
-}
-int myIOT2::inline_read(char *inputstr)
-{
-	char *pch;
-	int i = 0;
-
-	pch = strtok(inputstr, " ,.-");
-	while (pch != NULL && i < num_param)
-	{
-		sprintf(inline_param[i], "%s", pch);
-		pch = strtok(NULL, " ,.-");
-		i++;
-	}
-	return i;
-}
 void myIOT2::notifyOnline()
 {
 	// if (strcmp(AvailState, "online") != 0)
@@ -875,9 +838,23 @@ void myIOT2::clear_ExtTopicbuff()
 	strcpy(extTopic_msg.device_topic, "");
 	strcpy(extTopic_msg.from_topic, "");
 }
+uint8_t myIOT2::inline_read(char *inputstr)
+{
+	char *pch;
+	int i = 0;
+
+	pch = strtok(inputstr, " ,.-");
+	while (pch != NULL && i < num_param)
+	{
+		sprintf(inline_param[i], "%s", pch);
+		pch = strtok(NULL, " ,.-");
+		i++;
+	}
+	return i;
+}
 
 // ~~~~~~~~~~ Data Storage ~~~~~~~~~
-void myIOT2::write_log(char *inmsg, int x, char *topic)
+void myIOT2::write_log(char *inmsg, uint8_t x, char *topic)
 {
 	char a[strlen(inmsg) + 100];
 
@@ -893,7 +870,7 @@ void myIOT2::write_log(char *inmsg, int x, char *topic)
 		// }
 	}
 }
-void myIOT2::update_bootclockLOG()
+void myIOT2::_update_bootclockLOG()
 {
 	char clk_char[20];
 	sprintf(clk_char, "%d", time(nullptr));

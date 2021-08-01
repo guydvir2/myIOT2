@@ -140,7 +140,7 @@ private:
     // ##############################################
 
     // holds informamtion
-    char bootTime[50];
+    char bootTime[25];
     bool firstRun = true;
 
 public: /* Functions */
@@ -169,7 +169,7 @@ public: /* Functions */
     long get_bootclockLOG(int x);
     void convert_epoch2clock(long t1, long t2, char *time_str, char *days_str);
 
-    int inline_read(char *inputstr);
+    uint8_t inline_read(char *inputstr);
     bool read_fPars(char *filename, String &defs, JsonDocument &DOC, int JSIZE = 500);
     char *export_fPars(char *filename, JsonDocument &DOC, int JSIZE = 500);
 
@@ -187,15 +187,14 @@ private: /* Functions */
     bool subscribeMQTT();
     void createTopics();
     void callback(char *topic, uint8_t *payload, unsigned int length);
-    void msgSplitter(const char *msg_in, int max_msgSize, char *prefix, char *split_msg);
     void firstRun_ResetKeeper(char *msg);
-    void write_log(char *inmsg, int x, char *topic = "_deviceName");
+    void write_log(char *inmsg, uint8_t x, char *topic = "_deviceName");
     void _pub_generic(char *topic, char *inmsg, bool retain = false, char *devname = "", bool bare = false);
 
     // ~~~~~~~ Services  ~~~~~~~~~~~~~~~~~~~~~~~~
     void startWDT();
     void _acceptOTA();
-    void update_bootclockLOG();
+    void _update_bootclockLOG();
     void _post_boot_check();
     void _feedTheDog();
 
