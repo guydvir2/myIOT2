@@ -280,7 +280,7 @@ void myIOT2::_startNTP(const int gmtOffset_sec, const int daylightOffset_sec, co
 {
 	configTime(gmtOffset_sec, daylightOffset_sec, ntpServer); //configuring time offset and an NTP server
 	time_t now = time(nullptr);								  // before getting clock
-	while (now < 1627735850)
+	while (now < 1627735850) /* while in 2021 */
 	{
 		delay(20);
 		now = time(nullptr);
@@ -298,15 +298,15 @@ void myIOT2::_getTimestamp(char ret_timeStamp[25], time_t t)
 }
 void myIOT2::return_clock(char ret_tuple[20])
 {
-	// ESP8266 only
-	time_t t = now();
-	sprintf(ret_tuple, "%02d:%02d:%02d", hour(t), minute(t), second(t));
+	time_t t = time(nullptr);
+	struct tm *tm = localtime(&t);
+	sprintf(ret_tuple, "%02d:%02d:%02d", tm->tm_hour, tm->tm_min, tm->tm_sec);
 }
 void myIOT2::return_date(char ret_tuple[20])
 {
-	// ESP8266 only
-	time_t t = now();
-	sprintf(ret_tuple, "%02d-%02d-%02d", year(t), month(t), day(t));
+	time_t t = time(nullptr);
+	struct tm *tm = localtime(&t);
+	sprintf(ret_tuple, "%02d-%02d-%02d",tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
 }
 bool myIOT2::checkInternet(char *externalSite, uint8_t pings)
 {
@@ -386,9 +386,6 @@ void myIOT2::startMQTT()
 			stat = true;
 		}
 	}
-	// Set callback function
-	// if (stat)
-	// {
 	mqttClient.setCallback(std::bind(&myIOT2::callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 	subscribeMQTT();
 }
@@ -537,10 +534,6 @@ void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 	{
 		firstRun_ResetKeeper(incoming_msg);
 	}
-	// else if (strcmp(topic, _availTopic) == 0)
-	// {
-	// 	strcpy(AvailState, incoming_msg);
-	// }
 
 	if (strcmp(incoming_msg, "boot") == 0)
 	{
@@ -567,8 +560,8 @@ void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 	}
 	else if (strcmp(incoming_msg, "ver") == 0)
 	{
-		sprintf(msg, "ver: IOTlib: [%s], WDT: [%d], OTA: [%d], SERIAL: [%d], ResetKeeper[%d], FailNTP[%d], useDebugLog[%d] debugLog_VER[%s], no-networkReset[%d], useBootLog[%d]",
-				ver, useWDT, useOTA, useSerial, useResetKeeper, resetFailNTP, useDebug, "flog.VeR", useNetworkReset, useBootClockLog);
+		sprintf(msg, "ver: IOTlib: [%s], WDT: [%d], OTA: [%d], SERIAL: [%d], ResetKeeper[%d], useDebugLog[%d] debugLog_VER[%s], no-networkReset[%d], useBootLog[%d]",
+				ver, useWDT, useOTA, useSerial, useResetKeeper, useDebug, "flog.VeR", useNetworkReset, useBootClockLog);
 		pub_msg(msg);
 	}
 	else if (strcmp(incoming_msg, "help") == 0)
@@ -813,11 +806,8 @@ void myIOT2::pub_email(JsonDocument &email)
 }
 void myIOT2::notifyOnline()
 {
-	// if (strcmp(AvailState, "online") != 0)
-	// {
 	mqttClient.publish(_availTopic, "online", true);
 	write_log("online", 2, _availTopic);
-	// }
 }
 void myIOT2::firstRun_ResetKeeper(char *msg)
 {

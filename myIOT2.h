@@ -2,20 +2,18 @@
 #define myIOT2_h
 
 #include <Arduino.h>
-#include "secretsIOT8266.h"
 #include <Ticker.h> //WDT
 #include <TimeLib.h>
 #include <PubSubClient.h>
-#include <WiFiUdp.h>
-#include <ArduinoOTA.h>
+#include <WiFiUdp.h>    // OTA
+#include <ArduinoOTA.h> // OTA
+#include <ArduinoJson.h>
+#include "secretsIOT8266.h"
 #include <myLOG.h>
 #include <myJSON.h>
-#include <ArduinoJson.h>
-#include <WiFiManager.h>
 
 #if defined(ARDUINO_ARCH_ESP8266)
 #include <ESP8266WiFi.h>
-#include <NtpClientLib.h>
 #include <ESP8266mDNS.h> // OTA libraries
 
 #define isESP8266 true
@@ -25,7 +23,6 @@
 #include <WiFi.h>
 #include <ESPmDNS.h>
 #include <time.h>
-#include <WiFi.h>
 #include <ESP32Ping.h>
 
 #define isESP32 true
@@ -43,7 +40,6 @@ class myIOT2
 public: /* Classes */
     WiFiClient espClient;
     PubSubClient mqttClient;
-    WiFiManager wm;
 #if isESP8266
     Ticker wdt;
 #endif
@@ -57,7 +53,7 @@ public: /* Variables */
     bool useOTA = true;
     bool extDefine = false; // must to set to true in order to use EXtMQTT
     bool useResetKeeper = false;
-    bool resetFailNTP = false; // not needed any more
+    // bool resetFailNTP = false; // not needed any more
     bool useextTopic = false;
     bool useNetworkReset = true; // allow reset due to no-network timeout
     bool useAltermqttServer = false;
@@ -110,7 +106,6 @@ private:
     const uint8_t wdtMaxRetries = 60;  //seconds to bITE
     unsigned long noNetwork_Clock = 0; // clock
     unsigned long allowOTA_clock = 0;  // clock
-    // ############################
 
     //MQTT broker parameters
     char *_mqtt_server;
@@ -120,8 +115,6 @@ private:
 
     const int _maxMQTTmsg = 180;
     const int _maxMQTTheader = 70;
-
-    // ######################################
 
     // MQTT topics
     char _msgTopic[MaxTopicLength];
@@ -135,9 +128,7 @@ private:
     char _debugTopic[MaxTopicLength];
     char _smsTopic[MaxTopicLength];
     char _emailTopic[MaxTopicLength];
-
     char *topicArry[4] = {_deviceName, _groupTopic, _availTopic, addGroupTopic};
-    // ##############################################
 
     // holds informamtion
     char bootTime[25];
@@ -150,7 +141,7 @@ public: /* Functions */
     void startOTA();
     void return_clock(char ret_tuple[20]);
     void return_date(char ret_tuple[20]);
-    bool checkInternet(char *externalSite = "www.google.com", uint8_t pings = 1);
+    bool checkInternet(char *externalSite = "www.google.com", uint8_t pings = 3);
 
     void sendReset(char *header);
     void notifyOnline();
