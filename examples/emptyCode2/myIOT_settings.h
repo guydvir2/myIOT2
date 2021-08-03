@@ -34,7 +34,6 @@ void startIOTservices()
     iot.useOTA = true;
     iot.useResetKeeper = false;
     iot.useextTopic = false;
-    iot.resetFailNTP = true;
     iot.useDebug = false;
     iot.debug_level = 0;
     iot.useNetworkReset = true;
@@ -50,7 +49,6 @@ void startIOTservices()
     iot.useWDT = paramJSON["useWDT"];
     iot.useOTA = paramJSON["useOTA"];
     iot.useResetKeeper = paramJSON["useResetKeeper"];
-    iot.resetFailNTP = paramJSON["useFailNTP"];
     iot.useDebug = paramJSON["useDebugLog"];
     iot.debug_level = paramJSON["debug_level"];
     iot.useNetworkReset = paramJSON["useNetworkReset"];
