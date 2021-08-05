@@ -47,13 +47,12 @@ public: /* Classes */
     flashLOG clklog;
 
 public: /* Variables */
-        // ~~~~~~ Services ~~~~~~~~~
+    // ~~~~~~ Services ~~~~~~~~~
     bool useSerial = false;
     bool useWDT = true;
     bool useOTA = true;
     bool extDefine = false; // must to set to true in order to use EXtMQTT
     bool useResetKeeper = false;
-    // bool resetFailNTP = false; // not needed any more
     bool useextTopic = false;
     bool useNetworkReset = true; // allow reset due to no-network timeout
     bool useAltermqttServer = false;
@@ -63,7 +62,7 @@ public: /* Variables */
     static const uint8_t bootlog_len = 10; // nubmer of boot clock records
     // ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    const char *ver = "iot_v1.0";
+    const char *ver = "iot_v1.1";
     static const uint8_t num_param = 6;
     char inline_param[num_param][20]; //values from user
 
@@ -158,6 +157,7 @@ public: /* Functions */
     void pub_email(JsonDocument &email);
     void clear_ExtTopicbuff();
     long get_bootclockLOG(int x);
+    void get_timeStamp(time_t t = 0);
     void convert_epoch2clock(long t1, long t2, char *time_str, char *days_str);
 
     uint8_t inline_read(char *inputstr);
@@ -170,7 +170,6 @@ private: /* Functions */
     void start_clock();
     bool network_looper();
     void start_network_services();
-    void _getTimestamp(char ret_timeStamp[25], time_t t = 0);
     void _startNTP(const int gmtOffset_sec = 2 * 3600, const int daylightOffset_sec = 3600, const char *ntpServer = "pool.ntp.org");
 
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

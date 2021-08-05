@@ -274,7 +274,8 @@ bool myIOT2::network_looper()
 void myIOT2::start_clock()
 {
 	_startNTP();
-	_getTimestamp(bootTime);
+	get_timeStamp();
+	strcpy(bootTime, timeStamp);
 }
 void myIOT2::_startNTP(const int gmtOffset_sec, const int daylightOffset_sec, const char *ntpServer)
 {
@@ -286,7 +287,7 @@ void myIOT2::_startNTP(const int gmtOffset_sec, const int daylightOffset_sec, co
 		now = time(nullptr);
 	}
 }
-void myIOT2::_getTimestamp(char ret_timeStamp[25], time_t t)
+void myIOT2::get_timeStamp(time_t t)
 {
 	if (t == 0)
 	{
@@ -294,7 +295,7 @@ void myIOT2::_getTimestamp(char ret_timeStamp[25], time_t t)
 	}
 
 	struct tm *tm = localtime(&t);
-	sprintf(ret_timeStamp, "%04d-%02d-%02d %02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+	sprintf(timeStamp, "%04d-%02d-%02d %02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
 }
 void myIOT2::return_clock(char ret_tuple[20])
 {
@@ -659,7 +660,7 @@ void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 				char m[20];
 				clklog.readline(i, m);
 				time_t tmptime = atol(m);
-				_getTimestamp(timeStamp, tmptime);
+				get_timeStamp(tmptime);
 				strcat(t, timeStamp);
 			}
 			strcat(t, "}");
@@ -690,7 +691,7 @@ void myIOT2::_pub_generic(char *topic, char *inmsg, bool retain, char *devname, 
 
 	if (!bare)
 	{
-		_getTimestamp(timeStamp);
+		get_timeStamp();
 		if (strcmp(devname, "") == 0)
 		{
 			sprintf(header, "[%s] [%s] ", timeStamp, _deviceName);
@@ -775,7 +776,7 @@ void myIOT2::pub_sms(char *inmsg, char *name)
 void myIOT2::pub_sms(JsonDocument &sms)
 {
 	String output;
-	_getTimestamp(timeStamp);
+	get_timeStamp();
 	serializeJson(sms, output);
 	int len = output.length() + 1;
 	char sms_char[len];
@@ -795,7 +796,7 @@ void myIOT2::pub_email(String &inmsg, char *name)
 void myIOT2::pub_email(JsonDocument &email)
 {
 	String output;
-	_getTimestamp(timeStamp);
+	get_timeStamp();
 	serializeJson(email, output);
 	int len = output.length() + 1;
 	char email_char[len];
@@ -850,7 +851,7 @@ void myIOT2::write_log(char *inmsg, uint8_t x, char *topic)
 
 	if (useDebug && debug_level <= x)
 	{
-		_getTimestamp(timeStamp);
+		get_timeStamp();
 		sprintf(a, ">>%s<< [%s] %s", timeStamp, topic, inmsg);
 		flog.write(a);
 
