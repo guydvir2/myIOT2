@@ -26,7 +26,7 @@ void myIOT2::start_services(cb_func funct, char *ssid, char *password, char *mqt
 	}
 	if (useDebug)
 	{
-		flog.start(log_ents, log_len);
+		// flog.start(log_ents, log_len);
 	}
 	start_network_services();
 	if (useWDT)
@@ -43,8 +43,9 @@ void myIOT2::start_services(cb_func funct, char *ssid, char *password, char *mqt
 	}
 	if (useBootClockLog && WiFi.isConnected())
 	{
-		clklog.start(10, 13);
-		_update_bootclockLOG();
+		// clklog.start(10, 23, true, true);
+		// _update_bootclockLOG();
+		// clklog.rawPrintfile();
 	}
 }
 void myIOT2::_post_boot_check()
@@ -94,12 +95,12 @@ void myIOT2::looper()
 	}
 	if (useDebug)
 	{
-		flog.looper(45);
+		// flog.looper(45);
 	}
-	if (useBootClockLog)
-	{
-		clklog.looper(60);
-	}
+	// if (useBootClockLog)
+	// {
+	// 	clklog.looper(60);
+	// }
 	_post_boot_check();
 }
 
@@ -281,11 +282,12 @@ void myIOT2::_startNTP(const int gmtOffset_sec, const int daylightOffset_sec, co
 {
 	configTime(gmtOffset_sec, daylightOffset_sec, ntpServer); //configuring time offset and an NTP server
 	time_t now = time(nullptr);								  // before getting clock
-	while (now < 1627735850) /* while in 2021 */
+	while (now < 1627735850)								  /* while in 2021 */
 	{
 		delay(20);
 		now = time(nullptr);
 	}
+	delay(100);
 }
 void myIOT2::get_timeStamp(time_t t)
 {
@@ -307,7 +309,7 @@ void myIOT2::return_date(char ret_tuple[20])
 {
 	time_t t = time(nullptr);
 	struct tm *tm = localtime(&t);
-	sprintf(ret_tuple, "%02d-%02d-%02d",tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
+	sprintf(ret_tuple, "%02d-%02d-%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
 }
 bool myIOT2::checkInternet(char *externalSite, uint8_t pings)
 {
@@ -335,7 +337,10 @@ void myIOT2::convert_epoch2clock(long t1, long t2, char *time_str, char *days_st
 	sprintf(days_str, "%01dd", days);
 	sprintf(time_str, "%02d:%02d:%02d", hours, minutes, seconds);
 }
-
+time_t myIOT2::now()
+{
+	return time(nullptr);
+}
 // ~~~~~~~ MQTT functions ~~~~~~~
 void myIOT2::startMQTT()
 {
@@ -849,23 +854,26 @@ void myIOT2::write_log(char *inmsg, uint8_t x, char *topic)
 {
 	char a[strlen(inmsg) + 100];
 
-	if (useDebug && debug_level <= x)
-	{
-		get_timeStamp();
-		sprintf(a, ">>%s<< [%s] %s", timeStamp, topic, inmsg);
-		flog.write(a);
+	// if (useDebug && debug_level <= x)
+	// {
+	// 	get_timeStamp();
+	// 	sprintf(a, ">>%s<< [%s] %s", timeStamp, topic, inmsg);
+	// 	flog.write(a);
 
-		// if (x >= 1) /* system events are written immdietly */
-		// {
-		// 	flog.writeNow();
-		// }
-	}
+	// 	// if (x >= 1) /* system events are written immdietly */
+	// 	// {
+	// 	// 	flog.writeNow();
+	// 	// }
+	// }
 }
 void myIOT2::_update_bootclockLOG()
 {
-	char clk_char[20];
-	sprintf(clk_char, "%d", time(nullptr));
+	char clk_char[25];
+	// sprintf(clk_char, "%d", time(nullptr));
+	sprintf(clk_char, "%d", 1628259581);
 	clklog.write(clk_char, true);
+	Serial.print("Current: ");
+	Serial.println(clk_char);
 }
 bool myIOT2::read_fPars(char *filename, String &defs, JsonDocument &DOC, int JSIZE)
 {

@@ -159,6 +159,7 @@ public: /* Functions */
     long get_bootclockLOG(int x);
     void get_timeStamp(time_t t = 0);
     void convert_epoch2clock(long t1, long t2, char *time_str, char *days_str);
+    time_t now();
 
     uint8_t inline_read(char *inputstr);
     bool read_fPars(char *filename, String &defs, JsonDocument &DOC, int JSIZE = 500);
