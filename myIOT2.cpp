@@ -26,7 +26,7 @@ void myIOT2::start_services(cb_func funct, char *ssid, char *password, char *mqt
 	}
 	if (useDebug)
 	{
-		// flog.start(log_ents, log_len);
+		flog.start(log_ents, log_len);
 	}
 	start_network_services();
 	if (useWDT)
@@ -39,13 +39,12 @@ void myIOT2::start_services(cb_func funct, char *ssid, char *password, char *mqt
 	}
 	if (useNetworkReset)
 	{
-		time2Reset_noNetwork = (1000 * 60L) * noNetwork_reset;
+		time2Reset_noNetwork = noNetwork_reset;
 	}
 	if (useBootClockLog && WiFi.isConnected())
 	{
-		// clklog.start(10, 23, true, true);
-		// _update_bootclockLOG();
-		// clklog.rawPrintfile();
+		clklog.start(10, 13); // Dont need looper. saved only once a boot
+		_update_bootclockLOG();
 	}
 }
 void myIOT2::_post_boot_check()
@@ -80,7 +79,7 @@ void myIOT2::looper()
 	{
 		if (noNetwork_Clock > 0 && useNetworkReset)
 		{ // no Wifi or no MQTT will cause a reset
-			if (millis() - noNetwork_Clock > time2Reset_noNetwork)
+			if (millis() - noNetwork_Clock > time2Reset_noNetwork * MS2MINUTES)
 			{
 				sendReset("NO NETWoRK");
 			}
@@ -88,19 +87,15 @@ void myIOT2::looper()
 	}
 	if (useAltermqttServer == true)
 	{
-		if (millis() > time2Reset_noNetwork)
+		if (millis() > time2Reset_noNetwork * MS2MINUTES)
 		{
 			sendReset("Reset- restore main MQTT server");
 		}
 	}
 	if (useDebug)
 	{
-		// flog.looper(45);
+		flog.looper(55);
 	}
-	// if (useBootClockLog)
-	// {
-	// 	clklog.looper(60);
-	// }
 	_post_boot_check();
 }
 
@@ -122,7 +117,7 @@ bool myIOT2::startWifi(char *ssid, char *password)
 	WiFi.setAutoReconnect(true); // <-- BACK
 
 	// in case of reboot - timeOUT to wifi
-	while (WiFi.status() != WL_CONNECTED && millis() < WIFItimeOut + startWifiConnection)
+	while (WiFi.status() != WL_CONNECTED && millis() < WIFItimeOut * MS2MINUTES + startWifiConnection)
 	{
 		delay(200);
 		if (useSerial)
@@ -228,7 +223,7 @@ bool myIOT2::network_looper()
 	}
 	else /* No WiFi*/
 	{
-		if (millis() > noNetwork_Clock + retryConnectWiFi && millis() > _lastReco_try + retryConnectWiFi)
+		if (millis() > noNetwork_Clock + retryConnectWiFi * MS2MINUTES && millis() > _lastReco_try + retryConnectWiFi * MS2MINUTES)
 		{
 			if (!startWifi(_ssid, _wifi_pwd))
 			{ // failed to reconnect ?
@@ -281,11 +276,9 @@ void myIOT2::start_clock()
 void myIOT2::_startNTP(const int gmtOffset_sec, const int daylightOffset_sec, const char *ntpServer)
 {
 	configTime(gmtOffset_sec, daylightOffset_sec, ntpServer); //configuring time offset and an NTP server
-	time_t now = time(nullptr);								  // before getting clock
-	while (now < 1627735850)								  /* while in 2021 */
+	while (now() < 1627735850)								  /* while in 2021 */
 	{
 		delay(20);
-		now = time(nullptr);
 	}
 	delay(100);
 }
@@ -293,7 +286,7 @@ void myIOT2::get_timeStamp(time_t t)
 {
 	if (t == 0)
 	{
-		t = time(nullptr);
+		t = now();
 	}
 
 	struct tm *tm = localtime(&t);
@@ -301,13 +294,13 @@ void myIOT2::get_timeStamp(time_t t)
 }
 void myIOT2::return_clock(char ret_tuple[20])
 {
-	time_t t = time(nullptr);
+	time_t t = now();
 	struct tm *tm = localtime(&t);
 	sprintf(ret_tuple, "%02d:%02d:%02d", tm->tm_hour, tm->tm_min, tm->tm_sec);
 }
 void myIOT2::return_date(char ret_tuple[20])
 {
-	time_t t = time(nullptr);
+	time_t t = now();
 	struct tm *tm = localtime(&t);
 	sprintf(ret_tuple, "%02d-%02d-%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
 }
@@ -438,7 +431,11 @@ bool myIOT2::subscribeMQTT()
 			}
 			if (firstRun)
 			{
-				pub_log("<< PowerON Boot >>");
+				char buf[16];
+				char msg[60];
+				sprintf(buf, "%d.%d.%d.%d", WiFi.localIP()[0], WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3]);
+				sprintf(msg, "<< PowerON Boot >> IP:[%s]", buf);
+				pub_log(msg);
 				if (!useResetKeeper)
 				{
 					firstRun = false;
@@ -556,7 +553,7 @@ void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 	}
 	else if (strcmp(incoming_msg, "ota") == 0)
 	{
-		sprintf(msg, "OTA allowed for %d seconds", OTA_upload_interval / 1000);
+		sprintf(msg, "OTA allowed for %d seconds", OTA_upload_interval * MS2MINUTES / 1000);
 		pub_msg(msg);
 		allowOTA_clock = millis();
 	}
@@ -628,14 +625,6 @@ void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 			pub_debug("~~~ END ~~~");
 		}
 	}
-	else if (strcmp(incoming_msg, "del_log") == 0)
-	{
-		if (useDebug)
-		{
-			flog.delog();
-			pub_msg("debug_log: file deleted");
-		}
-	}
 	else if (strcmp(incoming_msg, "flash_format") == 0)
 	{
 		pub_msg("Flash: Starting flash Format. System will reset at end.");
@@ -653,16 +642,16 @@ void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 	{
 		if (useBootClockLog)
 		{
-			const int lsize = clklog.getnumlines();
+			uint8_t lsize = clklog.getnumlines();
 			char t[lsize * 23 + 20];
 			sprintf(t, "BootLog: {");
-			for (int i = 0; i < lsize; i++)
+			for (uint8_t i = 0; i < lsize; i++)
 			{
 				if (i != 0)
 				{
 					strcat(t, "; ");
 				}
-				char m[20];
+				char m[13];
 				clklog.readline(i, m);
 				time_t tmptime = atol(m);
 				get_timeStamp(tmptime);
@@ -854,23 +843,23 @@ void myIOT2::write_log(char *inmsg, uint8_t x, char *topic)
 {
 	char a[strlen(inmsg) + 100];
 
-	// if (useDebug && debug_level <= x)
-	// {
-	// 	get_timeStamp();
-	// 	sprintf(a, ">>%s<< [%s] %s", timeStamp, topic, inmsg);
-	// 	flog.write(a);
+	if (useDebug && debug_level <= x)
+	{
+		get_timeStamp();
+		sprintf(a, ">>%s<< [%s] %s", timeStamp, topic, inmsg);
+		flog.write(a);
+		Serial.println(a);
 
-	// 	// if (x >= 1) /* system events are written immdietly */
-	// 	// {
-	// 	// 	flog.writeNow();
-	// 	// }
-	// }
+		// 	// if (x >= 1) /* system events are written immdietly */
+		// 	// {
+		// 	// 	flog.writeNow();
+		// 	// }
+	}
 }
 void myIOT2::_update_bootclockLOG()
 {
 	char clk_char[25];
-	// sprintf(clk_char, "%d", time(nullptr));
-	sprintf(clk_char, "%d", 1628259581);
+	sprintf(clk_char, "%d", now());
 	clklog.write(clk_char, true);
 	Serial.print("Current: ");
 	Serial.println(clk_char);
@@ -967,7 +956,7 @@ void myIOT2::_feedTheDog()
 }
 void myIOT2::_acceptOTA()
 {
-	if (millis() - allowOTA_clock <= OTA_upload_interval)
+	if (millis() - allowOTA_clock <= OTA_upload_interval * MS2MINUTES)
 	{
 		ArduinoOTA.handle();
 	}

@@ -1,5 +1,6 @@
 #include <myIOT2.h>
-#include <Arduino.h>
+// #include <Arduino.h>
+// #include <myLOG.h>
 
 #define USE_SIMPLE_IOT 1 // Not Using FlashParameters
 
@@ -8,20 +9,16 @@
 #endif
 #include "myIOT_settings.h"
 
-void show_services()
-{
-        static bool showed = false;
-        if (!showed)
-        {
-                char msg[300];
-//                sprintf(msg, "Service: useSerial[%d], useWDT[%d], useOTA[%d], useResetKeeper[%d], useextTopic[%d], resetFailNTP[%d], useDebug[%d], debug_level[%d], useNetworkReset[%d], noNetwork_reset[%d],useBootClockLog[%d]",
-//                        iot.useSerial, iot.useWDT, iot.useOTA, iot.useResetKeeper, iot.useextTopic, iot.resetFailNTP, iot.useDebug, iot.debug_level, iot.useNetworkReset, iot.noNetwork_reset, iot.useBootClockLog);
-//                Serial.println(msg);
-                showed = true;
-        }
+// flashLOG clkLOG;
+
+
+void run(){
+        char a[20];
+        sprintf(a,"%d",millis());
+        int x=1234;
+        // clkLOG.write(a, true);
+        delay(100);
 }
-
-
 
 void setup()
 {
@@ -33,10 +30,34 @@ void setup()
         endRead_parameters();
 #endif
         Serial.println("BOOT!!!!");
+        // clkLOG.start(5, 20, true, true);
+        for (int x=0;x<3;x++){
+                run();
+        }
+        // char zz[60];
+        // clkLOG.readline(3,zz);
+        // Serial.println(zz);
+        // clkLOG.del_last_record();
+        // clkLOG.del_line(0);
+        // clkLOG.rawPrintfile();
+
+        // time_t T=iot.now();
+        // unsigned long T = 1234567890;
+        // _Print(T, false);
 }
+
 void loop()
 {
         iot.looper();
-        show_services();
+        // clkLOG.looper(10);
+        // static unsigned long lastW = 0;
+        // if ( millis()-lastW > 15000)
+        // {
+        //         unsigned long t = iot.now();
+        //         lastW = millis();
+        //         iot.get_timeStamp();
+        //         clkLOG.write(iot.timeStamp);
+        // }
+
         delay(100);
 }

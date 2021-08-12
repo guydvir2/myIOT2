@@ -37,6 +37,7 @@ typedef void (*cb_func)(char msg1[50]);
 
 class myIOT2
 {
+    #define MS2MINUTES 60000UL
 public: /* Classes */
     WiFiClient espClient;
     PubSubClient mqttClient;
@@ -77,14 +78,14 @@ public: /* Variables */
     uint8_t mqtt_detect_reset = 2;
     uint8_t noNetwork_reset = 30; // minutes
 
-    static const int MaxTopicLength = 64; //topics
+    static const uint8_t MaxTopicLength = 64; //topics
     char prefixTopic[MaxTopicLength];
     char deviceTopic[MaxTopicLength];
     char addGroupTopic[MaxTopicLength];
     char *extTopic[2] = {nullptr, nullptr};
 
     char mqqt_ext_buffer[3][150];
-    int max_mqtt_msg = 200;
+    uint8_t max_mqtt_msg = 200;
 
     char timeStamp[20];
     char *myIOT_paramfile = "/myIOT_param.json";
@@ -95,12 +96,11 @@ private:
     cb_func ext_mqtt;
 
     // time interval parameters
-    const unsigned int clockUpdateInt = 60 * 60;               // seconds to update NTP
-    const unsigned int WIFItimeOut = (1000 * 60) * 1 / 4;      // 30 sec try to connect WiFi
-    const unsigned int OTA_upload_interval = (1000 * 60) * 10; // 10 minute to try OTA
-    const unsigned long retryConnectWiFi = (1000 * 60) * 1;    // 1 minuter between fail Wifi reconnect reties
+    const uint8_t WIFItimeOut = 1;          // 30 sec try to connect WiFi
+    const uint8_t OTA_upload_interval = 10; // 10 minute to try OTA
+    const uint8_t retryConnectWiFi = 1;     // 1 minuter between fail Wifi reconnect reties
 
-    unsigned long time2Reset_noNetwork = (1000 * 60UL) * noNetwork_reset; // minutues pass without any network
+    uint8_t time2Reset_noNetwork = noNetwork_reset; // minutues pass without any network
     volatile uint8_t wdtResetCounter = 0;
     const uint8_t wdtMaxRetries = 60;  //seconds to bITE
     unsigned long noNetwork_Clock = 0; // clock
@@ -112,8 +112,8 @@ private:
     char *_mqtt_user = "";
     char *_mqtt_pwd = "";
 
-    const int _maxMQTTmsg = 180;
-    const int _maxMQTTheader = 70;
+    const uint8_t _maxMQTTmsg = 180;
+    const uint8_t _maxMQTTheader = 70;
 
     // MQTT topics
     char _msgTopic[MaxTopicLength];
