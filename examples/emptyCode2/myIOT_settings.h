@@ -54,7 +54,7 @@ void startIOTservices()
     iot.useNetworkReset = paramJSON["useNetworkReset"];
     iot.noNetwork_reset = paramJSON["noNetwork_reset"];
     iot.useextTopic = paramJSON["useextTopic"];
-    iot.useBootClockLog = true;
+    iot.useBootClockLog = paramJSON["useBootClockLog"];
     strcpy(iot.deviceTopic, paramJSON["deviceTopic"]);
     strcpy(iot.prefixTopic, paramJSON["prefixTopic"]);
     strcpy(iot.addGroupTopic, paramJSON["groupTopic"]);

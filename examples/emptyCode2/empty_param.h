@@ -2,8 +2,8 @@
 #include <ArduinoJson.h>
 #include <myJSON.h>
 
-#define JSON_SIZE_IOT 400
-#define JSON_SIZE_SKETCH 200
+#define JSON_SIZE_IOT 450
+#define JSON_SIZE_SKETCH 250
 
 char *sketch_paramfile = "/sketch_param.json";
 bool readfile_ok = false;
@@ -31,6 +31,10 @@ void startRead_parameters()
   bool a = iot.read_fPars(sketch_paramfile, sketch_defs, sketchJSON);
   bool b = iot.read_fPars(iot.myIOT_paramfile, myIOT_defs, paramJSON);
   readfile_ok = a && b;
+
+  serializeJsonPretty(sketchJSON, Serial);
+  serializeJsonPretty(paramJSON, Serial);
+  Serial.flush();
 
 #if USE_SIMPLE_IOT == 0
   update_vars(sketchJSON);

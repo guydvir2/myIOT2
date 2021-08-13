@@ -94,7 +94,7 @@ void myIOT2::looper()
 	}
 	if (useDebug)
 	{
-		flog.looper(55);
+		flog.looper(30);
 	}
 	_post_boot_check();
 }
@@ -315,10 +315,9 @@ void myIOT2::convert_epoch2clock(long t1, long t2, char *time_str, char *days_st
 	uint8_t minutes = 0;
 	uint8_t seconds = 0;
 
-	int sec2minutes = 60;
-	int sec2hours = (sec2minutes * 60);
-	int sec2days = (sec2hours * 24);
-	int sec2years = (sec2days * 365);
+	const uint8_t sec2minutes = 60;
+	const int sec2hours = (sec2minutes * 60);
+	const int sec2days = (sec2hours * 24);
 
 	long time_delta = t1 - t2;
 
@@ -337,7 +336,7 @@ time_t myIOT2::now()
 // ~~~~~~~ MQTT functions ~~~~~~~
 void myIOT2::startMQTT()
 {
-	bool stat = false;
+	bool stat=false;
 	createTopics();
 	// Select MQTT server
 	if (useAltermqttServer == false)
@@ -407,7 +406,7 @@ bool myIOT2::subscribeMQTT()
 		if (mqttClient.connect(tempname, _mqtt_user, _mqtt_pwd, _availTopic, 0, true, "offline"))
 		{
 			// Connecting sequence
-			for (int i = 0; i < sizeof(topicArry) / sizeof(char *); i++)
+			for (unsigned int i = 0; i < sizeof(topicArry) / sizeof(char *); i++)
 			{
 				if (strcmp(topicArry[i], "") != 0)
 				{
@@ -498,7 +497,7 @@ void myIOT2::createTopics()
 void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 {
 	char incoming_msg[max_mqtt_msg];
-	char msg[100];
+	char msg[200];
 
 	if (useSerial)
 	{
@@ -506,7 +505,7 @@ void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 		Serial.print(topic);
 		Serial.print("] ");
 	}
-	for (int i = 0; i < length; i++)
+	for (unsigned int i = 0; i < length; i++)
 	{
 		if (useSerial)
 		{
@@ -553,7 +552,7 @@ void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 	}
 	else if (strcmp(incoming_msg, "ota") == 0)
 	{
-		sprintf(msg, "OTA allowed for %d seconds", OTA_upload_interval * MS2MINUTES / 1000);
+		sprintf(msg, "OTA allowed for %ld seconds", OTA_upload_interval * MS2MINUTES / 1000);
 		pub_msg(msg);
 		allowOTA_clock = millis();
 	}
@@ -634,8 +633,8 @@ void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 	{
 		if (useDebug)
 		{
-			flog.delog();
-			pub_msg("debug_log: file deleted");
+			// flog.delog();
+			// pub_msg("debug_log: file deleted");
 		}
 	}
 	else if (strcmp(incoming_msg, "show_bootLog") == 0)
@@ -848,7 +847,6 @@ void myIOT2::write_log(char *inmsg, uint8_t x, char *topic)
 		get_timeStamp();
 		sprintf(a, ">>%s<< [%s] %s", timeStamp, topic, inmsg);
 		flog.write(a);
-		Serial.println(a);
 
 		// 	// if (x >= 1) /* system events are written immdietly */
 		// 	// {
@@ -859,24 +857,35 @@ void myIOT2::write_log(char *inmsg, uint8_t x, char *topic)
 void myIOT2::_update_bootclockLOG()
 {
 	char clk_char[25];
-	sprintf(clk_char, "%d", now());
+	sprintf(clk_char, "%lld", now());
 	clklog.write(clk_char, true);
-	Serial.print("Current: ");
-	Serial.println(clk_char);
 }
 bool myIOT2::read_fPars(char *filename, String &defs, JsonDocument &DOC, int JSIZE)
 {
-	myJSON param_on_flash(filename, false, JSIZE);
+	myJSON param_on_flash(filename, true, JSIZE);
 	param_on_flash.start();
+	// if (param_on_flash.readJSON_file(DOC))
+	// {
+	// 	Serial.println("file OK");
+	// 	return 1;
+	// }
+	// else
+	// {
+	// 	Serial.println("file NOT OK");
+	// 	return 0;
+	// }
 
 	if (param_on_flash.file_exists())
 	{
+		Serial.println("file exists");
 		if (param_on_flash.readJSON_file(DOC))
 		{
+			Serial.println("file OK");
 			return 1;
 		}
 		else
 		{
+			Serial.println("file NOT OK");
 			return 0;
 		}
 	}
@@ -886,6 +895,7 @@ bool myIOT2::read_fPars(char *filename, String &defs, JsonDocument &DOC, int JSI
 		{
 			Serial.printf("\nfile %s not found", filename);
 		}
+		Serial.println("NOT FOUND");
 		deserializeJson(DOC, defs);
 		return 0;
 	}
@@ -894,7 +904,7 @@ char *myIOT2::export_fPars(char *filename, JsonDocument &DOC, int JSIZE)
 {
 	int arraySize = 500;
 	char *ret = new char[arraySize];
-	myJSON param_on_flash(filename, false, JSIZE); /* read stored JSON from file */
+	myJSON param_on_flash(filename, true, JSIZE); /* read stored JSON from file */
 	param_on_flash.start();
 
 	if (param_on_flash.file_exists())

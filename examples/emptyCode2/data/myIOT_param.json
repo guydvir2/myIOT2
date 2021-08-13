@@ -3,12 +3,14 @@
     "useWDT": true,
     "useOTA": true,
     "useResetKeeper": true,
-    "useDebugLog": true,
+    "useDebugLog": false,
     "useNetworkReset":true,
+    "useBootClockLog": false,
+    "useextTopic": false,
     "deviceTopic": "empty",
     "groupTopic": "test",
     "prefixTopic": "myHome",
     "debug_level":0,
-    "noNetwork_reset":7,
-    "ver":0.2
+    "noNetwork_reset":30,
+    "ver":0.3
 }

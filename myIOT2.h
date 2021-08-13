@@ -78,7 +78,8 @@ public: /* Variables */
     uint8_t mqtt_detect_reset = 2;
     uint8_t noNetwork_reset = 30; // minutes
 
-    static const uint8_t MaxTopicLength = 64; //topics
+    static const uint8_t MaxTopicLength = 20; //topics
+    static const uint8_t MaxTopicLength2 = 20; //topics
     char prefixTopic[MaxTopicLength];
     char deviceTopic[MaxTopicLength];
     char addGroupTopic[MaxTopicLength];
@@ -116,17 +117,17 @@ private:
     const uint8_t _maxMQTTheader = 70;
 
     // MQTT topics
-    char _msgTopic[MaxTopicLength];
-    char _groupTopic[MaxTopicLength];
-    char _logTopic[MaxTopicLength];
-    char _deviceName[MaxTopicLength];
-    char _availTopic[MaxTopicLength];
-    char _stateTopic[MaxTopicLength];
-    char _stateTopic2[MaxTopicLength];
-    char _signalTopic[MaxTopicLength];
-    char _debugTopic[MaxTopicLength];
-    char _smsTopic[MaxTopicLength];
-    char _emailTopic[MaxTopicLength];
+    char _msgTopic[MaxTopicLength2];
+    char _groupTopic[MaxTopicLength2];
+    char _logTopic[MaxTopicLength2];
+    char _deviceName[MaxTopicLength2];
+    char _availTopic[MaxTopicLength2];
+    char _stateTopic[MaxTopicLength2];
+    char _stateTopic2[MaxTopicLength2];
+    char _signalTopic[MaxTopicLength2];
+    char _debugTopic[MaxTopicLength2];
+    char _smsTopic[MaxTopicLength2];
+    char _emailTopic[MaxTopicLength2];
     char *topicArry[4] = {_deviceName, _groupTopic, _availTopic, addGroupTopic};
 
     // holds informamtion
