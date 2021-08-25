@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include <Ticker.h> //WDT
-#include <TimeLib.h>
+// #include <TimeLib.h>
 #include <PubSubClient.h>
 #include <WiFiUdp.h>    // OTA
 #include <ArduinoOTA.h> // OTA
@@ -37,7 +37,7 @@ typedef void (*cb_func)(char msg1[50]);
 
 class myIOT2
 {
-    #define MS2MINUTES 60000UL
+#define MS2MINUTES 60000UL
 public: /* Classes */
     WiFiClient espClient;
     PubSubClient mqttClient;
@@ -47,7 +47,11 @@ public: /* Classes */
     flashLOG flog;
     flashLOG clklog;
 
-public: /* Variables */
+public:
+    const char *ver = "iot_v1.12";
+    const char *myIOT_paramfile = "/myIOT_param.json";
+
+    /*Variables */
     // ~~~~~~ Services ~~~~~~~~~
     bool useSerial = false;
     bool useWDT = true;
@@ -59,13 +63,10 @@ public: /* Variables */
     bool useAltermqttServer = false;
     bool useDebug = false;
     bool useBootClockLog = false;
-    uint8_t debug_level = 0;               // 0- All, 1- system states; 2- log only
-    static const uint8_t bootlog_len = 10; // nubmer of boot clock records
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~
+    uint8_t debug_level = 0;      // 0- All, 1- system states; 2- log only
+    uint8_t noNetwork_reset = 30; // minutes
 
-    const char *ver = "iot_v1.1";
-    static const uint8_t num_param = 6;
-    char inline_param[num_param][20]; //values from user
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~
 
     struct MQTT_msg
     {
@@ -74,22 +75,18 @@ public: /* Variables */
         char device_topic[50];
     };
     MQTT_msg extTopic_msg;
-
     uint8_t mqtt_detect_reset = 2;
-    uint8_t noNetwork_reset = 30; // minutes
 
-    static const uint8_t MaxTopicLength = 20; //topics
-    static const uint8_t MaxTopicLength2 = 20; //topics
+    static const uint8_t bootlog_len = 10;     // nubmer of boot clock records
+    static const uint8_t num_param = 4;        // MQTT parameter count
+    static const uint8_t MaxTopicLength = 20;  //topics
+    static const uint8_t MaxTopicLength2 = 64; //topics
+    char inline_param[num_param][20];          //values from user
     char prefixTopic[MaxTopicLength];
     char deviceTopic[MaxTopicLength];
     char addGroupTopic[MaxTopicLength];
     char *extTopic[2] = {nullptr, nullptr};
-
     char mqqt_ext_buffer[3][150];
-    uint8_t max_mqtt_msg = 200;
-
-    char timeStamp[20];
-    char *myIOT_paramfile = "/myIOT_param.json";
 
 private:
     char *_ssid;
@@ -113,9 +110,6 @@ private:
     char *_mqtt_user = "";
     char *_mqtt_pwd = "";
 
-    const uint8_t _maxMQTTmsg = 180;
-    const uint8_t _maxMQTTheader = 70;
-
     // MQTT topics
     char _msgTopic[MaxTopicLength2];
     char _groupTopic[MaxTopicLength2];
@@ -132,6 +126,8 @@ private:
 
     // holds informamtion
     char bootTime[25];
+    char timeStamp[20];
+
     bool firstRun = true;
 
 public: /* Functions */

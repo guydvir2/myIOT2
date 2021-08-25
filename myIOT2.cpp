@@ -94,7 +94,7 @@ void myIOT2::looper()
 	}
 	if (useDebug)
 	{
-		flog.looper(30);
+		flog.looper(30); /* 30 seconds from last write or 70% of buffer */
 	}
 	_post_boot_check();
 }
@@ -336,7 +336,7 @@ time_t myIOT2::now()
 // ~~~~~~~ MQTT functions ~~~~~~~
 void myIOT2::startMQTT()
 {
-	bool stat=false;
+	bool stat = false;
 	createTopics();
 	// Select MQTT server
 	if (useAltermqttServer == false)
@@ -406,7 +406,7 @@ bool myIOT2::subscribeMQTT()
 		if (mqttClient.connect(tempname, _mqtt_user, _mqtt_pwd, _availTopic, 0, true, "offline"))
 		{
 			// Connecting sequence
-			for (unsigned int i = 0; i < sizeof(topicArry) / sizeof(char *); i++)
+			for (int i = 0; i < sizeof(topicArry) / sizeof(char *); i++)
 			{
 				if (strcmp(topicArry[i], "") != 0)
 				{
@@ -466,37 +466,37 @@ bool myIOT2::subscribeMQTT()
 }
 void myIOT2::createTopics()
 {
-	snprintf(_msgTopic, MaxTopicLength, "%s/Messages", prefixTopic);
-	snprintf(_groupTopic, MaxTopicLength, "%s/All", prefixTopic);
-	snprintf(_logTopic, MaxTopicLength, "%s/log", prefixTopic);
-	snprintf(_signalTopic, MaxTopicLength, "%s/Signal", prefixTopic);
-	snprintf(_debugTopic, MaxTopicLength, "%s/debug", prefixTopic);
-	snprintf(_smsTopic, MaxTopicLength, "%s/sms", prefixTopic);
-	snprintf(_emailTopic, MaxTopicLength, "%s/email", prefixTopic);
+	snprintf(_msgTopic, MaxTopicLength2, "%s/Messages", prefixTopic);
+	snprintf(_groupTopic, MaxTopicLength2, "%s/All", prefixTopic);
+	snprintf(_logTopic, MaxTopicLength2, "%s/log", prefixTopic);
+	snprintf(_signalTopic, MaxTopicLength2, "%s/Signal", prefixTopic);
+	snprintf(_debugTopic, MaxTopicLength2, "%s/debug", prefixTopic);
+	snprintf(_smsTopic, MaxTopicLength2, "%s/sms", prefixTopic);
+	snprintf(_emailTopic, MaxTopicLength2, "%s/email", prefixTopic);
 
 	if (strcmp(addGroupTopic, "") != 0)
 	{
-		char temptopic[MaxTopicLength];
+		char temptopic[MaxTopicLength2];
 		strcpy(temptopic, addGroupTopic);
-		snprintf(addGroupTopic, MaxTopicLength, "%s/%s", prefixTopic,
+		snprintf(addGroupTopic, MaxTopicLength2, "%s/%s", prefixTopic,
 				 temptopic);
 
-		snprintf(_deviceName, MaxTopicLength, "%s/%s", addGroupTopic,
+		snprintf(_deviceName, MaxTopicLength2, "%s/%s", addGroupTopic,
 				 deviceTopic);
 	}
 	else
 	{
-		snprintf(_deviceName, MaxTopicLength, "%s/%s", prefixTopic,
+		snprintf(_deviceName, MaxTopicLength2, "%s/%s", prefixTopic,
 				 deviceTopic);
 	}
 
-	snprintf(_stateTopic, MaxTopicLength, "%s/State", _deviceName);
-	snprintf(_stateTopic2, MaxTopicLength, "%s/State_2", _deviceName);
-	snprintf(_availTopic, MaxTopicLength, "%s/Avail", _deviceName);
+	snprintf(_stateTopic, MaxTopicLength2, "%s/State", _deviceName);
+	snprintf(_stateTopic2, MaxTopicLength2, "%s/State_2", _deviceName);
+	snprintf(_availTopic, MaxTopicLength2, "%s/Avail", _deviceName);
 }
 void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 {
-	char incoming_msg[max_mqtt_msg];
+	char incoming_msg[200];
 	char msg[200];
 
 	if (useSerial)
@@ -633,8 +633,8 @@ void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 	{
 		if (useDebug)
 		{
-			// flog.delog();
-			// pub_msg("debug_log: file deleted");
+			flog.delog();
+			pub_msg("debug_log: file deleted");
 		}
 	}
 	else if (strcmp(incoming_msg, "show_bootLog") == 0)
@@ -847,11 +847,6 @@ void myIOT2::write_log(char *inmsg, uint8_t x, char *topic)
 		get_timeStamp();
 		sprintf(a, ">>%s<< [%s] %s", timeStamp, topic, inmsg);
 		flog.write(a);
-
-		// 	// if (x >= 1) /* system events are written immdietly */
-		// 	// {
-		// 	// 	flog.writeNow();
-		// 	// }
 	}
 }
 void myIOT2::_update_bootclockLOG()
@@ -862,30 +857,18 @@ void myIOT2::_update_bootclockLOG()
 }
 bool myIOT2::read_fPars(char *filename, String &defs, JsonDocument &DOC, int JSIZE)
 {
-	myJSON param_on_flash(filename, true, JSIZE);
+	myJSON param_on_flash(filename, useSerial, JSIZE);
 	param_on_flash.start();
-	// if (param_on_flash.readJSON_file(DOC))
-	// {
-	// 	Serial.println("file OK");
-	// 	return 1;
-	// }
-	// else
-	// {
-	// 	Serial.println("file NOT OK");
-	// 	return 0;
-	// }
 
 	if (param_on_flash.file_exists())
 	{
 		Serial.println("file exists");
 		if (param_on_flash.readJSON_file(DOC))
 		{
-			Serial.println("file OK");
 			return 1;
 		}
 		else
 		{
-			Serial.println("file NOT OK");
 			return 0;
 		}
 	}
@@ -895,7 +878,6 @@ bool myIOT2::read_fPars(char *filename, String &defs, JsonDocument &DOC, int JSI
 		{
 			Serial.printf("\nfile %s not found", filename);
 		}
-		Serial.println("NOT FOUND");
 		deserializeJson(DOC, defs);
 		return 0;
 	}

@@ -5,7 +5,7 @@
 #define MQTT_SERVER1 "192.168.3.200"
 #define MQTT_SERVER2 "192.168.3.199"
 #define MQTT_SERVER3 "mqtt.eclipse.org"
-
+#define tok "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"
 // #define SSID_ID "dvirz_iot"
 // #define PASS_WIFI "GdSd13100301"
 // #define MQTT_USER "guy"
