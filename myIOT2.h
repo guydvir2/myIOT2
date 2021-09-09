@@ -49,7 +49,7 @@ public: /* Classes */
 
 public:
     const char *ver = "iot_v1.12";
-    const char *myIOT_paramfile = "/myIOT_param.json";
+    char *myIOT_paramfile = "/myIOT_param.json";
 
     /*Variables */
     // ~~~~~~ Services ~~~~~~~~~
@@ -87,6 +87,7 @@ public:
     char addGroupTopic[MaxTopicLength];
     char *extTopic[2] = {nullptr, nullptr};
     char mqqt_ext_buffer[3][150];
+    char timeStamp[20];
 
 private:
     char *_ssid;
@@ -126,8 +127,6 @@ private:
 
     // holds informamtion
     char bootTime[25];
-    char timeStamp[20];
-
     bool firstRun = true;
 
 public: /* Functions */
