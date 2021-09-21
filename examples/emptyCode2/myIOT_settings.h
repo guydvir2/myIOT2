@@ -32,7 +32,7 @@ void startIOTservices()
     iot.useSerial = true;
     iot.useWDT = true;
     iot.useOTA = true;
-    iot.useResetKeeper = false;
+    iot.useResetKeeper = true;
     iot.useextTopic = false;
     iot.useDebug = true;
     iot.debug_level = 0;

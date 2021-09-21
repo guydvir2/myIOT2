@@ -64,7 +64,11 @@ void myIOT2::_post_boot_check()
 			{
 				sprintf(a, "Boot Type: [%s]", "Quick Reboot");
 			}
-			pub_log(a);
+
+			if (ignore_boot_msg == false)
+			{
+				pub_log(a);
+			}
 		}
 	}
 }
@@ -333,6 +337,7 @@ time_t myIOT2::now()
 {
 	return time(nullptr);
 }
+
 // ~~~~~~~ MQTT functions ~~~~~~~
 void myIOT2::startMQTT()
 {
@@ -434,7 +439,10 @@ bool myIOT2::subscribeMQTT()
 				char msg[60];
 				sprintf(buf, "%d.%d.%d.%d", WiFi.localIP()[0], WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3]);
 				sprintf(msg, "<< PowerON Boot >> IP:[%s]", buf);
-				pub_log(msg);
+				if (!ignore_boot_msg)
+				{
+					pub_log(msg);
+				}
 				if (!useResetKeeper)
 				{
 					firstRun = false;
@@ -446,7 +454,6 @@ bool myIOT2::subscribeMQTT()
 			{ // not first run
 				notifyOnline();
 			}
-			// lastReconnectAttempt = 0;
 			return 1;
 		}
 		else
@@ -464,6 +471,7 @@ bool myIOT2::subscribeMQTT()
 		return 1;
 	}
 }
+
 void myIOT2::createTopics()
 {
 	snprintf(_msgTopic, MaxTopicLength2, "%s/Messages", prefixTopic);
@@ -653,6 +661,9 @@ void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 				char m[13];
 				clklog.readline(i, m);
 				time_t tmptime = atol(m);
+				Serial.println(m);
+				Serial.println(tmptime);
+
 				get_timeStamp(tmptime);
 				strcat(t, timeStamp);
 			}
@@ -718,9 +729,9 @@ void myIOT2::pub_msg(char *inmsg)
 	_pub_generic(_msgTopic, inmsg);
 	write_log(inmsg, 0, _msgTopic);
 }
-void myIOT2::pub_noTopic(char *inmsg, char *Topic)
+void myIOT2::pub_noTopic(char *inmsg, char *Topic, bool retain)
 {
-	_pub_generic(Topic, inmsg, false, "", true);
+	_pub_generic(Topic, inmsg, retain, "", true);
 	write_log(inmsg, 0, Topic);
 }
 void myIOT2::pub_state(char *inmsg, uint8_t i)
@@ -852,7 +863,11 @@ void myIOT2::write_log(char *inmsg, uint8_t x, char *topic)
 void myIOT2::_update_bootclockLOG()
 {
 	char clk_char[25];
+#if isESP8266
 	sprintf(clk_char, "%lld", now());
+#elif isESP32
+	sprintf(clk_char, "%d", now());
+#endif
 	clklog.write(clk_char, true);
 }
 bool myIOT2::read_fPars(char *filename, String &defs, JsonDocument &DOC, int JSIZE)
@@ -1083,6 +1098,5 @@ void myIOT2::startWDT()
 // long myIOT2::get_bootclockLOG(int x)
 // {
 // 	// char t[20];
-// 	// clklog.readline()
-// 	return EEPROMReadlong(_prevBootclock_eADR[x]);
+// }
 // }

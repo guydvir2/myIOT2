@@ -1,9 +1,18 @@
 #ifndef myIOT2_h
 #define myIOT2_h
 
+#if defined(ARDUINO_ARCH_ESP8266)
+#define isESP8266 true
+#define isESP32 false
+#elif defined(ESP32)
+#define isESP32 true
+#define isESP8266 false
+#else
+#error Architecture unrecognized by this code.
+#endif
+
 #include <Arduino.h>
 #include <Ticker.h> //WDT
-// #include <TimeLib.h>
 #include <PubSubClient.h>
 #include <WiFiUdp.h>    // OTA
 #include <ArduinoOTA.h> // OTA
@@ -12,24 +21,13 @@
 #include <myLOG.h>
 #include <myJSON.h>
 
-#if defined(ARDUINO_ARCH_ESP8266)
+#if isESP8266
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h> // OTA libraries
-
-#define isESP8266 true
-#define isESP32 false
-
-#elif defined(ESP32)
+#elif isESP32
 #include <WiFi.h>
 #include <ESPmDNS.h>
-#include <time.h>
 #include <ESP32Ping.h>
-
-#define isESP32 true
-#define isESP8266 false
-
-#else
-#error Architecture unrecognized by this code.
 #endif
 
 // ~~~~define generic cb function~~~~
@@ -63,16 +61,15 @@ public:
     bool useAltermqttServer = false;
     bool useDebug = false;
     bool useBootClockLog = false;
+    bool ignore_boot_msg = false;
     uint8_t debug_level = 0;      // 0- All, 1- system states; 2- log only
     uint8_t noNetwork_reset = 30; // minutes
 
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~
-
     struct MQTT_msg
     {
-        char from_topic[50];
-        char msg[500];
-        char device_topic[50];
+        char from_topic[40];
+        char msg[200];
+        char device_topic[40];
     };
     MQTT_msg extTopic_msg;
     uint8_t mqtt_detect_reset = 2;
@@ -136,13 +133,13 @@ public: /* Functions */
     void startOTA();
     void return_clock(char ret_tuple[20]);
     void return_date(char ret_tuple[20]);
-    bool checkInternet(char *externalSite = "www.google.com", uint8_t pings = 3);
+    static bool checkInternet(char *externalSite = "www.google.com", uint8_t pings = 3);
 
     void sendReset(char *header);
     void notifyOnline();
     void pub_state(char *inmsg, uint8_t i = 0);
     void pub_msg(char *inmsg);
-    void pub_noTopic(char *inmsg, char *Topic);
+    void pub_noTopic(char *inmsg, char *Topic, bool retain = false);
     void pub_log(char *inmsg);
     void pub_ext(char *inmsg, char *name = "", bool retain = false, uint8_t i = 0);
     void pub_debug(char *inmsg);
