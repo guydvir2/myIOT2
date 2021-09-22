@@ -73,7 +73,7 @@ public:
     };
     MQTT_msg extTopic_msg;
     uint8_t mqtt_detect_reset = 2;
-
+    static const uint8_t _size_extTopic = 2;
     static const uint8_t bootlog_len = 10;     // nubmer of boot clock records
     static const uint8_t num_param = 4;        // MQTT parameter count
     static const uint8_t MaxTopicLength = 20;  //topics
@@ -82,9 +82,10 @@ public:
     char prefixTopic[MaxTopicLength];
     char deviceTopic[MaxTopicLength];
     char addGroupTopic[MaxTopicLength];
-    char *extTopic[2] = {nullptr, nullptr};
+    char *extTopic[_size_extTopic] = {nullptr, nullptr};
     char mqqt_ext_buffer[3][150];
     char timeStamp[20];
+    bool extTopic_newmsg_flag = false;
 
 private:
     char *_ssid;
@@ -123,7 +124,7 @@ private:
     char *topicArry[4] = {_deviceName, _groupTopic, _availTopic, addGroupTopic};
 
     // holds informamtion
-    char bootTime[25];
+    // char bootTime[25];
     bool firstRun = true;
 
 public: /* Functions */
@@ -168,6 +169,7 @@ private: /* Functions */
 
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     void startMQTT();
+    void selectMQTTbroker();
     bool subscribeMQTT();
     void createTopics();
     void callback(char *topic, uint8_t *payload, unsigned int length);

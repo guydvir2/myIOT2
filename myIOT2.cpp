@@ -274,8 +274,8 @@ bool myIOT2::network_looper()
 void myIOT2::start_clock()
 {
 	_startNTP();
-	get_timeStamp();
-	strcpy(bootTime, timeStamp);
+	// get_timeStamp();
+	// strcpy(bootTime, timeStamp);
 }
 void myIOT2::_startNTP(const int gmtOffset_sec, const int daylightOffset_sec, const char *ntpServer)
 {
@@ -339,56 +339,34 @@ time_t myIOT2::now()
 }
 
 // ~~~~~~~ MQTT functions ~~~~~~~
-void myIOT2::startMQTT()
+void myIOT2::selectMQTTbroker()
 {
-	bool stat = false;
-	createTopics();
-	// Select MQTT server
-	if (useAltermqttServer == false)
-	{
-		mqttClient.setServer(_mqtt_server, 1883);
-		if (useSerial)
-		{
-			Serial.print("MQTT SERVER: ");
-			Serial.println(_mqtt_server);
-		}
-	}
-	else
+	char *_server;
+	_server = _mqtt_server;
+
+	if (useAltermqttServer)
 	{
 		if (Ping.ping(_mqtt_server, 2))
 		{
-			mqttClient.setServer(_mqtt_server, 1883);
-			stat = true;
-			useAltermqttServer = false;
-			if (useSerial)
-			{
-				Serial.print("MQTT SERVER: ");
-				Serial.println(_mqtt_server);
-			}
+			_server = _mqtt_server;
 		}
 		else if (Ping.ping(_mqtt_server2), 5)
 		{
-			mqttClient.setServer(_mqtt_server2, 1883);
-			if (useSerial)
-			{
-				Serial.println("Connected to >>>>>>>>> MQTT SERVER2 <<<<<<<<<<<: ");
-				Serial.println(_mqtt_server2);
-			}
-			useAltermqttServer = true;
-			stat = true;
-		}
-		else
-		{
-			mqttClient.setServer(MQTT_SERVER3, 1883);
-			if (useSerial)
-			{
-				Serial.println("Connected to >>>>>>>>> EXTERNAL MQTT SERVER <<<<<<<<<<: ");
-				Serial.println(MQTT_SERVER3);
-			}
-			useAltermqttServer = true;
-			stat = true;
+			_server = _mqtt_server2;
 		}
 	}
+
+	mqttClient.setServer(_mqtt_server, 1883);
+	if (useSerial)
+	{
+		Serial.print("MQTT SERVER: ");
+		Serial.println(_server);
+	}
+}
+void myIOT2::startMQTT()
+{
+	createTopics();
+	selectMQTTbroker();
 	mqttClient.setCallback(std::bind(&myIOT2::callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 	subscribeMQTT();
 }
@@ -529,36 +507,23 @@ void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 	}
 	if (useextTopic)
 	{
-		uint8_t x = sizeof(extTopic) / sizeof(char *);
-		for (int i = 0; i < x; i++)
+		for (uint8_t i = 0; i < _size_extTopic; i++)
 		{
 			if (extTopic[i] != nullptr && strcmp(extTopic[i], topic) == 0)
 			{
 				strcpy(extTopic_msg.msg, incoming_msg);
 				strcpy(extTopic_msg.device_topic, deviceTopic);
 				strcpy(extTopic_msg.from_topic, topic);
+				extTopic_newmsg_flag = true;
 			}
 		}
 	}
+	
 	if (strcmp(topic, _availTopic) == 0 && useResetKeeper && firstRun)
 	{
 		firstRun_ResetKeeper(incoming_msg);
 	}
-
-	if (strcmp(incoming_msg, "boot") == 0)
-	{
-		sprintf(msg, "Boot:[%s]", bootTime);
-		pub_msg(msg);
-	}
-	else if (strcmp(incoming_msg, "ip") == 0)
-	{
-		char buf[16];
-		sprintf(buf, "%d.%d.%d.%d", WiFi.localIP()[0], WiFi.localIP()[1],
-				WiFi.localIP()[2], WiFi.localIP()[3]);
-		sprintf(msg, "IP address:[%s]", buf);
-		pub_msg(msg);
-	}
-	else if (strcmp(incoming_msg, "ota") == 0)
+	if (strcmp(incoming_msg, "ota") == 0)
 	{
 		sprintf(msg, "OTA allowed for %ld seconds", OTA_upload_interval * MS2MINUTES / 1000);
 		pub_msg(msg);
@@ -570,16 +535,25 @@ void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 	}
 	else if (strcmp(incoming_msg, "ver") == 0)
 	{
-		sprintf(msg, "ver: IOTlib: [%s], WDT: [%d], OTA: [%d], SERIAL: [%d], ResetKeeper[%d], useDebugLog[%d] debugLog_VER[%s], no-networkReset[%d], useBootLog[%d]",
-				ver, useWDT, useOTA, useSerial, useResetKeeper, useDebug, "flog.VeR", useNetworkReset, useBootClockLog);
+		sprintf(msg, "ver: IOTlib: [%s], flashLOG[%s]",
+				ver, flog.VeR);
+		pub_msg(msg);
+	}
+	else if (strcmp(incoming_msg, "services") == 0)
+	{
+		sprintf(msg, "Services[#1]: WDT: [%d], OTA: [%d], SERIAL: [%d], ResetKeeper[%d], useDebugLog[%d] , no-networkReset[%d] [%d min]",
+				useWDT, useOTA, useSerial, useResetKeeper, useDebug, useNetworkReset, noNetwork_reset);
+		pub_msg(msg);
+
+		sprintf(msg, "Services[#2]: useBootLog[%d], extTopic[%d], AlterMQTTserver[%d], ignore_boot_msg[%d], debug_level[%d]",
+				useBootClockLog, useextTopic, useAltermqttServer, ignore_boot_msg);
 		pub_msg(msg);
 	}
 	else if (strcmp(incoming_msg, "help") == 0)
 	{
-		sprintf(msg,
-				"Help: Commands #1 - [status, boot, reset, ip, ota, ver,ver2, help, help2, MCU_type]");
+		sprintf(msg, "Help: Commands #1 - [status, reset, ota, ver, ver2, help, help2, MCU_type, services, network]");
 		pub_msg(msg);
-		sprintf(msg, "Help: Commands #2 - [flash_format, debug_log, del_log, show_log, show_bootLog]");
+		sprintf(msg, "Help: Commands #2 - [flash_format, size_debug_log, del_debug_log, show_debuglog, show_bootLog]");
 		pub_msg(msg);
 	}
 	else if (strcmp(incoming_msg, "MCU_type") == 0)
@@ -598,7 +572,7 @@ void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 		}
 		pub_msg(msg);
 	}
-	else if (strcmp(incoming_msg, "debug_log") == 0)
+	else if (strcmp(incoming_msg, "size_debug_log") == 0)
 	{
 		if (useDebug)
 		{
@@ -611,7 +585,7 @@ void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 			pub_msg(msg);
 		}
 	}
-	else if (strcmp(incoming_msg, "show_log") == 0)
+	else if (strcmp(incoming_msg, "show_debuglog") == 0)
 	{
 		if (useDebug)
 		{
@@ -637,7 +611,7 @@ void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 		pub_msg("Flash: Starting flash Format. System will reset at end.");
 		sendReset("End Format");
 	}
-	else if (strcmp(incoming_msg, "del_log") == 0)
+	else if (strcmp(incoming_msg, "del_debug_log") == 0)
 	{
 		if (useDebug)
 		{
@@ -675,6 +649,19 @@ void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 		{
 			pub_msg("BootLog: Not supported");
 		}
+	}
+	else if (strcmp(incoming_msg, "network") == 0)
+	{
+		char IPadd[16];
+		char days[10];
+		char clock[25];
+
+		unsigned long t = (long)(millis() / 1000);
+		convert_epoch2clock(t, 0, clock, days);
+		sprintf(IPadd, "%d.%d.%d.%d", WiFi.localIP()[0], WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3]);
+		sprintf(msg, "Network: uptime[%s %s], localIP[%s], MQTTserver[%s]", days, clock, IPadd, _mqtt_server);
+
+		pub_msg(msg);
 	}
 
 	else
@@ -832,6 +819,7 @@ void myIOT2::clear_ExtTopicbuff()
 	strcpy(extTopic_msg.msg, "");
 	strcpy(extTopic_msg.device_topic, "");
 	strcpy(extTopic_msg.from_topic, "");
+	extTopic_newmsg_flag = false;
 }
 uint8_t myIOT2::inline_read(char *inputstr)
 {
