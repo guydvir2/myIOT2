@@ -163,7 +163,8 @@ void myIOT2::start_network_services()
 {
 	if (startWifi(_ssid, _wifi_pwd))
 	{
-		start_clock();
+		// start_clock();
+		_startNTP();
 		startMQTT();
 	}
 }
@@ -271,16 +272,15 @@ bool myIOT2::network_looper()
 }
 
 // ~~~~~~~ NTP & Clock  ~~~~~~~~
-void myIOT2::start_clock()
-{
-	_startNTP();
-	// get_timeStamp();
-	// strcpy(bootTime, timeStamp);
-}
+// void myIOT2::start_clock()
+// {
+// 	_startNTP();
+// }
 void myIOT2::_startNTP(const int gmtOffset_sec, const int daylightOffset_sec, const char *ntpServer)
 {
 	configTime(gmtOffset_sec, daylightOffset_sec, ntpServer); //configuring time offset and an NTP server
-	while (now() < 1627735850)								  /* while in 2021 */
+	unsigned long startLoop = millis();
+	while (now() < 1627735850 && millis() - startLoop < 5000) /* while in 2021 */
 	{
 		delay(20);
 	}
@@ -365,7 +365,7 @@ void myIOT2::selectMQTTbroker()
 }
 void myIOT2::startMQTT()
 {
-	createTopics();
+	// createTopics();
 	selectMQTTbroker();
 	mqttClient.setCallback(std::bind(&myIOT2::callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 	subscribeMQTT();
@@ -386,6 +386,27 @@ bool myIOT2::subscribeMQTT()
 		uint64_t chipid = ESP.getEfuseMac();
 		sprintf(tempname, "ESP32_%04X", (uint16_t)(chipid >> 32));
 #endif
+
+		char _groupTopic[MaxTopicLength2];
+		char _availTopic[MaxTopicLength2];
+
+		snprintf(_groupTopic, MaxTopicLength2, "%s/All", prefixTopic);
+		snprintf(_availTopic, MaxTopicLength2, "%s/Avail", _deviceName);
+
+		if (strcmp(addGroupTopic, "") != 0)
+		{
+			char temptopic[MaxTopicLength2];
+			strcpy(temptopic, addGroupTopic);
+			snprintf(addGroupTopic, MaxTopicLength2, "%s/%s", prefixTopic, temptopic);
+			snprintf(_deviceName, MaxTopicLength2, "%s/%s", addGroupTopic, deviceTopic);
+		}
+		else
+		{
+			snprintf(_deviceName, MaxTopicLength2, "%s/%s", prefixTopic, deviceTopic);
+		}
+
+		char *topicArry[4] = {_deviceName, _groupTopic, _availTopic, addGroupTopic};
+
 		if (mqttClient.connect(tempname, _mqtt_user, _mqtt_pwd, _availTopic, 0, true, "offline"))
 		{
 			// Connecting sequence
@@ -452,33 +473,32 @@ bool myIOT2::subscribeMQTT()
 
 void myIOT2::createTopics()
 {
-	snprintf(_msgTopic, MaxTopicLength2, "%s/Messages", prefixTopic);
-	snprintf(_groupTopic, MaxTopicLength2, "%s/All", prefixTopic);
-	snprintf(_logTopic, MaxTopicLength2, "%s/log", prefixTopic);
-	snprintf(_signalTopic, MaxTopicLength2, "%s/Signal", prefixTopic);
-	snprintf(_debugTopic, MaxTopicLength2, "%s/debug", prefixTopic);
-	snprintf(_smsTopic, MaxTopicLength2, "%s/sms", prefixTopic);
-	snprintf(_emailTopic, MaxTopicLength2, "%s/email", prefixTopic);
+	// snprintf(_msgTopic, MaxTopicLength2, "%s/Messages", prefixTopic);
+	// snprintf(_groupTopic, MaxTopicLength2, "%s/All", prefixTopic);
+	// snprintf(_logTopic, MaxTopicLength2, "%s/log", prefixTopic);
+	// snprintf(_signalTopic, MaxTopicLength2, "%s/Signal", prefixTopic);
+	// snprintf(_debugTopic, MaxTopicLength2, "%s/debug", prefixTopic);
+	// snprintf(_smsTopic, MaxTopicLength2, "%s/sms", prefixTopic);
+	// snprintf(_emailTopic, MaxTopicLength2, "%s/email", prefixTopic);
+	// char _groupTopic[MaxTopicLength2];
 
-	if (strcmp(addGroupTopic, "") != 0)
-	{
-		char temptopic[MaxTopicLength2];
-		strcpy(temptopic, addGroupTopic);
-		snprintf(addGroupTopic, MaxTopicLength2, "%s/%s", prefixTopic,
-				 temptopic);
+	// if (strcmp(addGroupTopic, "") != 0)
+	// {
+	// 	char temptopic[MaxTopicLength2];
+	// 	strcpy(temptopic, addGroupTopic);
+	// 	snprintf(addGroupTopic, MaxTopicLength2, "%s/%s", prefixTopic,
+	// 			 temptopic);
 
-		snprintf(_deviceName, MaxTopicLength2, "%s/%s", addGroupTopic,
-				 deviceTopic);
-	}
-	else
-	{
-		snprintf(_deviceName, MaxTopicLength2, "%s/%s", prefixTopic,
-				 deviceTopic);
-	}
+	// 	snprintf(_deviceName, MaxTopicLength2, "%s/%s", addGroupTopic,
+	// 			 deviceTopic);
+	// }
+	// else
+	// {
+	// 	snprintf(_deviceName, MaxTopicLength2, "%s/%s", prefixTopic,
+	// 			 deviceTopic);
+	// }
 
-	snprintf(_stateTopic, MaxTopicLength2, "%s/State", _deviceName);
-	snprintf(_stateTopic2, MaxTopicLength2, "%s/State_2", _deviceName);
-	snprintf(_availTopic, MaxTopicLength2, "%s/Avail", _deviceName);
+	// snprintf(_availTopic, MaxTopicLength2, "%s/Avail", _deviceName);
 }
 void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 {
@@ -518,7 +538,7 @@ void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 			}
 		}
 	}
-	
+
 	if (strcmp(topic, _availTopic) == 0 && useResetKeeper && firstRun)
 	{
 		firstRun_ResetKeeper(incoming_msg);
@@ -713,6 +733,9 @@ void myIOT2::_pub_generic(char *topic, char *inmsg, bool retain, char *devname, 
 }
 void myIOT2::pub_msg(char *inmsg)
 {
+	char _msgTopic[MaxTopicLength2];
+	snprintf(_msgTopic, MaxTopicLength2, "%s/Messages", prefixTopic);
+
 	_pub_generic(_msgTopic, inmsg);
 	write_log(inmsg, 0, _msgTopic);
 }
@@ -723,12 +746,20 @@ void myIOT2::pub_noTopic(char *inmsg, char *Topic, bool retain)
 }
 void myIOT2::pub_state(char *inmsg, uint8_t i)
 {
+	char _stateTopic[MaxTopicLength2];
+	char _stateTopic2[MaxTopicLength2];
+	snprintf(_stateTopic, MaxTopicLength2, "%s/State", _deviceName);
+	snprintf(_stateTopic2, MaxTopicLength2, "%s/State_2", _deviceName);
+
 	char *st[] = {_stateTopic, _stateTopic2};
 	mqttClient.publish(st[i], inmsg, true);
 	write_log(inmsg, 2, st[i]);
 }
 void myIOT2::pub_log(char *inmsg)
 {
+	char _logTopic[MaxTopicLength2];
+	snprintf(_logTopic, MaxTopicLength2, "%s/log", prefixTopic);
+
 	_pub_generic(_logTopic, inmsg);
 	write_log(inmsg, 1, _logTopic);
 }
@@ -739,6 +770,9 @@ void myIOT2::pub_ext(char *inmsg, char *name, bool retain, uint8_t i)
 }
 void myIOT2::pub_debug(char *inmsg)
 {
+	char _debugTopic[MaxTopicLength2];
+	snprintf(_debugTopic, MaxTopicLength2, "%s/debug", prefixTopic);
+
 	if (strlen(inmsg) + 23 > mqttClient.getBufferSize())
 	{
 		const int mqtt_defsize = mqttClient.getBufferSize();
@@ -796,6 +830,20 @@ void myIOT2::pub_email(JsonDocument &email)
 	_pub_generic(_emailTopic, email_char, false, "", true);
 	write_log(email_char, 0, _emailTopic);
 }
+char myIOT2::_devName()
+{
+	char *ret = new char[MaxTopicLength2];
+	if (strcmp(addGroupTopic, "") != 0)
+	{
+		snprintf(ret, MaxTopicLength2, "%s/%s", addGroupTopic, deviceTopic);
+	}
+	else
+	{
+		snprintf(ret, MaxTopicLength2, "%s/%s", prefixTopic, deviceTopic);
+	}
+	return ret;
+}
+
 void myIOT2::notifyOnline()
 {
 	mqttClient.publish(_availTopic, "online", true);

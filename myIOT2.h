@@ -110,21 +110,20 @@ private:
     char *_mqtt_pwd = "";
 
     // MQTT topics
-    char _msgTopic[MaxTopicLength2];
-    char _groupTopic[MaxTopicLength2];
-    char _logTopic[MaxTopicLength2];
+    // char _msgTopic[MaxTopicLength2];
+    // char _groupTopic[MaxTopicLength2];
+    // char _logTopic[MaxTopicLength2];
     char _deviceName[MaxTopicLength2];
-    char _availTopic[MaxTopicLength2];
-    char _stateTopic[MaxTopicLength2];
-    char _stateTopic2[MaxTopicLength2];
-    char _signalTopic[MaxTopicLength2];
-    char _debugTopic[MaxTopicLength2];
-    char _smsTopic[MaxTopicLength2];
-    char _emailTopic[MaxTopicLength2];
-    char *topicArry[4] = {_deviceName, _groupTopic, _availTopic, addGroupTopic};
+    // char _availTopic[MaxTopicLength2];
+    // char _stateTopic[MaxTopicLength2];
+    // char _stateTopic2[MaxTopicLength2];
+    // char _signalTopic[MaxTopicLength2];
+    // char _debugTopic[MaxTopicLength2];
+    // char _smsTopic[MaxTopicLength2];
+    // char _emailTopic[MaxTopicLength2];
+    // char *topicArry[4] = {_deviceName, _groupTopic, _availTopic, addGroupTopic};
 
     // holds informamtion
-    // char bootTime[25];
     bool firstRun = true;
 
 public: /* Functions */
@@ -162,7 +161,7 @@ public: /* Functions */
 private: /* Functions */
     // ~~~~~~~~~~~~~~WIFI ~~~~~~~~~~~~~~~~~~~~~
     bool startWifi(char *ssid, char *password);
-    void start_clock();
+    // void start_clock();
     bool network_looper();
     void start_network_services();
     void _startNTP(const int gmtOffset_sec = 2 * 3600, const int daylightOffset_sec = 3600, const char *ntpServer = "pool.ntp.org");
@@ -176,6 +175,7 @@ private: /* Functions */
     void firstRun_ResetKeeper(char *msg);
     void write_log(char *inmsg, uint8_t x, char *topic = "_deviceName");
     void _pub_generic(char *topic, char *inmsg, bool retain = false, char *devname = "", bool bare = false);
+    char *_devName();
 
     // ~~~~~~~ Services  ~~~~~~~~~~~~~~~~~~~~~~~~
     void startWDT();
