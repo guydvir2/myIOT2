@@ -67,8 +67,8 @@ public:
 
     struct MQTT_msg
     {
-        char from_topic[40];
         char msg[200];
+        char from_topic[40];
         char device_topic[40];
     };
     MQTT_msg extTopic_msg;
@@ -124,7 +124,6 @@ private:
     char *topicArry[4] = {_deviceName, _groupTopic, _availTopic, addGroupTopic};
 
     // holds informamtion
-    // char bootTime[25];
     bool firstRun = true;
 
 public: /* Functions */

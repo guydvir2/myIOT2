@@ -292,7 +292,6 @@ void myIOT2::get_timeStamp(time_t t)
 	{
 		t = now();
 	}
-
 	struct tm *tm = localtime(&t);
 	sprintf(timeStamp, "%04d-%02d-%02d %02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
 }
@@ -518,7 +517,7 @@ void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 			}
 		}
 	}
-	
+
 	if (strcmp(topic, _availTopic) == 0 && useResetKeeper && firstRun)
 	{
 		firstRun_ResetKeeper(incoming_msg);
