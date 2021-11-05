@@ -8,7 +8,6 @@
 
 void setup()
 {
-        MQTT_msg a;
 #if USE_SIMPLE_IOT == 1
         startIOTservices();
 #elif USE_SIMPLE_IOT == 0
@@ -23,5 +22,9 @@ void loop()
 {
         iot.looper();
         delay(100);
+        if (iot.extTopic_newmsg_flag)
+        {
+                Serial.println(iot.extTopic_msgArray[0]->msg);
+                iot.clear_ExtTopicbuff();
+        }
 }
-

@@ -58,16 +58,17 @@ public:
 
     /*Variables */
     // ~~~~~~ Services ~~~~~~~~~
-    bool useSerial = false;
     bool useWDT = true;
     bool useOTA = true;
-    bool useResetKeeper = false;
-    bool useextTopic = false;
-    bool useNetworkReset = true; // allow reset due to no-network timeout
-    bool useAltermqttServer = false;
     bool useDebug = false;
+    bool useSerial = false;
+    bool useextTopic = false;
+    bool useResetKeeper = false;
+    bool useNetworkReset = true; // allow reset due to no-network timeout
     bool useBootClockLog = false;
     bool ignore_boot_msg = false;
+    bool useAltermqttServer = false;
+    
     uint8_t debug_level = 0;      // 0- All, 1- system states; 2- log only
     uint8_t noNetwork_reset = 30; // minutes
 
@@ -78,14 +79,21 @@ public:
     static const uint8_t MaxTopicLength = 20;  //topics
     static const uint8_t MaxTopicLength2 = 64; //topics
     char inline_param[num_param][20];          //values from user
+    
+    // MQTT Topic variables
     char *prefixTopic, *deviceTopic, *addGroupTopic;
-    MQTT_msg *extTopic_msgArray[1] = {nullptr};
-    char *extTopic[_size_extTopic] = {nullptr, nullptr};
+    char *extTopic[_size_extTopic];
     bool extTopic_newmsg_flag = false;
+    MQTT_msg *extTopic_msgArray[1] = {nullptr};
 
 private:
+    // WiFi MQTT broker parameters
     char *_ssid;
     char *_wifi_pwd;
+    char *_mqtt_server;
+    char *_mqtt_server2 = MQTT_SERVER2;
+    char *_mqtt_user = "";
+    char *_mqtt_pwd = "";
     cb_func ext_mqtt;
 
     // time interval parameters
@@ -98,12 +106,6 @@ private:
     const uint8_t wdtMaxRetries = 60;  //seconds to bITE
     unsigned long noNetwork_Clock = 0; // clock
     unsigned long allowOTA_clock = 0;  // clock
-
-    //MQTT broker parameters
-    char *_mqtt_server;
-    char *_mqtt_server2 = MQTT_SERVER2;
-    char *_mqtt_user = "";
-    char *_mqtt_pwd = "";
 
     // holds informamtion
     bool firstRun = true;
@@ -140,7 +142,7 @@ public: /* Functions */
     bool read_fPars(char *filename, String &defs, JsonDocument &DOC, int JSIZE = 500);
     char *export_fPars(char *filename, JsonDocument &DOC, int JSIZE = 500);
 
-private: /* Functions */
+private:
     // ~~~~~~~~~~~~~~WIFI ~~~~~~~~~~~~~~~~~~~~~
     bool _startWifi(char *ssid, char *password);
     bool _network_looper();
@@ -149,18 +151,17 @@ private: /* Functions */
 
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     void _startMQTT();
-    void selectMQTTbroker();
-    bool subscribeMQTT();
-    void createTopics();
-    void callback(char *topic, uint8_t *payload, unsigned int length);
-    void firstRun_ResetKeeper(char *msg);
-    void write_log(char *inmsg, uint8_t x, char *topic = "_deviceName");
+    void _selectMQTTbroker();
+    bool _subscribeMQTT();
+    void _MQTTcb(char *topic, uint8_t *payload, unsigned int length);
+    void _getBootReason_resetKeeper(char *msg);
+    void _write_log(char *inmsg, uint8_t x, char *topic = "_deviceName");
     void _pub_generic(char *topic, char *inmsg, bool retain = false, char *devname = "", bool bare = false);
     char *_devName();
     char *_availName();
 
     // ~~~~~~~ Services  ~~~~~~~~~~~~~~~~~~~~~~~~
-    void startWDT();
+    void _startWDT();
     void _acceptOTA();
     void _update_bootclockLOG();
     void _post_boot_check();

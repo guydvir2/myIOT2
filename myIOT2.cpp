@@ -15,8 +15,7 @@ void myIOT2::start_services(cb_func funct, char *ssid, char *password, char *mqt
 	_mqtt_pwd = mqtt_passw;
 	_ssid = ssid;
 	_wifi_pwd = password;
-	ext_mqtt = funct; //redirecting to ex-class function ( defined outside)
-	// extDefine = true; // maing sure this ext_func was defined
+	ext_mqtt = funct; // redirecting to ex-class function ( defined outside)
 
 	if (useSerial)
 	{
@@ -30,7 +29,7 @@ void myIOT2::start_services(cb_func funct, char *ssid, char *password, char *mqt
 	_start_network_services();
 	if (useWDT)
 	{
-		startWDT();
+		_startWDT();
 	}
 	if (useOTA)
 	{
@@ -73,7 +72,7 @@ void myIOT2::_post_boot_check()
 }
 void myIOT2::looper()
 {
-	wdtResetCounter = 0; //reset WDT watchDog
+	wdtResetCounter = 0; // reset WDT watchDog
 	if (useOTA)
 	{
 		_acceptOTA();
@@ -183,7 +182,7 @@ bool myIOT2::_network_looper()
 			if (noNetwork_Clock == 0 || millis() - _lastReco_try > 1000 * time_retry_mqtt)
 			{
 				_lastReco_try = millis();
-				if (subscribeMQTT()) /* succeed to reconnect */
+				if (_subscribeMQTT()) /* succeed to reconnect */
 				{
 					mqttClient.loop();
 					if (noNetwork_Clock != 0)
@@ -272,7 +271,7 @@ bool myIOT2::_network_looper()
 // ~~~~~~~ NTP & Clock  ~~~~~~~~
 void myIOT2::_startNTP(const char *ntpServer)
 {
-	configTime(TZ_Asia_Jerusalem, ntpServer); //configuring time offset and an NTP server
+	configTime(TZ_Asia_Jerusalem, ntpServer); // configuring time offset and an NTP server
 	unsigned long startLoop = millis();
 	while (now() < 1627735850 && millis() - startLoop < 5000) /* while in 2021 */
 	{
@@ -335,7 +334,7 @@ time_t myIOT2::now()
 }
 
 // ~~~~~~~ MQTT functions ~~~~~~~
-void myIOT2::selectMQTTbroker()
+void myIOT2::_selectMQTTbroker()
 {
 	char *_server;
 	_server = _mqtt_server;
@@ -361,11 +360,11 @@ void myIOT2::selectMQTTbroker()
 }
 void myIOT2::_startMQTT()
 {
-	selectMQTTbroker();
-	mqttClient.setCallback(std::bind(&myIOT2::callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-	subscribeMQTT();
+	_selectMQTTbroker();
+	mqttClient.setCallback(std::bind(&myIOT2::_MQTTcb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+	_subscribeMQTT();
 }
-bool myIOT2::subscribeMQTT()
+bool myIOT2::_subscribeMQTT()
 {
 	if (!mqttClient.connected())
 	{
@@ -423,8 +422,7 @@ bool myIOT2::subscribeMQTT()
 			{
 				char buf[16];
 				char msg[60];
-				sprintf(buf, "%d.%d.%d.%d", WiFi.localIP()[0], WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3]);
-				sprintf(msg, "<< PowerON Boot >> IP:[%s]", buf);
+				sprintf(msg, "<< PowerON Boot >> IP:[%d.%d.%d.%d]", WiFi.localIP()[0], WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3]);
 				if (!ignore_boot_msg)
 				{
 					pub_log(msg);
@@ -453,9 +451,9 @@ bool myIOT2::subscribeMQTT()
 		return 1;
 	}
 }
-void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
+void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 {
-	char incoming_msg[200];
+	char incoming_msg[length + 5];
 	char msg[200];
 
 	if (useSerial)
@@ -494,7 +492,7 @@ void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 
 	if (strcmp(topic, _availName()) == 0 && useResetKeeper && firstRun)
 	{
-		firstRun_ResetKeeper(incoming_msg);
+		_getBootReason_resetKeeper(incoming_msg);
 	}
 	if (strcmp(incoming_msg, "ota") == 0)
 	{
@@ -682,12 +680,12 @@ void myIOT2::pub_msg(char *inmsg)
 	snprintf(_msgTopic, MaxTopicLength2, "%s/Messages", prefixTopic);
 
 	_pub_generic(_msgTopic, inmsg);
-	write_log(inmsg, 0, _msgTopic);
+	_write_log(inmsg, 0, _msgTopic);
 }
 void myIOT2::pub_noTopic(char *inmsg, char *Topic, bool retain)
 {
 	_pub_generic(Topic, inmsg, retain, "", true);
-	write_log(inmsg, 0, Topic);
+	_write_log(inmsg, 0, Topic);
 }
 void myIOT2::pub_state(char *inmsg, uint8_t i)
 {
@@ -698,7 +696,7 @@ void myIOT2::pub_state(char *inmsg, uint8_t i)
 
 	char *st[] = {_stateTopic, _stateTopic2};
 	mqttClient.publish(st[i], inmsg, true);
-	write_log(inmsg, 2, st[i]);
+	_write_log(inmsg, 2, st[i]);
 }
 void myIOT2::pub_log(char *inmsg)
 {
@@ -706,12 +704,12 @@ void myIOT2::pub_log(char *inmsg)
 	snprintf(_logTopic, MaxTopicLength2, "%s/log", prefixTopic);
 
 	_pub_generic(_logTopic, inmsg);
-	write_log(inmsg, 1, _logTopic);
+	_write_log(inmsg, 1, _logTopic);
 }
 void myIOT2::pub_ext(char *inmsg, char *name, bool retain, uint8_t i)
 {
 	_pub_generic(extTopic[i], inmsg, retain, name);
-	write_log(inmsg, 0, extTopic[i]);
+	_write_log(inmsg, 0, extTopic[i]);
 }
 void myIOT2::pub_debug(char *inmsg)
 {
@@ -738,14 +736,14 @@ void myIOT2::pub_sms(String &inmsg, char *name)
 	char sms_char[len];
 	inmsg.toCharArray(sms_char, len);
 	_pub_generic(_smsTopic, sms_char, false, name, true);
-	write_log(sms_char, 0, _smsTopic);
+	_write_log(sms_char, 0, _smsTopic);
 }
 void myIOT2::pub_sms(char *inmsg, char *name)
 {
 	char _smsTopic[MaxTopicLength2];
 	snprintf(_smsTopic, MaxTopicLength2, "%s/sms", prefixTopic);
 	_pub_generic(_smsTopic, inmsg, false, name, true);
-	write_log(inmsg, 0, _smsTopic);
+	_write_log(inmsg, 0, _smsTopic);
 }
 void myIOT2::pub_sms(JsonDocument &sms)
 {
@@ -767,7 +765,7 @@ void myIOT2::pub_email(String &inmsg, char *name)
 	char email_char[len];
 	inmsg.toCharArray(email_char, len);
 	_pub_generic(_emailTopic, email_char, false, name, true);
-	write_log(email_char, 0, _emailTopic);
+	_write_log(email_char, 0, _emailTopic);
 }
 void myIOT2::pub_email(JsonDocument &email)
 {
@@ -780,7 +778,7 @@ void myIOT2::pub_email(JsonDocument &email)
 	output.toCharArray(email_char, len);
 
 	_pub_generic(_emailTopic, email_char, false, "", true);
-	write_log(email_char, 0, _emailTopic);
+	_write_log(email_char, 0, _emailTopic);
 }
 char *myIOT2::_devName()
 {
@@ -805,9 +803,9 @@ char *myIOT2::_availName()
 void myIOT2::notifyOnline()
 {
 	mqttClient.publish(_availName(), "online", true);
-	write_log("online", 2, _availName());
+	_write_log("online", 2, _availName());
 }
-void myIOT2::firstRun_ResetKeeper(char *msg)
+void myIOT2::_getBootReason_resetKeeper(char *msg)
 {
 	if (strcmp(msg, "online") == 0)
 	{
@@ -842,7 +840,7 @@ uint8_t myIOT2::inline_read(char *inputstr)
 }
 
 // ~~~~~~~~~~ Data Storage ~~~~~~~~~
-void myIOT2::write_log(char *inmsg, uint8_t x, char *topic)
+void myIOT2::_write_log(char *inmsg, uint8_t x, char *topic)
 {
 	char a[strlen(inmsg) + 100];
 
@@ -925,7 +923,7 @@ void myIOT2::sendReset(char *header)
 	char temp[150];
 
 	sprintf(temp, "[%s] - Reset sent", header);
-	write_log(temp, 2, _devName());
+	_write_log(temp, 2, _devName());
 	if (useSerial)
 	{
 		Serial.println(temp);
@@ -972,79 +970,77 @@ void myIOT2::startOTA()
 	// 	m++;
 	// }
 
-	allowOTA_clock = millis();
+	// allowOTA_clock = millis();
 
-	// Port defaults to 8266
-	ArduinoOTA.setPort(8266);
+	// // Port defaults to 8266
+	// ArduinoOTA.setPort(8266);
 
-	// Hostname defaults to esp8266-[ChipID]
-	// ArduinoOTA.setHostname(OTAname);
-	ArduinoOTA.setHostname(deviceTopic);
+	// // Hostname defaults to esp8266-[ChipID]
+	// // ArduinoOTA.setHostname(OTAname);
+	// ArduinoOTA.setHostname(deviceTopic);
 
-	// No authentication by default
-	// ArduinoOTA.setPassword("admin");
+	// // No authentication by default
+	// // ArduinoOTA.setPassword("admin");
 
-	// Password can be set with it's md5 value as well
-	// MD5(admin) = 21232f297a57a5a743894a0e4a801fc3
-	// ArduinoOTA.setPasswordHash("21232f297a57a5a743894a0e4a801fc3");
+	// // Password can be set with it's md5 value as well
+	// // MD5(admin) = 21232f297a57a5a743894a0e4a801fc3
+	// // ArduinoOTA.setPasswordHash("21232f297a57a5a743894a0e4a801fc3");
 
-	ArduinoOTA.onStart([]()
-					   {
-						   String type;
-						   if (ArduinoOTA.getCommand() == U_FLASH)
-						   {
-							   type = "sketch";
-						   }
-						   else
-						   { // U_SPIFFS
-							   type = "filesystem";
-						   }
+	// ArduinoOTA.onStart([]()
+	// 				   {
+	// 					   String type;
+	// 					   if (ArduinoOTA.getCommand() == U_FLASH)
+	// 					   {
+	// 						   type = "sketch";
+	// 					   }
+	// 					   else
+	// 					   { // U_SPIFFS
+	// 						   type = "filesystem";
+	// 					   }
 
-						   // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-						   //    if (useSerial) {
-						   // Serial.println("Start updating " + type);
-						   //    }
-						   // Serial.end();
-					   });
-	if (useSerial)
-	{ // for debug
-		ArduinoOTA.onEnd([]()
-						 { Serial.println("\nEnd"); });
-		ArduinoOTA.onProgress([](unsigned int progress, unsigned int total)
-							  { Serial.printf("Progress: %u%%\r", (progress / (total / 100))); });
-		ArduinoOTA.onError([](ota_error_t error)
-						   {
-							   Serial.printf("Error[%u]: ", error);
-							   if (error == OTA_AUTH_ERROR)
-							   {
-								   Serial.println("Auth Failed");
-							   }
-							   else if (error == OTA_BEGIN_ERROR)
-							   {
-								   Serial.println("Begin Failed");
-							   }
-							   else if (error == OTA_CONNECT_ERROR)
-							   {
-								   Serial.println("Connect Failed");
-							   }
-							   else if (error == OTA_RECEIVE_ERROR)
-							   {
-								   Serial.println("Receive Failed");
-							   }
-							   else if (error == OTA_END_ERROR)
-							   {
-								   Serial.println("End Failed");
-							   }
-						   });
-		// ArduinoOTA.begin();
-		// Serial.println("Ready");
-		// Serial.print("IP address: ");
-		// Serial.println(WiFi.localIP());
-	}
+	// 					   // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+	// 					   //    if (useSerial) {
+	// 					   // Serial.println("Start updating " + type);
+	// 					   //    }
+	// 					   // Serial.end(); });
+	// if (useSerial)
+	// { // for debug
+	// 	ArduinoOTA.onEnd([]()
+	// 					 { Serial.println("\nEnd"); });
+	// 	ArduinoOTA.onProgress([](unsigned int progress, unsigned int total)
+	// 						  { Serial.printf("Progress: %u%%\r", (progress / (total / 100))); });
+	// 	ArduinoOTA.onError([](ota_error_t error)
+	// 					   {
+	// 						   Serial.printf("Error[%u]: ", error);
+	// 						   if (error == OTA_AUTH_ERROR)
+	// 						   {
+	// 							   Serial.println("Auth Failed");
+	// 						   }
+	// 						   else if (error == OTA_BEGIN_ERROR)
+	// 						   {
+	// 							   Serial.println("Begin Failed");
+	// 						   }
+	// 						   else if (error == OTA_CONNECT_ERROR)
+	// 						   {
+	// 							   Serial.println("Connect Failed");
+	// 						   }
+	// 						   else if (error == OTA_RECEIVE_ERROR)
+	// 						   {
+	// 							   Serial.println("Receive Failed");
+	// 						   }
+	// 						   else if (error == OTA_END_ERROR)
+	// 						   {
+	// 							   Serial.println("End Failed");
+	// 						   } });
+	// 	// ArduinoOTA.begin();
+	// 	// Serial.println("Ready");
+	// 	// Serial.print("IP address: ");
+	// 	// Serial.println(WiFi.localIP());
+	// }
 
-	ArduinoOTA.begin();
+	// ArduinoOTA.begin();
 }
-void myIOT2::startWDT()
+void myIOT2::_startWDT()
 {
 #if isESP8266
 	wdt.attach(1, std::bind(&myIOT2::_feedTheDog, this)); // Start WatchDog

@@ -6,6 +6,9 @@ myIOT2 iot;
 #define GROUP_TOPIC "none"
 #define PREFIX_TOPIC "myHome"
 
+MQTT_msg extTopic_msg;
+
+
 void addiotnalMQTT(char *incoming_msg)
 {
     char msg[150];
@@ -33,7 +36,7 @@ void startIOTservices()
     iot.useWDT = true;
     iot.useOTA = true;
     iot.useResetKeeper = true;
-    iot.useextTopic = false;
+    iot.useextTopic = true;
     iot.useDebug = true;
     iot.debug_level = 0;
     iot.useNetworkReset = true;
@@ -45,8 +48,8 @@ void startIOTservices()
     iot.prefixTopic = PREFIX_TOPIC;
     iot.addGroupTopic= GROUP_TOPIC;
 
-
-
+    iot.extTopic_msgArray[0] = &extTopic_msg;
+    iot.extTopic[0] = "myHome/new";
     // strcpy(iot.addGroupTopic, GROUP_TOPIC);
     // strcpy(iot.deviceTopic, DEV_TOPIC);
     // strcpy(iot.prefixTopic, PREFIX_TOPIC);
@@ -68,10 +71,10 @@ void startIOTservices()
     strcpy(iot.addGroupTopic, paramJSON["groupTopic"]);
 #endif
 
-    // char a[50];
-    // sprintf(a, "%s/%s/%s/%s", iot.prefixTopic, iot.addGroupTopic, iot.deviceTopic, DEBUG_TOPIC);
-    // strcpy(iot.extTopic, a);
+        // char a[50];
+        // sprintf(a, "%s/%s/%s/%s", iot.prefixTopic, iot.addGroupTopic, iot.deviceTopic, DEBUG_TOPIC);
+        // strcpy(iot.extTopic, a);
 
-    iot.start_services(addiotnalMQTT);
+        iot.start_services(addiotnalMQTT);
     // iot.start_services(addiotnalMQTT, "dvirz_iot", "GdSd13100301", MQTT_USER, MQTT_PASS, "192.168.2.100");
 }
