@@ -16,7 +16,7 @@ void myIOT2::start_services(cb_func funct, char *ssid, char *password, char *mqt
 	_ssid = ssid;
 	_wifi_pwd = password;
 	ext_mqtt = funct; //redirecting to ex-class function ( defined outside)
-	extDefine = true; // maing sure this ext_func was defined
+	// extDefine = true; // maing sure this ext_func was defined
 
 	if (useSerial)
 	{
@@ -27,7 +27,7 @@ void myIOT2::start_services(cb_func funct, char *ssid, char *password, char *mqt
 	{
 		flog.start(log_ents, log_len);
 	}
-	start_network_services();
+	_start_network_services();
 	if (useWDT)
 	{
 		startWDT();
@@ -78,7 +78,7 @@ void myIOT2::looper()
 	{
 		_acceptOTA();
 	}
-	if (network_looper() == 0)
+	if (_network_looper() == 0)
 	{
 		if (noNetwork_Clock > 0 && useNetworkReset)
 		{ // no Wifi or no MQTT will cause a reset
@@ -103,7 +103,7 @@ void myIOT2::looper()
 }
 
 // ~~~~~~~ Wifi functions ~~~~~~~
-bool myIOT2::startWifi(char *ssid, char *password)
+bool myIOT2::_startWifi(char *ssid, char *password)
 {
 	long startWifiConnection = millis();
 
@@ -158,15 +158,15 @@ bool myIOT2::startWifi(char *ssid, char *password)
 		return 1;
 	}
 }
-void myIOT2::start_network_services()
+void myIOT2::_start_network_services()
 {
-	if (startWifi(_ssid, _wifi_pwd))
+	if (_startWifi(_ssid, _wifi_pwd))
 	{
 		_startNTP();
-		startMQTT();
+		_startMQTT();
 	}
 }
-bool myIOT2::network_looper()
+bool myIOT2::_network_looper()
 {
 	const uint8_t time_retry_mqtt = 5;
 	static unsigned long _lastReco_try = 0;
@@ -228,7 +228,7 @@ bool myIOT2::network_looper()
 	{
 		if (millis() > noNetwork_Clock + retryConnectWiFi * MS2MINUTES && millis() > _lastReco_try + retryConnectWiFi * MS2MINUTES)
 		{
-			if (!startWifi(_ssid, _wifi_pwd))
+			if (!_startWifi(_ssid, _wifi_pwd))
 			{ // failed to reconnect ?
 				if (noNetwork_Clock == 0)
 				{ // first time when NO NETWORK ?
@@ -270,13 +270,9 @@ bool myIOT2::network_looper()
 }
 
 // ~~~~~~~ NTP & Clock  ~~~~~~~~
-// void myIOT2::start_clock()
-// {
-// 	_startNTP();
-// }
 void myIOT2::_startNTP(const char *ntpServer)
 {
-	configTime(TZ_Asia_Jerusalem, ntpServer);				  //configuring time offset and an NTP server
+	configTime(TZ_Asia_Jerusalem, ntpServer); //configuring time offset and an NTP server
 	unsigned long startLoop = millis();
 	while (now() < 1627735850 && millis() - startLoop < 5000) /* while in 2021 */
 	{
@@ -284,15 +280,17 @@ void myIOT2::_startNTP(const char *ntpServer)
 	}
 	delay(100);
 }
-void myIOT2::get_timeStamp(time_t t)
+char *myIOT2::get_timeStamp(time_t t)
 {
 	if (t == 0)
 	{
 		t = now();
 	}
 
+	char *ret = new char[20];
 	struct tm *tm = localtime(&t);
-	sprintf(timeStamp, "%04d-%02d-%02d %02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+	sprintf(ret, "%04d-%02d-%02d %02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+	return ret;
 }
 void myIOT2::return_clock(char ret_tuple[20])
 {
@@ -361,7 +359,7 @@ void myIOT2::selectMQTTbroker()
 		Serial.println(_server);
 	}
 }
-void myIOT2::startMQTT()
+void myIOT2::_startMQTT()
 {
 	selectMQTTbroker();
 	mqttClient.setCallback(std::bind(&myIOT2::callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
@@ -494,7 +492,7 @@ void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 		}
 	}
 
-	if (strcmp(topic,_availName())==0 && useResetKeeper && firstRun)
+	if (strcmp(topic, _availName()) == 0 && useResetKeeper && firstRun)
 	{
 		firstRun_ResetKeeper(incoming_msg);
 	}
@@ -610,11 +608,7 @@ void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 				char m[13];
 				clklog.readline(i, m);
 				time_t tmptime = atol(m);
-				Serial.println(m);
-				Serial.println(tmptime);
-
-				get_timeStamp(tmptime);
-				strcat(t, timeStamp);
+				strcat(t, get_timeStamp(tmptime));
 			}
 			strcat(t, "}");
 			pub_debug(t);
@@ -641,10 +635,7 @@ void myIOT2::callback(char *topic, uint8_t *payload, unsigned int length)
 
 	else
 	{
-		if (extDefine)
-		{ // if this function was define then:
-			ext_mqtt(incoming_msg);
-		}
+		ext_mqtt(incoming_msg);
 	}
 }
 void myIOT2::_pub_generic(char *topic, char *inmsg, bool retain, char *devname, bool bare)
@@ -657,14 +648,13 @@ void myIOT2::_pub_generic(char *topic, char *inmsg, bool retain, char *devname, 
 
 	if (!bare)
 	{
-		get_timeStamp();
 		if (strcmp(devname, "") == 0)
 		{
-			sprintf(header, "[%s] [%s] ", timeStamp, _devName());
+			sprintf(header, "[%s] [%s] ", get_timeStamp(), _devName());
 		}
 		else
 		{
-			sprintf(header, "[%s] [%s] ", timeStamp, devname);
+			sprintf(header, "[%s] [%s] ", get_timeStamp(), devname);
 		}
 		lenhdr = strlen(header);
 	}
@@ -762,7 +752,6 @@ void myIOT2::pub_sms(JsonDocument &sms)
 	char _smsTopic[MaxTopicLength2];
 	snprintf(_smsTopic, MaxTopicLength2, "%s/sms", prefixTopic);
 	String output;
-	get_timeStamp();
 	serializeJson(sms, output);
 	int len = output.length() + 1;
 	char sms_char[len];
@@ -785,7 +774,6 @@ void myIOT2::pub_email(JsonDocument &email)
 	char _emailTopic[MaxTopicLength2];
 	snprintf(_emailTopic, MaxTopicLength2, "%s/email", prefixTopic);
 	String output;
-	get_timeStamp();
 	serializeJson(email, output);
 	int len = output.length() + 1;
 	char email_char[len];
@@ -860,8 +848,7 @@ void myIOT2::write_log(char *inmsg, uint8_t x, char *topic)
 
 	if (useDebug && debug_level <= x)
 	{
-		get_timeStamp();
-		sprintf(a, ">>%s<< [%s] %s", timeStamp, topic, inmsg);
+		sprintf(a, ">>%s<< [%s] %s", get_timeStamp(), topic, inmsg);
 		flog.write(a);
 	}
 }

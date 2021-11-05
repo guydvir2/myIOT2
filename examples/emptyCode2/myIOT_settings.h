@@ -39,9 +39,17 @@ void startIOTservices()
     iot.useNetworkReset = true;
     iot.noNetwork_reset = 10;
     iot.useBootClockLog = true;
-    strcpy(iot.deviceTopic, DEV_TOPIC);
-    strcpy(iot.prefixTopic, PREFIX_TOPIC);
-    strcpy(iot.addGroupTopic, GROUP_TOPIC);
+    iot.useAltermqttServer = false;
+    iot.ignore_boot_msg = false;
+    iot.deviceTopic = DEV_TOPIC;
+    iot.prefixTopic = PREFIX_TOPIC;
+    iot.addGroupTopic= GROUP_TOPIC;
+
+
+
+    // strcpy(iot.addGroupTopic, GROUP_TOPIC);
+    // strcpy(iot.deviceTopic, DEV_TOPIC);
+    // strcpy(iot.prefixTopic, PREFIX_TOPIC);
 
 #elif USE_SIMPLE_IOT == 0
 

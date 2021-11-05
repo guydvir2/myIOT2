@@ -20,11 +20,11 @@
 #include "secretsIOT8266.h"
 #include <myLOG.h>
 #include <myJSON.h>
-#include <TZ.h>
 
 #if isESP8266
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h> // OTA libraries
+#include <TZ.h>
 #elif isESP32
 #include <WiFi.h>
 #include <ESPmDNS.h>
@@ -61,7 +61,6 @@ public:
     bool useSerial = false;
     bool useWDT = true;
     bool useOTA = true;
-    bool extDefine = false; // must to set to true in order to use EXtMQTT
     bool useResetKeeper = false;
     bool useextTopic = false;
     bool useNetworkReset = true; // allow reset due to no-network timeout
@@ -72,8 +71,6 @@ public:
     uint8_t debug_level = 0;      // 0- All, 1- system states; 2- log only
     uint8_t noNetwork_reset = 30; // minutes
 
-    MQTT_msg *extTopic_msgArray[1] = {nullptr};
-
     uint8_t mqtt_detect_reset = 2;
     static const uint8_t _size_extTopic = 2;
     static const uint8_t bootlog_len = 10;     // nubmer of boot clock records
@@ -81,15 +78,9 @@ public:
     static const uint8_t MaxTopicLength = 20;  //topics
     static const uint8_t MaxTopicLength2 = 64; //topics
     char inline_param[num_param][20];          //values from user
-    char *prefixTopic = new char[MaxTopicLength];
-    char *deviceTopic = new char[MaxTopicLength];
-    char *addGroupTopic = new char[MaxTopicLength];
-
-    // char prefixTopic[MaxTopicLength];
-    // char deviceTopic[MaxTopicLength];
-    // char addGroupTopic[MaxTopicLength];
+    char *prefixTopic, *deviceTopic, *addGroupTopic;
+    MQTT_msg *extTopic_msgArray[1] = {nullptr};
     char *extTopic[_size_extTopic] = {nullptr, nullptr};
-    char timeStamp[20];
     bool extTopic_newmsg_flag = false;
 
 private:
@@ -141,7 +132,7 @@ public: /* Functions */
     void pub_email(JsonDocument &email);
     void clear_ExtTopicbuff();
     long get_bootclockLOG(int x);
-    void get_timeStamp(time_t t = 0);
+    char *get_timeStamp(time_t t = 0);
     void convert_epoch2clock(long t1, long t2, char *time_str, char *days_str);
     time_t now();
 
@@ -151,13 +142,13 @@ public: /* Functions */
 
 private: /* Functions */
     // ~~~~~~~~~~~~~~WIFI ~~~~~~~~~~~~~~~~~~~~~
-    bool startWifi(char *ssid, char *password);
-    bool network_looper();
-    void start_network_services();
+    bool _startWifi(char *ssid, char *password);
+    bool _network_looper();
+    void _start_network_services();
     void _startNTP(const char *ntpServer = "pool.ntp.org");
 
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    void startMQTT();
+    void _startMQTT();
     void selectMQTTbroker();
     bool subscribeMQTT();
     void createTopics();
