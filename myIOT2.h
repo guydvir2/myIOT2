@@ -68,7 +68,7 @@ public:
     bool useBootClockLog = false;
     bool ignore_boot_msg = false;
     bool useAltermqttServer = false;
-    
+
     uint8_t debug_level = 0;      // 0- All, 1- system states; 2- log only
     uint8_t noNetwork_reset = 30; // minutes
 
@@ -76,34 +76,37 @@ public:
     static const uint8_t _size_extTopic = 2;
     static const uint8_t bootlog_len = 10;     // nubmer of boot clock records
     static const uint8_t num_param = 4;        // MQTT parameter count
-    static const uint8_t MaxTopicLength = 20;  //topics
-    static const uint8_t MaxTopicLength2 = 64; //topics
-    char inline_param[num_param][20];          //values from user
-    
+    static const uint8_t MaxTopicLength = 15;  // topics
+    static const uint8_t MaxTopicLength2 = 3 * MaxTopicLength; // topics
+    char inline_param[num_param][20];          // values from user
+
     // MQTT Topic variables
-    char *prefixTopic, *deviceTopic, *addGroupTopic;
+    char *prefixTopic = (char *)malloc(MaxTopicLength);
+    char *deviceTopic = (char *)malloc(MaxTopicLength);
+    char *addGroupTopic = (char *)malloc(MaxTopicLength);
     char *extTopic[_size_extTopic];
     bool extTopic_newmsg_flag = false;
+
     MQTT_msg *extTopic_msgArray[1] = {nullptr};
 
 private:
     // WiFi MQTT broker parameters
-    char *_ssid;
-    char *_wifi_pwd;
-    char *_mqtt_server;
+    char *_ssid = (char *)malloc(MaxTopicLength);
+    char *_wifi_pwd = (char *)malloc(MaxTopicLength);
+    char *_mqtt_server = (char *)malloc(MaxTopicLength);
     char *_mqtt_server2 = MQTT_SERVER2;
-    char *_mqtt_user = "";
-    char *_mqtt_pwd = "";
+    char *_mqtt_user = (char *)malloc(MaxTopicLength);
+    char *_mqtt_pwd = (char *)malloc(MaxTopicLength);
     cb_func ext_mqtt;
 
     // time interval parameters
     const uint8_t WIFItimeOut = 1;          // 30 sec try to connect WiFi
-    const uint8_t OTA_upload_interval = 10; // 10 minute to try OTA
     const uint8_t retryConnectWiFi = 1;     // 1 minuter between fail Wifi reconnect reties
+    const uint8_t OTA_upload_interval = 10; // 10 minute to try OTA
 
     uint8_t time2Reset_noNetwork = noNetwork_reset; // minutues pass without any network
     volatile uint8_t wdtResetCounter = 0;
-    const uint8_t wdtMaxRetries = 60;  //seconds to bITE
+    const uint8_t wdtMaxRetries = 60;  // seconds to bITE
     unsigned long noNetwork_Clock = 0; // clock
     unsigned long allowOTA_clock = 0;  // clock
 

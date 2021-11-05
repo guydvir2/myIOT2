@@ -15,16 +15,11 @@ void setup()
         startIOTservices();
         endRead_parameters();
 #endif
-        Serial.println("BOOT!!!!");
 }
 
 void loop()
 {
         iot.looper();
         delay(100);
-        if (iot.extTopic_newmsg_flag)
-        {
-                Serial.println(iot.extTopic_msgArray[0]->msg);
-                iot.clear_ExtTopicbuff();
-        }
+        extTopic_looper();
 }

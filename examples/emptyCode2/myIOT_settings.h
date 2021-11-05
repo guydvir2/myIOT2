@@ -2,12 +2,11 @@
 
 myIOT2 iot;
 
-#define DEV_TOPIC "empty"
+#define DEV_TOPIC "empty2"
 #define GROUP_TOPIC "none"
 #define PREFIX_TOPIC "myHome"
 
-MQTT_msg extTopic_msg;
-
+MQTT_msg extTopic_msg; /* ExtTopic*/
 
 void addiotnalMQTT(char *incoming_msg)
 {
@@ -46,13 +45,10 @@ void startIOTservices()
     iot.ignore_boot_msg = false;
     iot.deviceTopic = DEV_TOPIC;
     iot.prefixTopic = PREFIX_TOPIC;
-    iot.addGroupTopic= GROUP_TOPIC;
+    iot.addGroupTopic = GROUP_TOPIC;
 
     iot.extTopic_msgArray[0] = &extTopic_msg;
     iot.extTopic[0] = "myHome/new";
-    // strcpy(iot.addGroupTopic, GROUP_TOPIC);
-    // strcpy(iot.deviceTopic, DEV_TOPIC);
-    // strcpy(iot.prefixTopic, PREFIX_TOPIC);
 
 #elif USE_SIMPLE_IOT == 0
 
@@ -70,11 +66,14 @@ void startIOTservices()
     strcpy(iot.prefixTopic, paramJSON["prefixTopic"]);
     strcpy(iot.addGroupTopic, paramJSON["groupTopic"]);
 #endif
+    iot.start_services(addiotnalMQTT);
+}
 
-        // char a[50];
-        // sprintf(a, "%s/%s/%s/%s", iot.prefixTopic, iot.addGroupTopic, iot.deviceTopic, DEBUG_TOPIC);
-        // strcpy(iot.extTopic, a);
-
-        iot.start_services(addiotnalMQTT);
-    // iot.start_services(addiotnalMQTT, "dvirz_iot", "GdSd13100301", MQTT_USER, MQTT_PASS, "192.168.2.100");
+void extTopic_looper()
+{
+    if (iot.extTopic_newmsg_flag)
+    {
+        Serial.println(iot.extTopic_msgArray[0]->msg);
+        iot.clear_ExtTopicbuff();
+    }
 }
