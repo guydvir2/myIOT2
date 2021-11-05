@@ -20,6 +20,7 @@
 #include "secretsIOT8266.h"
 #include <myLOG.h>
 #include <myJSON.h>
+#include <TZ.h>
 
 #if isESP8266
 #include <ESP8266WiFi.h>
@@ -32,11 +33,17 @@
 
 // ~~~~define generic cb function~~~~
 typedef void (*cb_func)(char msg1[50]);
+struct MQTT_msg
+{
+    char from_topic[40];
+    char msg[200];
+    char device_topic[40];
+};
 
 class myIOT2
 {
 #define MS2MINUTES 60000UL
-public: /* Classes */
+public:
     WiFiClient espClient;
     PubSubClient mqttClient;
 #if isESP8266
@@ -46,7 +53,7 @@ public: /* Classes */
     flashLOG clklog;
 
 public:
-    const char *ver = "iot_v1.12";
+    const char *ver = "iot_v1.2";
     char *myIOT_paramfile = "/myIOT_param.json";
 
     /*Variables */
@@ -65,13 +72,8 @@ public:
     uint8_t debug_level = 0;      // 0- All, 1- system states; 2- log only
     uint8_t noNetwork_reset = 30; // minutes
 
-    struct MQTT_msg
-    {
-        char from_topic[40];
-        char msg[200];
-        char device_topic[40];
-    };
-    MQTT_msg extTopic_msg;
+    MQTT_msg *extTopic_msgArray[1] = {nullptr};
+
     uint8_t mqtt_detect_reset = 2;
     static const uint8_t _size_extTopic = 2;
     static const uint8_t bootlog_len = 10;     // nubmer of boot clock records
@@ -79,11 +81,14 @@ public:
     static const uint8_t MaxTopicLength = 20;  //topics
     static const uint8_t MaxTopicLength2 = 64; //topics
     char inline_param[num_param][20];          //values from user
-    char prefixTopic[MaxTopicLength];
-    char deviceTopic[MaxTopicLength];
-    char addGroupTopic[MaxTopicLength];
+    char *prefixTopic = new char[MaxTopicLength];
+    char *deviceTopic = new char[MaxTopicLength];
+    char *addGroupTopic = new char[MaxTopicLength];
+
+    // char prefixTopic[MaxTopicLength];
+    // char deviceTopic[MaxTopicLength];
+    // char addGroupTopic[MaxTopicLength];
     char *extTopic[_size_extTopic] = {nullptr, nullptr};
-    char mqqt_ext_buffer[3][150];
     char timeStamp[20];
     bool extTopic_newmsg_flag = false;
 
@@ -108,20 +113,6 @@ private:
     char *_mqtt_server2 = MQTT_SERVER2;
     char *_mqtt_user = "";
     char *_mqtt_pwd = "";
-
-    // MQTT topics
-    // char _msgTopic[MaxTopicLength2];
-    // char _groupTopic[MaxTopicLength2];
-    // char _logTopic[MaxTopicLength2];
-    char _deviceName[MaxTopicLength2];
-    // char _availTopic[MaxTopicLength2];
-    // char _stateTopic[MaxTopicLength2];
-    // char _stateTopic2[MaxTopicLength2];
-    // char _signalTopic[MaxTopicLength2];
-    // char _debugTopic[MaxTopicLength2];
-    // char _smsTopic[MaxTopicLength2];
-    // char _emailTopic[MaxTopicLength2];
-    // char *topicArry[4] = {_deviceName, _groupTopic, _availTopic, addGroupTopic};
 
     // holds informamtion
     bool firstRun = true;
@@ -161,10 +152,9 @@ public: /* Functions */
 private: /* Functions */
     // ~~~~~~~~~~~~~~WIFI ~~~~~~~~~~~~~~~~~~~~~
     bool startWifi(char *ssid, char *password);
-    // void start_clock();
     bool network_looper();
     void start_network_services();
-    void _startNTP(const int gmtOffset_sec = 2 * 3600, const int daylightOffset_sec = 3600, const char *ntpServer = "pool.ntp.org");
+    void _startNTP(const char *ntpServer = "pool.ntp.org");
 
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     void startMQTT();
@@ -176,6 +166,7 @@ private: /* Functions */
     void write_log(char *inmsg, uint8_t x, char *topic = "_deviceName");
     void _pub_generic(char *topic, char *inmsg, bool retain = false, char *devname = "", bool bare = false);
     char *_devName();
+    char *_availName();
 
     // ~~~~~~~ Services  ~~~~~~~~~~~~~~~~~~~~~~~~
     void startWDT();

@@ -8,7 +8,7 @@
 
 void setup()
 {
-        // Serial.begin(115200);
+        MQTT_msg a;
 #if USE_SIMPLE_IOT == 1
         startIOTservices();
 #elif USE_SIMPLE_IOT == 0
