@@ -29,6 +29,7 @@
 #include <WiFi.h>
 #include <ESPmDNS.h>
 #include <ESP32Ping.h>
+#define TZ_Asia_Jerusalem PSTR("IST-2IDT,M3.4.4/26,M10.5.0")
 #endif
 
 // ~~~~define generic cb function~~~~
@@ -53,7 +54,7 @@ public:
     flashLOG clklog;
 
 public:
-    const char *ver = "iot_v1.2";
+    const char *ver = "iot_v1.4";
     char *myIOT_paramfile = "/myIOT_param.json";
 
     /*Variables */

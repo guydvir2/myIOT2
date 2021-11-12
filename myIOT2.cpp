@@ -271,7 +271,11 @@ bool myIOT2::_network_looper()
 // ~~~~~~~ NTP & Clock  ~~~~~~~~
 void myIOT2::_startNTP(const char *ntpServer)
 {
+#if isESP8266
 	configTime(TZ_Asia_Jerusalem, ntpServer); // configuring time offset and an NTP server
+#elif isESP32
+	configTzTime(TZ_Asia_Jerusalem, ntpServer);
+#endif
 	unsigned long startLoop = millis();
 	while (now() < 1627735850 && millis() - startLoop < 5000) /* while in 2021 */
 	{
@@ -392,7 +396,7 @@ bool myIOT2::_subscribeMQTT()
 			strcpy(addGroupTopic, "");
 		}
 
-		char *topicArry[4] = {_devName(), _groupTopic, _availName(), _addgroupTopic};
+		char *topicArry[4] = {_devName(), _groupTopic, _availName(), addGroupTopic};
 
 		if (mqttClient.connect(tempname, _mqtt_user, _mqtt_pwd, _availName(), 0, true, "offline"))
 		{
@@ -998,12 +1002,12 @@ void myIOT2::startOTA()
 							   type = "filesystem";
 						   }
 
-						   // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+						   /* NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
 						   //    if (useSerial) {
 						   // Serial.println("Start updating " + type);
 						   //    }
-						   // Serial.end();
-					   });
+						   // Serial.end(); 
+						   */ });
 	if (useSerial)
 	{ // for debug
 		ArduinoOTA.onEnd([]()
