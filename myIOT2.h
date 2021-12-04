@@ -24,19 +24,27 @@
 #if isESP8266
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h> // OTA libraries
+#include <TZ.h>
 #elif isESP32
 #include <WiFi.h>
 #include <ESPmDNS.h>
 #include <ESP32Ping.h>
+#define TZ_Asia_Jerusalem PSTR("IST-2IDT,M3.4.4/26,M10.5.0")
 #endif
 
 // ~~~~define generic cb function~~~~
 typedef void (*cb_func)(char msg1[50]);
+struct MQTT_msg
+{
+    char from_topic[40];
+    char msg[200];
+    char device_topic[40];
+};
 
 class myIOT2
 {
 #define MS2MINUTES 60000UL
-public: /* Classes */
+public:
     WiFiClient espClient;
     PubSubClient mqttClient;
 #if isESP8266
@@ -46,85 +54,66 @@ public: /* Classes */
     flashLOG clklog;
 
 public:
-    const char *ver = "iot_v1.12";
+    const char *ver = "iot_v1.4";
     char *myIOT_paramfile = "/myIOT_param.json";
 
     /*Variables */
     // ~~~~~~ Services ~~~~~~~~~
-    bool useSerial = false;
     bool useWDT = true;
     bool useOTA = true;
-    bool extDefine = false; // must to set to true in order to use EXtMQTT
-    bool useResetKeeper = false;
-    bool useextTopic = false;
-    bool useNetworkReset = true; // allow reset due to no-network timeout
-    bool useAltermqttServer = false;
     bool useDebug = false;
+    bool useSerial = false;
+    bool useextTopic = false;
+    bool useResetKeeper = false;
+    bool useNetworkReset = true; // allow reset due to no-network timeout
     bool useBootClockLog = false;
     bool ignore_boot_msg = false;
+    bool useAltermqttServer = false;
+
     uint8_t debug_level = 0;      // 0- All, 1- system states; 2- log only
     uint8_t noNetwork_reset = 30; // minutes
 
-    struct MQTT_msg
-    {
-        char msg[200];
-        char from_topic[40];
-        char device_topic[40];
-    };
-    MQTT_msg extTopic_msg;
     uint8_t mqtt_detect_reset = 2;
     static const uint8_t _size_extTopic = 2;
-    static const uint8_t bootlog_len = 10;     // nubmer of boot clock records
-    static const uint8_t num_param = 4;        // MQTT parameter count
-    static const uint8_t MaxTopicLength = 20;  //topics
-    static const uint8_t MaxTopicLength2 = 64; //topics
-    char inline_param[num_param][20];          //values from user
-    char prefixTopic[MaxTopicLength];
-    char deviceTopic[MaxTopicLength];
-    char addGroupTopic[MaxTopicLength];
-    char *extTopic[_size_extTopic] = {nullptr, nullptr};
-    char mqqt_ext_buffer[3][150];
-    char timeStamp[20];
+    static const uint8_t bootlog_len = 10;                     // nubmer of boot clock records
+    static const uint8_t num_param = 4;                        // MQTT parameter count
+    static const uint8_t MaxTopicLength = 15;                  // topics
+    static const uint8_t MaxTopicLength2 = 3 * MaxTopicLength; // topics
+    char inline_param[num_param][20];                          // values from user
+
+    // MQTT Topic variables
+    char *prefixTopic = (char *)malloc(MaxTopicLength);
+    char *deviceTopic = (char *)malloc(MaxTopicLength);
+    char *addGroupTopic = (char *)malloc(MaxTopicLength);
+    char *extTopic[_size_extTopic];
     bool extTopic_newmsg_flag = false;
 
+    MQTT_msg *extTopic_msgArray[1] = {nullptr};
+
 private:
-    char *_ssid;
-    char *_wifi_pwd;
+    // WiFi MQTT broker parameters
+    char *_ssid = (char *)malloc(MaxTopicLength);
+    char *_wifi_pwd = (char *)malloc(MaxTopicLength);
+    char *_mqtt_server = (char *)malloc(MaxTopicLength);
+    char *_mqtt_server2 = MQTT_SERVER2;
+    char *_mqtt_user = (char *)malloc(MaxTopicLength);
+    char *_mqtt_pwd = (char *)malloc(MaxTopicLength);
     cb_func ext_mqtt;
 
     // time interval parameters
-    const uint8_t WIFItimeOut = 1;          // 30 sec try to connect WiFi
+    const uint8_t WIFItimeOut = 20;         // 30 sec try to connect WiFi
+    const uint8_t retryConnectWiFi = 1;     // minutes between fail Wifi reconnect reties
     const uint8_t OTA_upload_interval = 10; // 10 minute to try OTA
-    const uint8_t retryConnectWiFi = 1;     // 1 minuter between fail Wifi reconnect reties
 
     uint8_t time2Reset_noNetwork = noNetwork_reset; // minutues pass without any network
     volatile uint8_t wdtResetCounter = 0;
-    const uint8_t wdtMaxRetries = 60;  //seconds to bITE
+    const uint8_t wdtMaxRetries = 60;  // seconds to bITE
     unsigned long noNetwork_Clock = 0; // clock
     unsigned long allowOTA_clock = 0;  // clock
 
-    //MQTT broker parameters
-    char *_mqtt_server;
-    char *_mqtt_server2 = MQTT_SERVER2;
-    char *_mqtt_user = "";
-    char *_mqtt_pwd = "";
-
-    // MQTT topics
-    char _msgTopic[MaxTopicLength2];
-    char _groupTopic[MaxTopicLength2];
-    char _logTopic[MaxTopicLength2];
-    char _deviceName[MaxTopicLength2];
-    char _availTopic[MaxTopicLength2];
-    char _stateTopic[MaxTopicLength2];
-    char _stateTopic2[MaxTopicLength2];
-    char _signalTopic[MaxTopicLength2];
-    char _debugTopic[MaxTopicLength2];
-    char _smsTopic[MaxTopicLength2];
-    char _emailTopic[MaxTopicLength2];
-    char *topicArry[4] = {_deviceName, _groupTopic, _availTopic, addGroupTopic};
-
     // holds informamtion
     bool firstRun = true;
+    bool _Wifi_and_mqtt_OK = false;
 
 public: /* Functions */
     myIOT2();
@@ -150,7 +139,7 @@ public: /* Functions */
     void pub_email(JsonDocument &email);
     void clear_ExtTopicbuff();
     long get_bootclockLOG(int x);
-    void get_timeStamp(time_t t = 0);
+    char *get_timeStamp(time_t t = 0);
     void convert_epoch2clock(long t1, long t2, char *time_str, char *days_str);
     time_t now();
 
@@ -158,26 +147,26 @@ public: /* Functions */
     bool read_fPars(char *filename, String &defs, JsonDocument &DOC, int JSIZE = 500);
     char *export_fPars(char *filename, JsonDocument &DOC, int JSIZE = 500);
 
-private: /* Functions */
+private:
     // ~~~~~~~~~~~~~~WIFI ~~~~~~~~~~~~~~~~~~~~~
-    bool startWifi(char *ssid, char *password);
-    void start_clock();
-    bool network_looper();
-    void start_network_services();
-    void _startNTP(const int gmtOffset_sec = 2 * 3600, const int daylightOffset_sec = 3600, const char *ntpServer = "pool.ntp.org");
+    bool _startWifi(char *ssid, char *password);
+    bool _network_looper();
+    bool _start_network_services();
+    void _startNTP(const char *ntpServer = "pool.ntp.org");
 
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    void startMQTT();
-    void selectMQTTbroker();
-    bool subscribeMQTT();
-    void createTopics();
-    void callback(char *topic, uint8_t *payload, unsigned int length);
-    void firstRun_ResetKeeper(char *msg);
-    void write_log(char *inmsg, uint8_t x, char *topic = "_deviceName");
+    bool _startMQTT();
+    void _selectMQTTbroker();
+    bool _subscribeMQTT();
+    void _MQTTcb(char *topic, uint8_t *payload, unsigned int length);
+    void _getBootReason_resetKeeper(char *msg);
+    void _write_log(char *inmsg, uint8_t x, char *topic = "_deviceName");
     void _pub_generic(char *topic, char *inmsg, bool retain = false, char *devname = "", bool bare = false);
+    char *_devName();
+    char *_availName();
 
     // ~~~~~~~ Services  ~~~~~~~~~~~~~~~~~~~~~~~~
-    void startWDT();
+    void _startWDT();
     void _acceptOTA();
     void _update_bootclockLOG();
     void _post_boot_check();
