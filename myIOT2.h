@@ -75,11 +75,11 @@ public:
 
     uint8_t mqtt_detect_reset = 2;
     static const uint8_t _size_extTopic = 2;
-    static const uint8_t bootlog_len = 10;     // nubmer of boot clock records
-    static const uint8_t num_param = 4;        // MQTT parameter count
-    static const uint8_t MaxTopicLength = 15;  // topics
+    static const uint8_t bootlog_len = 10;                     // nubmer of boot clock records
+    static const uint8_t num_param = 4;                        // MQTT parameter count
+    static const uint8_t MaxTopicLength = 15;                  // topics
     static const uint8_t MaxTopicLength2 = 3 * MaxTopicLength; // topics
-    char inline_param[num_param][20];          // values from user
+    char inline_param[num_param][20];                          // values from user
 
     // MQTT Topic variables
     char *prefixTopic = (char *)malloc(MaxTopicLength);
@@ -101,8 +101,8 @@ private:
     cb_func ext_mqtt;
 
     // time interval parameters
-    const uint8_t WIFItimeOut = 1;          // 30 sec try to connect WiFi
-    const uint8_t retryConnectWiFi = 1;     // 1 minuter between fail Wifi reconnect reties
+    const uint8_t WIFItimeOut = 20;         // 30 sec try to connect WiFi
+    const uint8_t retryConnectWiFi = 1;     // minutes between fail Wifi reconnect reties
     const uint8_t OTA_upload_interval = 10; // 10 minute to try OTA
 
     uint8_t time2Reset_noNetwork = noNetwork_reset; // minutues pass without any network
@@ -113,6 +113,7 @@ private:
 
     // holds informamtion
     bool firstRun = true;
+    bool _Wifi_and_mqtt_OK = false;
 
 public: /* Functions */
     myIOT2();
@@ -150,11 +151,11 @@ private:
     // ~~~~~~~~~~~~~~WIFI ~~~~~~~~~~~~~~~~~~~~~
     bool _startWifi(char *ssid, char *password);
     bool _network_looper();
-    void _start_network_services();
+    bool _start_network_services();
     void _startNTP(const char *ntpServer = "pool.ntp.org");
 
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    void _startMQTT();
+    bool _startMQTT();
     void _selectMQTTbroker();
     bool _subscribeMQTT();
     void _MQTTcb(char *topic, uint8_t *payload, unsigned int length);

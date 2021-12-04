@@ -3,7 +3,7 @@
 myIOT2 iot;
 
 #define DEV_TOPIC "empty2"
-#define GROUP_TOPIC "none"
+#define GROUP_TOPIC ""
 #define PREFIX_TOPIC "myHome"
 
 MQTT_msg extTopic_msg; /* ExtTopic*/
@@ -35,12 +35,12 @@ void startIOTservices()
     iot.useWDT = true;
     iot.useOTA = true;
     iot.useResetKeeper = true;
-    iot.useextTopic = true;
-    iot.useDebug = true;
+    iot.useextTopic = false;
+    iot.useDebug = false;
     iot.debug_level = 0;
     iot.useNetworkReset = true;
     iot.noNetwork_reset = 10;
-    iot.useBootClockLog = true;
+    iot.useBootClockLog = false;
     iot.useAltermqttServer = false;
     iot.ignore_boot_msg = false;
     iot.deviceTopic = DEV_TOPIC;
@@ -51,7 +51,6 @@ void startIOTservices()
     iot.extTopic[0] = "myHome/new";
 
 #elif USE_SIMPLE_IOT == 0
-
     iot.useSerial = paramJSON["useSerial"];
     iot.useWDT = paramJSON["useWDT"];
     iot.useOTA = paramJSON["useOTA"];
@@ -66,6 +65,7 @@ void startIOTservices()
     strcpy(iot.prefixTopic, paramJSON["prefixTopic"]);
     strcpy(iot.addGroupTopic, paramJSON["groupTopic"]);
 #endif
+    // iot.start_services(addiotnalMQTT, "dvirz_iot", "GdSd13100301", "guy", "kupelu9e", "192.168.2.100");
     iot.start_services(addiotnalMQTT);
 }
 

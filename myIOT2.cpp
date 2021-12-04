@@ -77,7 +77,7 @@ void myIOT2::looper()
 	{
 		_acceptOTA();
 	}
-	if (_network_looper() == 0)
+	if (_network_looper() == false)
 	{
 		if (noNetwork_Clock > 0 && useNetworkReset)
 		{ // no Wifi or no MQTT will cause a reset
@@ -87,7 +87,7 @@ void myIOT2::looper()
 			}
 		}
 	}
-	if (useAltermqttServer == true)
+	if (useAltermqttServer)
 	{
 		if (millis() > time2Reset_noNetwork * MS2MINUTES)
 		{
@@ -119,9 +119,9 @@ bool myIOT2::_startWifi(char *ssid, char *password)
 	WiFi.setAutoReconnect(true); // <-- BACK
 
 	// in case of reboot - timeOUT to wifi
-	while (WiFi.status() != WL_CONNECTED && millis() < WIFItimeOut * MS2MINUTES + startWifiConnection)
+	while (WiFi.status() != WL_CONNECTED && (millis() < WIFItimeOut * MS2MINUTES / 60 + startWifiConnection))
 	{
-		delay(200);
+		delay(100);
 		if (useSerial)
 		{
 			Serial.print(".");
@@ -157,32 +157,93 @@ bool myIOT2::_startWifi(char *ssid, char *password)
 		return 1;
 	}
 }
-void myIOT2::_start_network_services()
+bool myIOT2::_start_network_services()
 {
 	if (_startWifi(_ssid, _wifi_pwd))
 	{
 		_startNTP();
 		_startMQTT();
+		_Wifi_and_mqtt_OK = true;
 	}
+	return _Wifi_and_mqtt_OK;
 }
 bool myIOT2::_network_looper()
 {
-	const uint8_t time_retry_mqtt = 5;
 	static unsigned long _lastReco_try = 0;
-	if (WiFi.status() == WL_CONNECTED) /* wifi is ok */
+	const uint8_t time_retry_mqtt = 10;
+
+	bool cur_mqtt_status = mqttClient.connected();
+	bool cur_wifi_status = WiFi.isConnected();
+
+	if (cur_mqtt_status && cur_wifi_status) /* All good */
 	{
-		if (mqttClient.connected()) /* MQTT is OK */
+		mqttClient.loop();
+		noNetwork_Clock = 0;
+		return 1;
+	}
+	else if (cur_wifi_status == false) /* No WiFi */
+	{
+		if (noNetwork_Clock == 0) /* First Time */
 		{
-			mqttClient.loop();
-			noNetwork_Clock = 0;
-			return 1;
+			noNetwork_Clock = millis();
+			return 0;
 		}
-		else /* Not connected mqtt*/
+		else
 		{
-			if (noNetwork_Clock == 0 || millis() - _lastReco_try > 1000 * time_retry_mqtt)
+			if (millis() > _lastReco_try + retryConnectWiFi * MS2MINUTES) /* try ater time interval */
 			{
-				_lastReco_try = millis();
-				if (_subscribeMQTT()) /* succeed to reconnect */
+				if (_Wifi_and_mqtt_OK == false) /* Never succeeded */
+				{
+					if (_start_network_services()) /* disconnect and reconnect again */
+					{
+						return 1;
+					}
+					else /* case of failure */
+					{
+						_lastReco_try = millis();
+						return 0;
+					}
+				}
+				else /* Start all MQTT connect after regain wifi */
+				{
+					if (_startMQTT())
+					{
+						_lastReco_try = 0;
+						return 1;
+					}
+					else
+					{
+						_lastReco_try = millis();
+						return 0;
+					}
+				}
+			}
+			else
+			{
+				return 0;
+			}
+		}
+	}
+	else if (cur_mqtt_status == false) /* No MQTT */
+	{
+		if (millis() - _lastReco_try > 1000 * time_retry_mqtt) /* Retry timeout */
+		{
+			_lastReco_try = millis();
+			if (_Wifi_and_mqtt_OK == false) /* Case of fail at boot */
+			{
+				if (_startMQTT())
+				{
+					_lastReco_try = 0;
+					noNetwork_Clock = 0;
+					return 1;
+				}
+				else
+				{
+					return 0;
+				}
+			}
+			else{
+				if(_subscribeMQTT())  /* succeed to reconnect */
 				{
 					mqttClient.loop();
 					if (noNetwork_Clock != 0)
@@ -199,7 +260,7 @@ bool myIOT2::_network_looper()
 					_lastReco_try = 0;
 					if (useSerial)
 					{
-						Serial.println("reconnect mqtt - succeed");
+						Serial.println("reconnect mqtt");
 					}
 					return 1;
 				}
@@ -208,62 +269,10 @@ bool myIOT2::_network_looper()
 					if (noNetwork_Clock == 0)
 					{
 						noNetwork_Clock = millis();
-						if (useSerial)
-						{
-							Serial.println("first_clock MQTT");
-						}
 					}
 					return 0;
 				}
 			}
-			else
-			{
-				return 0;
-			}
-			return 0;
-		}
-	}
-	else /* No WiFi*/
-	{
-		if (millis() > noNetwork_Clock + retryConnectWiFi * MS2MINUTES && millis() > _lastReco_try + retryConnectWiFi * MS2MINUTES)
-		{
-			if (!_startWifi(_ssid, _wifi_pwd))
-			{ // failed to reconnect ?
-				if (noNetwork_Clock == 0)
-				{ // first time when NO NETWORK ?
-					noNetwork_Clock = millis();
-					if (useSerial)
-					{
-						Serial.println("no-wifi, first clock");
-					}
-				}
-				else
-				{
-					if (useSerial)
-					{
-						Serial.println("no-wifi, retry");
-					}
-				}
-				_lastReco_try = millis();
-				return 0;
-			}
-			else
-			{ // reconnect succeeded
-				if (useSerial)
-				{
-					Serial.println("reconnect wifi");
-				}
-				char b[50];
-				sprintf(b, "WiFi reconnect after %d sec", (int)((millis() - noNetwork_Clock) / 1000UL));
-				pub_log(b);
-				noNetwork_Clock = 0;
-				_lastReco_try = 0;
-				return 1;
-			}
-		}
-		else
-		{
-			return 0;
 		}
 	}
 }
@@ -277,7 +286,7 @@ void myIOT2::_startNTP(const char *ntpServer)
 	configTzTime(TZ_Asia_Jerusalem, ntpServer);
 #endif
 	unsigned long startLoop = millis();
-	while (now() < 1627735850 && millis() - startLoop < 5000) /* while in 2021 */
+	while (now() < (long)1627735850 && (millis() - startLoop < 10000)) /* while in 2021 */
 	{
 		delay(20);
 	}
@@ -362,11 +371,11 @@ void myIOT2::_selectMQTTbroker()
 		Serial.println(_server);
 	}
 }
-void myIOT2::_startMQTT()
+bool myIOT2::_startMQTT()
 {
 	_selectMQTTbroker();
 	mqttClient.setCallback(std::bind(&myIOT2::_MQTTcb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-	_subscribeMQTT();
+	return _subscribeMQTT();
 }
 bool myIOT2::_subscribeMQTT()
 {
@@ -383,9 +392,9 @@ bool myIOT2::_subscribeMQTT()
 		uint64_t chipid = ESP.getEfuseMac();
 		sprintf(tempname, "ESP32_%04X", (uint16_t)(chipid >> 32));
 #endif
-		char _groupTopic[MaxTopicLength2];
+		char _ALLtopic[MaxTopicLength2];
 		char _addgroupTopic[MaxTopicLength2];
-		snprintf(_groupTopic, MaxTopicLength2, "%s/All", prefixTopic);
+		snprintf(_ALLtopic, MaxTopicLength2, "%s/All", prefixTopic);
 
 		if (strcmp(addGroupTopic, "") != 0)
 		{
@@ -393,10 +402,10 @@ bool myIOT2::_subscribeMQTT()
 		}
 		else
 		{
-			strcpy(addGroupTopic, "");
+			strcpy(_addgroupTopic, "");
 		}
 
-		char *topicArry[4] = {_devName(), _groupTopic, _availName(), addGroupTopic};
+		char *topicArry[4] = {_devName(), _ALLtopic, _availName(), _addgroupTopic};
 
 		if (mqttClient.connect(tempname, _mqtt_user, _mqtt_pwd, _availName(), 0, true, "offline"))
 		{
@@ -871,7 +880,7 @@ bool myIOT2::read_fPars(char *filename, String &defs, JsonDocument &DOC, int JSI
 
 	if (param_on_flash.file_exists())
 	{
-		Serial.println("file exists");
+		// Serial.println("file exists");
 		if (param_on_flash.readJSON_file(DOC))
 		{
 			return 1;
