@@ -11,12 +11,10 @@
 #error Architecture unrecognized by this code.
 #endif
 
-#include <Arduino.h>
 #include <Ticker.h> //WDT
-#include <PubSubClient.h>
+#include <PubSubClient.h> // MQTT
 #include <WiFiUdp.h>    // OTA
 #include <ArduinoOTA.h> // OTA
-#include <ArduinoJson.h>
 #include "secretsIOT8266.h"
 #include <myLOG.h>
 #include <myJSON.h>
@@ -27,7 +25,7 @@
 #include <TZ.h>
 #elif isESP32
 #include <WiFi.h>
-#include <ESPmDNS.h>
+#include <ESPmDNS.h>    // OTA libraries
 #include <ESP32Ping.h>
 #define TZ_Asia_Jerusalem PSTR("IST-2IDT,M3.4.4/26,M10.5.0")
 #endif
@@ -152,7 +150,8 @@ private:
     bool _startWifi(char *ssid, char *password);
     bool _network_looper();
     bool _start_network_services();
-    void _startNTP(const char *ntpServer = "pool.ntp.org");
+    bool _startNTP(const char *ntpServer = "pool.ntp.org");
+    bool _NTP_updated();
 
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     bool _startMQTT();

@@ -26,7 +26,11 @@ void myIOT2::start_services(cb_func funct, char *ssid, char *password, char *mqt
 	{
 		flog.start(log_ents, log_len);
 	}
-	_start_network_services();
+	if (!_start_network_services())
+	{
+		noNetwork_Clock = millis();
+		_Wifi_and_mqtt_OK = false;
+	}
 	if (useWDT)
 	{
 		_startWDT();
@@ -159,12 +163,30 @@ bool myIOT2::_startWifi(char *ssid, char *password)
 }
 bool myIOT2::_start_network_services()
 {
+	bool a = false;
+	bool b = false;
 	if (_startWifi(_ssid, _wifi_pwd))
 	{
-		_startNTP();
-		_startMQTT();
-		_Wifi_and_mqtt_OK = true;
+		a = _startNTP();
+		b = _startMQTT();
+		_Wifi_and_mqtt_OK = a && b;
 	}
+
+	// §§§§§§§ DEGUG §§§§§§§§§ //
+	else
+	{
+		Serial.println("fail wifi");
+	}
+
+	if (!_Wifi_and_mqtt_OK)
+	{
+		Serial.print("NTP: ");
+		Serial.println(a);
+		Serial.print("MQTT: ");
+		Serial.println(b);
+	}
+	// END DEBUG //
+
 	return _Wifi_and_mqtt_OK;
 }
 bool myIOT2::_network_looper()
@@ -174,6 +196,8 @@ bool myIOT2::_network_looper()
 
 	bool cur_mqtt_status = mqttClient.connected();
 	bool cur_wifi_status = WiFi.isConnected();
+	bool cur_NTP = _NTP_updated();
+	// if()
 
 	if (cur_mqtt_status && cur_wifi_status) /* All good */
 	{
@@ -242,8 +266,9 @@ bool myIOT2::_network_looper()
 					return 0;
 				}
 			}
-			else{
-				if(_subscribeMQTT())  /* succeed to reconnect */
+			else
+			{
+				if (_subscribeMQTT()) /* succeed to reconnect */
 				{
 					mqttClient.loop();
 					if (noNetwork_Clock != 0)
@@ -278,7 +303,7 @@ bool myIOT2::_network_looper()
 }
 
 // ~~~~~~~ NTP & Clock  ~~~~~~~~
-void myIOT2::_startNTP(const char *ntpServer)
+bool myIOT2::_startNTP(const char *ntpServer)
 {
 #if isESP8266
 	configTime(TZ_Asia_Jerusalem, ntpServer); // configuring time offset and an NTP server
@@ -286,11 +311,13 @@ void myIOT2::_startNTP(const char *ntpServer)
 	configTzTime(TZ_Asia_Jerusalem, ntpServer);
 #endif
 	unsigned long startLoop = millis();
-	while (now() < (long)1627735850 && (millis() - startLoop < 10000)) /* while in 2021 */
+	while (!_NTP_updated() && (millis() - startLoop < 10000)) /* while in 2021 */
 	{
 		delay(20);
 	}
 	delay(100);
+
+	return (_NTP_updated());
 }
 char *myIOT2::get_timeStamp(time_t t)
 {
@@ -344,6 +371,13 @@ void myIOT2::convert_epoch2clock(long t1, long t2, char *time_str, char *days_st
 time_t myIOT2::now()
 {
 	return time(nullptr);
+}
+bool myIOT2::_NTP_updated()
+{
+	time_t now;
+	time(&now);
+	struct tm *timeinfo = localtime(&now);
+	return timeinfo->tm_year > 120;
 }
 
 // ~~~~~~~ MQTT functions ~~~~~~~
