@@ -52,7 +52,7 @@ public:
     flashLOG clklog;
 
 public:
-    const char *ver = "iot_v1.4";
+    const char *ver = "iot_v1.41a";
     char *myIOT_paramfile = "/myIOT_param.json";
 
     /*Variables */
@@ -75,9 +75,9 @@ public:
     static const uint8_t _size_extTopic = 2;
     static const uint8_t bootlog_len = 10;                     // nubmer of boot clock records
     static const uint8_t num_param = 4;                        // MQTT parameter count
-    static const uint8_t MaxTopicLength = 15;                  // topics
+    static const uint8_t MaxTopicLength = 20;                  // topics
     static const uint8_t MaxTopicLength2 = 3 * MaxTopicLength; // topics
-    char inline_param[num_param][20];                          // values from user
+    char inline_param[num_param][10];                          // values from user
 
     // MQTT Topic variables
     char *prefixTopic = (char *)malloc(MaxTopicLength);
@@ -150,7 +150,7 @@ private:
     bool _startWifi(char *ssid, char *password);
     bool _network_looper();
     bool _start_network_services();
-    bool _startNTP(const char *ntpServer = "pool.ntp.org");
+    bool _startNTP(const char *ntpServer = "pool.ntp.org", const char *ntpServer2 = "il.pool.ntp.org");
     bool _NTP_updated();
 
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include "myIOT2.h"
 
 #if defined(ARDUINO_ARCH_ESP8266)
@@ -106,98 +107,16 @@ void myIOT2::looper()
 }
 
 // ~~~~~~~ Wifi functions ~~~~~~~
-bool myIOT2::_startWifi(char *ssid, char *password)
-{
-	long startWifiConnection = millis();
-
-	if (useSerial)
-	{
-		Serial.println();
-		Serial.print("Connecting to ");
-		Serial.println(ssid);
-	}
-	WiFi.mode(WIFI_OFF); // <---- NEW
-	WiFi.mode(WIFI_STA);
-	WiFi.disconnect(true);
-	WiFi.begin(ssid, password);
-	WiFi.setAutoReconnect(true); // <-- BACK
-
-	// in case of reboot - timeOUT to wifi
-	while (WiFi.status() != WL_CONNECTED && (millis() < WIFItimeOut * MS2MINUTES / 60 + startWifiConnection))
-	{
-		delay(100);
-		if (useSerial)
-		{
-			Serial.print(".");
-		}
-	}
-
-	// case of no success - restart due to no wifi
-	if (WiFi.status() != WL_CONNECTED)
-	{
-		if (useSerial)
-		{
-			Serial.println("no wifi detected");
-			Serial.printf("\nConnection status: %d\n", WiFi.status());
-		}
-		if (noNetwork_Clock == 0)
-		{
-			noNetwork_Clock = millis();
-		}
-		return 0;
-	}
-
-	// if wifi is OK
-	else
-	{
-		if (useSerial)
-		{
-			Serial.println("");
-			Serial.println("WiFi connected");
-			Serial.print("IP address: ");
-			Serial.println(WiFi.localIP());
-		}
-		noNetwork_Clock = 0;
-		return 1;
-	}
-}
-bool myIOT2::_start_network_services()
-{
-	bool a = false;
-	bool b = false;
-	if (_startWifi(_ssid, _wifi_pwd))
-	{
-		a = _startNTP();
-		b = _startMQTT();
-		_Wifi_and_mqtt_OK = a && b;
-	}
-
-	// §§§§§§§ DEGUG §§§§§§§§§ //
-	else
-	{
-		Serial.println("fail wifi");
-	}
-
-	if (!_Wifi_and_mqtt_OK)
-	{
-		Serial.print("NTP: ");
-		Serial.println(a);
-		Serial.print("MQTT: ");
-		Serial.println(b);
-	}
-	// END DEBUG //
-
-	return _Wifi_and_mqtt_OK;
-}
 bool myIOT2::_network_looper()
 {
 	static unsigned long _lastReco_try = 0;
+	static unsigned long _lastNTP_try = 0;
+	static unsigned long NTP_err_clk = 0;
 	const uint8_t time_retry_mqtt = 10;
 
 	bool cur_mqtt_status = mqttClient.connected();
 	bool cur_wifi_status = WiFi.isConnected();
-	bool cur_NTP = _NTP_updated();
-	// if()
+	bool cur_NTP_status = _NTP_updated();
 
 	if (cur_mqtt_status && cur_wifi_status) /* All good */
 	{
@@ -300,23 +219,135 @@ bool myIOT2::_network_looper()
 			}
 		}
 	}
+
+	if (cur_NTP_status == false && cur_wifi_status == true) /* Wifi connected NTP failed */
+	{
+		if (NTP_err_clk == 0)
+		{
+			NTP_err_clk = millis();
+		}
+		else if (millis() - NTP_err_clk > 60 * MS2MINUTES)
+		{
+			sendReset("NTP_RESET");
+		}
+		else if (millis() - _lastNTP_try > 10 * MS2MINUTES)
+		{
+			_lastNTP_try = millis();
+			if (_startNTP())
+			{
+				_lastNTP_try = 0;
+				NTP_err_clk = 0;
+			}
+		}
+	}
+}
+bool myIOT2::_start_network_services()
+{
+	bool a = false;
+	bool b = false;
+	// unsigned long tik = millis();
+	if (_startWifi(_ssid, _wifi_pwd))
+	{
+		// Serial.print("wifi:");
+		// Serial.println(millis() - tik);
+		// tik = millis();
+		a = _startNTP();
+		// Serial.print("ntp:");
+		// Serial.println(millis() - tik);
+		// tik = millis();
+		b = _startMQTT();
+		// Serial.print("mqtt:");
+		// Serial.println(millis() - tik);
+		_Wifi_and_mqtt_OK = a && b;
+	}
+
+	// §§§§§§§ DEGUG §§§§§§§§§ //
+	// else
+	// {
+	// 	Serial.println("fail wifi");
+	// }
+
+	// if (!_Wifi_and_mqtt_OK)
+	// {
+	// 	Serial.print("NTP: ");
+	// 	Serial.println(a);
+	// 	Serial.print("MQTT: ");
+	// 	Serial.println(b);
+	// }
+	// END DEBUG //
+
+	return _Wifi_and_mqtt_OK;
+}
+bool myIOT2::_startWifi(char *ssid, char *password)
+{
+	long startWifiConnection = millis();
+
+	if (useSerial)
+	{
+		Serial.println();
+		Serial.print("Connecting to ");
+		Serial.println(ssid);
+	}
+	WiFi.mode(WIFI_OFF); // <---- NEW
+	WiFi.mode(WIFI_STA);
+	WiFi.disconnect(true);
+	WiFi.begin(ssid, password);
+	WiFi.setAutoReconnect(true); // <-- BACK
+
+	// in case of reboot - timeOUT to wifi
+	while (WiFi.status() != WL_CONNECTED && (millis() < WIFItimeOut * MS2MINUTES / 60 + startWifiConnection))
+	{
+		delay(100);
+		if (useSerial)
+		{
+			Serial.print(".");
+		}
+	}
+
+	// case of no success - restart due to no wifi
+	if (WiFi.status() != WL_CONNECTED)
+	{
+		if (useSerial)
+		{
+			Serial.println("no wifi detected");
+			Serial.printf("\nConnection status: %d\n", WiFi.status());
+		}
+		if (noNetwork_Clock == 0)
+		{
+			noNetwork_Clock = millis();
+		}
+		return 0;
+	}
+
+	// if wifi is OK
+	else
+	{
+		if (useSerial)
+		{
+			Serial.println("");
+			Serial.println("WiFi connected");
+			Serial.print("IP address: ");
+			Serial.println(WiFi.localIP());
+		}
+		noNetwork_Clock = 0;
+		return 1;
+	}
 }
 
 // ~~~~~~~ NTP & Clock  ~~~~~~~~
-bool myIOT2::_startNTP(const char *ntpServer)
+bool myIOT2::_startNTP(const char *ntpServer, const char *ntpServer2)
 {
 #if isESP8266
-	configTime(TZ_Asia_Jerusalem, ntpServer); // configuring time offset and an NTP server
+	configTime(TZ_Asia_Jerusalem, ntpServer2, ntpServer); // configuring time offset and an NTP server
 #elif isESP32
-	configTzTime(TZ_Asia_Jerusalem, ntpServer);
+	configTzTime(TZ_Asia_Jerusalem, ntpServer2, ntpServer);
 #endif
 	unsigned long startLoop = millis();
-	while (!_NTP_updated() && (millis() - startLoop < 10000)) /* while in 2021 */
+	while (!_NTP_updated() && (millis() - startLoop < 15000)) /* while in 2021 */
 	{
-		delay(20);
+		delay(50);
 	}
-	delay(100);
-
+	delay(300);
 	return (_NTP_updated());
 }
 char *myIOT2::get_timeStamp(time_t t)
