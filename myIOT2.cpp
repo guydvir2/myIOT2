@@ -105,7 +105,11 @@ bool myIOT2::_network_looper()
 	static unsigned long _lastReco_try = 0;
 	static unsigned long _lastNTP_try = 0;
 	static unsigned long NTP_err_clk = 0;
+<<<<<<< HEAD
 	const uint8_t time_retry_mqtt = 15; // sec
+=======
+	const uint8_t time_retry_mqtt = 10;
+>>>>>>> b2cc49d455b5281cfc0737ac616120ff04e7d05a
 
 	bool cur_mqtt_status = mqttClient.connected();
 	bool cur_wifi_status = WiFi.isConnected();
@@ -117,6 +121,7 @@ bool myIOT2::_network_looper()
 		noNetwork_Clock = 0;
 		return 1;
 	}
+<<<<<<< HEAD
 	else
 	{
 		// Serial.print("WiFi: ");
@@ -271,6 +276,121 @@ bool myIOT2::_network_looper()
 				{
 					NTP_err_clk = 0;
 				}
+=======
+	else if (cur_wifi_status == false) /* No WiFi */
+	{
+		if (noNetwork_Clock == 0) /* First Time */
+		{
+			noNetwork_Clock = millis();
+			return 0;
+		}
+		else
+		{
+			if (millis() > _lastReco_try + retryConnectWiFi * MS2MINUTES) /* try ater time interval */
+			{
+				if (_Wifi_and_mqtt_OK == false) /* Never succeeded */
+				{
+					if (_start_network_services()) /* disconnect and reconnect again */
+					{
+						return 1;
+					}
+					else /* case of failure */
+					{
+						_lastReco_try = millis();
+						return 0;
+					}
+				}
+				else /* Start all MQTT connect after regain wifi */
+				{
+					if (_startMQTT())
+					{
+						_lastReco_try = 0;
+						return 1;
+					}
+					else
+					{
+						_lastReco_try = millis();
+						return 0;
+					}
+				}
+			}
+			else
+			{
+				return 0;
+			}
+		}
+	}
+	else if (cur_mqtt_status == false) /* No MQTT */
+	{
+		if (millis() - _lastReco_try > 1000 * time_retry_mqtt) /* Retry timeout */
+		{
+			_lastReco_try = millis();
+			if (_Wifi_and_mqtt_OK == false) /* Case of fail at boot */
+			{
+				if (_startMQTT())
+				{
+					_lastReco_try = 0;
+					noNetwork_Clock = 0;
+					return 1;
+				}
+				else
+				{
+					return 0;
+				}
+			}
+			else
+			{
+				if (_subscribeMQTT()) /* succeed to reconnect */
+				{
+					mqttClient.loop();
+					if (noNetwork_Clock != 0)
+					{
+						int not_con_period = (int)((millis() - noNetwork_Clock) / 1000UL);
+						if (not_con_period > 30)
+						{
+							char b[50];
+							sprintf(b, "MQTT reconnect after %d sec", not_con_period);
+							pub_log(b);
+						}
+					}
+					noNetwork_Clock = 0;
+					_lastReco_try = 0;
+					if (useSerial)
+					{
+						Serial.println("reconnect mqtt");
+					}
+					return 1;
+				}
+				else
+				{
+					if (noNetwork_Clock == 0)
+					{
+						noNetwork_Clock = millis();
+					}
+					return 0;
+				}
+			}
+		}
+	}
+
+	if (cur_NTP_status == false && cur_wifi_status == true) /* Wifi connected NTP failed */
+	{
+		if (NTP_err_clk == 0)
+		{
+			NTP_err_clk = millis();
+		}
+		else if (millis() - NTP_err_clk > 60 * MS2MINUTES)
+		{
+			sendReset("NTP_RESET");
+		}
+		else if (millis() - _lastNTP_try > 10 * MS2MINUTES)
+		{
+			_lastNTP_try = millis();
+			if (_startNTP())
+			{
+				_lastNTP_try = 0;
+				NTP_err_clk = 0;
+>>>>>>> b2cc49d455b5281cfc0737ac616120ff04e7d05a
 			}
 		}
 	}
@@ -279,6 +399,7 @@ bool myIOT2::_start_network_services()
 {
 	bool a = false;
 	bool b = false;
+<<<<<<< HEAD
 	_Wifi_and_mqtt_OK = false;
 
 	if (_startWifi(_ssid, _wifi_pwd))
@@ -290,6 +411,42 @@ bool myIOT2::_start_network_services()
 	return _Wifi_and_mqtt_OK;
 }
 bool myIOT2::_startWifi(const char *ssid, const char *password)
+=======
+	// unsigned long tik = millis();
+	if (_startWifi(_ssid, _wifi_pwd))
+	{
+		// Serial.print("wifi:");
+		// Serial.println(millis() - tik);
+		// tik = millis();
+		a = _startNTP();
+		// Serial.print("ntp:");
+		// Serial.println(millis() - tik);
+		// tik = millis();
+		b = _startMQTT();
+		// Serial.print("mqtt:");
+		// Serial.println(millis() - tik);
+		_Wifi_and_mqtt_OK = a && b;
+	}
+
+	// §§§§§§§ DEGUG §§§§§§§§§ //
+	// else
+	// {
+	// 	Serial.println("fail wifi");
+	// }
+
+	// if (!_Wifi_and_mqtt_OK)
+	// {
+	// 	Serial.print("NTP: ");
+	// 	Serial.println(a);
+	// 	Serial.print("MQTT: ");
+	// 	Serial.println(b);
+	// }
+	// END DEBUG //
+
+	return _Wifi_and_mqtt_OK;
+}
+bool myIOT2::_startWifi(char *ssid, char *password)
+>>>>>>> b2cc49d455b5281cfc0737ac616120ff04e7d05a
 {
 	long startWifiConnection = millis();
 
@@ -303,7 +460,11 @@ bool myIOT2::_startWifi(const char *ssid, const char *password)
 	WiFi.mode(WIFI_STA);
 	WiFi.disconnect(true);
 	WiFi.begin(ssid, password);
+<<<<<<< HEAD
 	// WiFi.setAutoReconnect(true); // <-- BACK
+=======
+	WiFi.setAutoReconnect(true); // <-- BACK
+>>>>>>> b2cc49d455b5281cfc0737ac616120ff04e7d05a
 
 	// in case of reboot - timeOUT to wifi
 	while (WiFi.status() != WL_CONNECTED && (millis() < WIFItimeOut * MS2MINUTES / 60 + startWifiConnection))
@@ -352,12 +513,25 @@ bool myIOT2::_startNTP(const char *ntpServer, const char *ntpServer2)
 	while (!_NTP_updated() && (millis() - startLoop < 20000))
 	{
 #if isESP8266
+<<<<<<< HEAD
 		configTime(TZ_Asia_Jerusalem, ntpServer2, ntpServer); // configuring time offset and an NTP server
 #elif isESP32
 		configTzTime(TZ_Asia_Jerusalem, ntpServer2, ntpServer);
 #endif
 		delay(250);
 	}
+=======
+	configTime(TZ_Asia_Jerusalem, ntpServer2, ntpServer); // configuring time offset and an NTP server
+#elif isESP32
+	configTzTime(TZ_Asia_Jerusalem, ntpServer2, ntpServer);
+#endif
+	unsigned long startLoop = millis();
+	while (!_NTP_updated() && (millis() - startLoop < 15000)) /* while in 2021 */
+	{
+		delay(50);
+	}
+	delay(300);
+>>>>>>> b2cc49d455b5281cfc0737ac616120ff04e7d05a
 	return (_NTP_updated());
 }
 char *myIOT2::get_timeStamp(time_t t)
