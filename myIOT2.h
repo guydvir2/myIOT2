@@ -52,7 +52,7 @@ public:
     flashLOG clklog;
 
 public:
-    const char *ver = "iot_v1.4";
+    const char *ver = "iot_v1.42a";
     char *myIOT_paramfile = "/myIOT_param.json";
 
     /*Variables */
@@ -72,12 +72,12 @@ public:
     uint8_t noNetwork_reset = 30; // minutes
 
     uint8_t mqtt_detect_reset = 2;
-    static const uint8_t _size_extTopic = 2;
-    static const uint8_t bootlog_len = 10;                     // nubmer of boot clock records
     static const uint8_t num_param = 4;                        // MQTT parameter count
-    static const uint8_t MaxTopicLength = 15;                  // topics
+    static const uint8_t bootlog_len = 10;                     // nubmer of boot clock records
+    static const uint8_t _size_extTopic = 2;
+    static const uint8_t MaxTopicLength = 20;                  // topics
     static const uint8_t MaxTopicLength2 = 3 * MaxTopicLength; // topics
-    char inline_param[num_param][20];                          // values from user
+    char inline_param[num_param][10];                          // values from user
 
     // MQTT Topic variables
     char *prefixTopic = (char *)malloc(MaxTopicLength);
@@ -90,20 +90,19 @@ public:
 
 private:
     // WiFi MQTT broker parameters
-    char *_ssid = (char *)malloc(MaxTopicLength);
-    char *_wifi_pwd = (char *)malloc(MaxTopicLength);
-    char *_mqtt_server = (char *)malloc(MaxTopicLength);
-    char *_mqtt_server2 = MQTT_SERVER2;
-    char *_mqtt_user = (char *)malloc(MaxTopicLength);
-    char *_mqtt_pwd = (char *)malloc(MaxTopicLength);
+    const char *_ssid = (char *)malloc(MaxTopicLength);
+    const char *_wifi_pwd = (char *)malloc(MaxTopicLength);
+    const char *_mqtt_server = (char *)malloc(MaxTopicLength);
+    const char *_mqtt_server2 = MQTT_SERVER2;
+    const char *_mqtt_user = (char *)malloc(MaxTopicLength);
+    const char *_mqtt_pwd = (char *)malloc(MaxTopicLength);
     cb_func ext_mqtt;
 
     // time interval parameters
-    const uint8_t WIFItimeOut = 20;         // 30 sec try to connect WiFi
+    const uint8_t WIFItimeOut = 20;         // sec try to connect WiFi
     const uint8_t retryConnectWiFi = 1;     // minutes between fail Wifi reconnect reties
-    const uint8_t OTA_upload_interval = 10; // 10 minute to try OTA
+    const uint8_t OTA_upload_interval = 10; // minute to try OTA
 
-    uint8_t time2Reset_noNetwork = noNetwork_reset; // minutues pass without any network
     volatile uint8_t wdtResetCounter = 0;
     const uint8_t wdtMaxRetries = 60;  // seconds to bITE
     unsigned long noNetwork_Clock = 0; // clock
@@ -115,7 +114,7 @@ private:
 
 public: /* Functions */
     myIOT2();
-    void start_services(cb_func funct, char *ssid = SSID_ID, char *password = PASS_WIFI, char *mqtt_user = MQTT_USER, char *mqtt_passw = MQTT_PASS, char *mqtt_broker = MQTT_SERVER1, int log_ents = 50, int log_len = 250);
+    void start_services(cb_func funct, const char *ssid = SSID_ID, const char *password = PASS_WIFI, const char *mqtt_user = MQTT_USER, const char *mqtt_passw = MQTT_PASS, const char *mqtt_broker = MQTT_SERVER1, int log_ents = 50, int log_len = 250);
     void looper();
     void startOTA();
     void return_clock(char ret_tuple[20]);
@@ -147,10 +146,10 @@ public: /* Functions */
 
 private:
     // ~~~~~~~~~~~~~~WIFI ~~~~~~~~~~~~~~~~~~~~~
-    bool _startWifi(char *ssid, char *password);
+    bool _startWifi(const char *ssid, const char *password);
     bool _network_looper();
     bool _start_network_services();
-    bool _startNTP(const char *ntpServer = "pool.ntp.org");
+    bool _startNTP(const char *ntpServer = "pool.ntp.org", const char *ntpServer2 = "il.pool.ntp.org");
     bool _NTP_updated();
 
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -159,10 +158,10 @@ private:
     bool _subscribeMQTT();
     void _MQTTcb(char *topic, uint8_t *payload, unsigned int length);
     void _getBootReason_resetKeeper(char *msg);
-    void _write_log(char *inmsg, uint8_t x, char *topic = "_deviceName");
+    void _write_log(char *inmsg, uint8_t x, const char *topic = "_deviceName");
     void _pub_generic(char *topic, char *inmsg, bool retain = false, char *devname = "", bool bare = false);
-    char *_devName();
-    char *_availName();
+    const char *_devName();
+    const char *_availName();
 
     // ~~~~~~~ Services  ~~~~~~~~~~~~~~~~~~~~~~~~
     void _startWDT();

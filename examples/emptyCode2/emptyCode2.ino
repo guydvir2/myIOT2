@@ -24,12 +24,12 @@ void loop()
         iot.looper();
         delay(100);
         // extTopic_looper();
-        static uint8_t wifistatus = WL_DISCONNECTED;
+        // static uint8_t wifistatus = WL_DISCONNECTED;
 
-        if (WiFi.status() != wifistatus)
-        {
-                wifistatus = WiFi.status();
-                Serial.print("WiFi: ");
-                Serial.println(wifistatus);
-        }
+        // if (WiFi.status() != wifistatus)
+        // {
+        //         wifistatus = WiFi.status();
+        //         Serial.print("WiFi: ");
+        //         Serial.println(wifistatus);
+        // }
 }
