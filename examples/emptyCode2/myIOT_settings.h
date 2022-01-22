@@ -2,7 +2,7 @@
 
 myIOT2 iot;
 
-#define DEV_TOPIC "empty2"
+#define DEV_TOPIC "empty3"
 #define GROUP_TOPIC ""
 #define PREFIX_TOPIC "myHome"
 
@@ -22,10 +22,11 @@ void addiotnalMQTT(char *incoming_msg)
         // sprintf(msg, "ver #2: [%s], lib: [%s], boardType[%s]", "espVer", VER, boardType);
         // iot.pub_msg(msg);
     }
-    else if (strcmp(incoming_msg, "help2") == 0)
+    else if (strcmp(incoming_msg, "disco") == 0)
     {
-        sprintf(msg, "Help2: Commands #2 - [; m; ,x]");
+        sprintf(msg, "Disconnect sent to broker");
         iot.pub_msg(msg);
+        iot.mqttClient.disconnect();
     }
 }
 void startIOTservices()
@@ -43,9 +44,9 @@ void startIOTservices()
     iot.useBootClockLog = false;
     iot.useAltermqttServer = false;
     iot.ignore_boot_msg = false;
-    iot.deviceTopic = DEV_TOPIC;
-    iot.prefixTopic = PREFIX_TOPIC;
-    iot.addGroupTopic = GROUP_TOPIC;
+    strcpy(iot.deviceTopic,DEV_TOPIC);
+    strcpy(iot.prefixTopic,PREFIX_TOPIC);
+    strcpy(iot.addGroupTopic,GROUP_TOPIC);
 
     iot.extTopic_msgArray[0] = &extTopic_msg;
     iot.extTopic[0] = "myHome/new";

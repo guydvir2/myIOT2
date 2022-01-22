@@ -11,10 +11,10 @@
 #error Architecture unrecognized by this code.
 #endif
 
-#include <Ticker.h> //WDT
+#include <Ticker.h>       //WDT
 #include <PubSubClient.h> // MQTT
-#include <WiFiUdp.h>    // OTA
-#include <ArduinoOTA.h> // OTA
+#include <WiFiUdp.h>      // OTA
+#include <ArduinoOTA.h>   // OTA
 #include "secretsIOT8266.h"
 #include <myLOG.h>
 #include <myJSON.h>
@@ -25,7 +25,7 @@
 #include <TZ.h>
 #elif isESP32
 #include <WiFi.h>
-#include <ESPmDNS.h>    // OTA libraries
+#include <ESPmDNS.h> // OTA libraries
 #include <ESP32Ping.h>
 #define TZ_Asia_Jerusalem PSTR("IST-2IDT,M3.4.4/26,M10.5.0")
 #endif
@@ -52,7 +52,7 @@ public:
     flashLOG clklog;
 
 public:
-    const char *ver = "iot_v1.42a";
+    const char *ver = "iot_v1.44a";
     char *myIOT_paramfile = "/myIOT_param.json";
 
     /*Variables */
@@ -72,17 +72,17 @@ public:
     uint8_t noNetwork_reset = 30; // minutes
 
     uint8_t mqtt_detect_reset = 2;
-    static const uint8_t num_param = 4;                        // MQTT parameter count
-    static const uint8_t bootlog_len = 10;                     // nubmer of boot clock records
+    static const uint8_t num_param = 4;    // MQTT parameter count
+    static const uint8_t bootlog_len = 10; // nubmer of boot clock records
     static const uint8_t _size_extTopic = 2;
     static const uint8_t MaxTopicLength = 20;                  // topics
     static const uint8_t MaxTopicLength2 = 3 * MaxTopicLength; // topics
     char inline_param[num_param][10];                          // values from user
 
     // MQTT Topic variables
-    char *prefixTopic = (char *)malloc(MaxTopicLength);
-    char *deviceTopic = (char *)malloc(MaxTopicLength);
-    char *addGroupTopic = (char *)malloc(MaxTopicLength);
+    char prefixTopic[MaxTopicLength];
+    char deviceTopic[MaxTopicLength];
+    char addGroupTopic[MaxTopicLength];
     char *extTopic[_size_extTopic];
     bool extTopic_newmsg_flag = false;
 
@@ -90,12 +90,11 @@ public:
 
 private:
     // WiFi MQTT broker parameters
-    const char *_ssid = (char *)malloc(MaxTopicLength);
-    const char *_wifi_pwd = (char *)malloc(MaxTopicLength);
-    const char *_mqtt_server = (char *)malloc(MaxTopicLength);
-    const char *_mqtt_server2 = MQTT_SERVER2;
-    const char *_mqtt_user = (char *)malloc(MaxTopicLength);
-    const char *_mqtt_pwd = (char *)malloc(MaxTopicLength);
+    char _ssid[MaxTopicLength];
+    char _wifi_pwd[MaxTopicLength];
+    char _mqtt_server[MaxTopicLength];
+    char _mqtt_user[MaxTopicLength];
+    char _mqtt_pwd[MaxTopicLength];
     cb_func ext_mqtt;
 
     // time interval parameters
@@ -104,7 +103,7 @@ private:
     const uint8_t OTA_upload_interval = 10; // minute to try OTA
 
     volatile uint8_t wdtResetCounter = 0;
-    const uint8_t wdtMaxRetries = 60;  // seconds to bITE
+    const uint8_t wdtMaxRetries = 20;  // seconds to bITE
     unsigned long noNetwork_Clock = 0; // clock
     unsigned long allowOTA_clock = 0;  // clock
 
