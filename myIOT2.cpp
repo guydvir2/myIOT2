@@ -619,8 +619,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	}
 	else if (strcmp(incoming_msg, "ver") == 0)
 	{
-		sprintf(msg, "ver: IOTlib: [%s], flashLOG[%s]",
-				ver, flog.VeR);
+		sprintf(msg, "ver: IOTlib: [%s], flashLOG[%s]", ver, flog.VeR);
 		pub_msg(msg);
 	}
 	else if (strcmp(incoming_msg, "services") == 0)
