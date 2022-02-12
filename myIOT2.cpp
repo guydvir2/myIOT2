@@ -6,7 +6,7 @@
 #endif
 
 // ~~~~~~ myIOT2 CLASS ~~~~~~~~~~~ //
-myIOT2::myIOT2() : mqttClient(espClient), flog("/myIOTlog.txt"), clklog("/clkLOG.txt")
+myIOT2::myIOT2() : mqttClient(espClient) //, flog("/myIOTlog.txt"), clklog("/clkLOG.txt")
 {
 }
 void myIOT2::start_services(cb_func funct, const char *ssid, const char *password, const char *mqtt_user, const char *mqtt_passw, const char *mqtt_broker, int log_ents, int log_len)
@@ -25,7 +25,7 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	}
 	if (useDebug)
 	{
-		flog.start(log_ents, log_len);
+		// flog.start(log_ents, log_len);
 	}
 	_start_network_services();
 
@@ -39,7 +39,7 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	}
 	if (useBootClockLog && WiFi.isConnected())
 	{
-		clklog.start(10, 13); // Dont need looper. saved only once a boot
+		// clklog.start(10, 13); // Dont need looper. saved only once a boot
 		_update_bootclockLOG();
 	}
 }
@@ -91,7 +91,7 @@ void myIOT2::looper()
 	// }
 	if (useDebug)
 	{
-		flog.looper(30); /* 30 seconds from last write or 70% of buffer */
+		// flog.looper(30); /* 30 seconds from last write or 70% of buffer */
 	}
 	_post_boot_check();
 }
@@ -283,10 +283,6 @@ bool myIOT2::_start_network_services()
 		_Wifi_and_mqtt_OK = a && b;
 		if (useSerial)
 		{
-			// DEBUG
-			Serial.println("Wifi Coonected OK.");
-			// DEBUG
-
 			// DEBUG
 			Serial.println("Wifi Started: OK");
 			Serial.print("NTP_start:");
@@ -492,7 +488,9 @@ bool myIOT2::_subscribeMQTT()
 		{
 			strcpy(_addgroupTopic, "");
 		}
-		const char *topicArry[4] = {_devName(), _ALLtopic, _availName(), _addgroupTopic};
+		const char *NAME = _availName();
+		const char *topicArry[4] = {_devName(), _ALLtopic, NAME, _addgroupTopic};
+		delete NAME;
 
 		if (mqttClient.connect(tempname, _mqtt_user, _mqtt_pwd, topicArry[2], 1, true, "offline"))
 		{
@@ -602,11 +600,14 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 			}
 		}
 	}
-
-	if (strcmp(topic, _availName()) == 0 && useResetKeeper && firstRun)
+	
+	const char *NAME = _availName();
+	if (strcmp(topic, NAME) == 0 && useResetKeeper && firstRun)
 	{
 		_getBootReason_resetKeeper(incoming_msg);
 	}
+	delete NAME;
+	
 	if (strcmp(incoming_msg, "ota") == 0)
 	{
 		sprintf(msg, "OTA allowed for %ld seconds", OTA_upload_interval * MS2MINUTES / 1000);
@@ -619,7 +620,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	}
 	else if (strcmp(incoming_msg, "ver") == 0)
 	{
-		sprintf(msg, "ver: IOTlib: [%s], flashLOG[%s]", ver, flog.VeR);
+		sprintf(msg, "ver: IOTlib: [%s], flashLOG[%s]", ver, "flog.VeR");
 		pub_msg(msg);
 	}
 	else if (strcmp(incoming_msg, "services") == 0)
@@ -659,8 +660,10 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	{
 		if (useDebug)
 		{
-			int num_lines = flog.getnumlines();
-			int filesize = flog.sizelog();
+			int num_lines = 0;
+			// flog.getnumlines();
+			int filesize = 0;
+			// flog.sizelog();
 			sprintf(msg,
 					"debug_log: active[%s], entries [#%d], file-size[%.2f kb]",
 					useDebug ? "Yes" : "No", num_lines,
@@ -673,12 +676,12 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 		if (useDebug)
 		{
 			char m[250];
-			int x = flog.getnumlines();
+			int x = 0; // flog.getnumlines();
 			pub_debug("~~~ Start ~~~");
 			for (int a = 0; a < x; a++)
 			{
-				flog.readline(a, m);
-				pub_debug(m);
+				// flog.readline(a, m);
+				// pub_debug(m);
 				if (useSerial)
 				{
 					Serial.println(m);
@@ -698,7 +701,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	{
 		if (useDebug)
 		{
-			flog.delog();
+			// flog.delog();
 			pub_msg("debug_log: file deleted");
 		}
 	}
@@ -706,7 +709,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	{
 		if (useBootClockLog)
 		{
-			uint8_t lsize = clklog.getnumlines();
+			uint8_t lsize = 0; // clklog.getnumlines();
 			char t[lsize * 23 + 20];
 			sprintf(t, "BootLog: {");
 			for (uint8_t i = 0; i < lsize; i++)
@@ -716,9 +719,11 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 					strcat(t, "; ");
 				}
 				char m[13];
-				clklog.readline(i, m);
+				// clklog.readline(i, m);
 				time_t tmptime = atol(m);
-				strcat(t, get_timeStamp(tmptime));
+				// strcat(t, get_timeStamp(tmptime));
+				char *T = get_timeStamp(tmptime);
+				delete T;
 			}
 			strcat(t, "}");
 			pub_debug(t);
@@ -738,7 +743,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 		unsigned long t = (long)(millis() / 1000);
 		convert_epoch2clock(t, 0, clock, days);
 		sprintf(IPadd, "%d.%d.%d.%d", WiFi.localIP()[0], WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3]);
-		sprintf(msg, "Network: uptime[%s %s], localIP[%s], MQTTserver[%s]", days, clock, IPadd, _mqtt_server);
+		sprintf(msg, "Network: uptime[%s %s], localIP[%s], MQTTserver[%s],  RSSI: [%d dBm]", days, clock, IPadd, _mqtt_server, WiFi.RSSI());
 
 		pub_msg(msg);
 	}
@@ -758,14 +763,19 @@ void myIOT2::_pub_generic(char *topic, char *inmsg, bool retain, char *devname, 
 
 	if (!bare)
 	{
+		char *T = get_timeStamp();
 		if (strcmp(devname, "") == 0)
 		{
-			sprintf(header, "[%s] [%s] ", get_timeStamp(), _devName());
+
+			const char *DEV = _devName();
+			sprintf(header, "[%s] [%s] ", T, DEV);
+			delete DEV;
 		}
 		else
 		{
-			sprintf(header, "[%s] [%s] ", get_timeStamp(), devname);
+			sprintf(header, "[%s] [%s] ", T, devname);
 		}
+		delete T;
 		lenhdr = strlen(header);
 	}
 	else
@@ -914,8 +924,10 @@ const char *myIOT2::_availName()
 
 void myIOT2::notifyOnline()
 {
-	mqttClient.publish(_availName(), "online", true);
-	_write_log("online", 2, _availName());
+	const char *NAME = _availName();
+	mqttClient.publish(NAME, "online", true);
+	_write_log("online", 2, NAME);
+	delete NAME;
 }
 void myIOT2::_getBootReason_resetKeeper(char *msg)
 {
@@ -958,8 +970,10 @@ void myIOT2::_write_log(char *inmsg, uint8_t x, const char *topic)
 
 	if (useDebug && debug_level <= x)
 	{
-		sprintf(a, ">>%s<< [%s] %s", get_timeStamp(), topic, inmsg);
-		flog.write(a);
+		char *T = get_timeStamp();
+		sprintf(a, ">>%s<< [%s] %s", T, topic, inmsg);
+		delete T;
+		// flog.write(a);
 		if (useSerial)
 		{
 			Serial.println(a);
@@ -974,7 +988,7 @@ void myIOT2::_update_bootclockLOG()
 #elif isESP32
 	sprintf(clk_char, "%d", now());
 #endif
-	clklog.write(clk_char, true);
+	// clklog.write(clk_char, true);
 }
 bool myIOT2::read_fPars(char *filename, String &defs, JsonDocument &DOC, int JSIZE)
 {
