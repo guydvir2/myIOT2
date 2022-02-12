@@ -16,7 +16,7 @@
 #include <WiFiUdp.h>      // OTA
 #include <ArduinoOTA.h>   // OTA
 #include "secretsIOT8266.h"
-//#include <myLOG.h>
+#include <myLOG.h>
 #include <myJSON.h>
 
 #if isESP8266
@@ -48,11 +48,11 @@ public:
 #if isESP8266
     Ticker wdt;
 #endif
-   // flashLOG flog;
-  //  flashLOG clklog;
+   flashLOG flog;
+   flashLOG clklog;
 
 public:
-    const char *ver = "iot_v1.44c";
+    const char *ver = "iot_v1.44d";
     char *myIOT_paramfile = "/myIOT_param.json";
 
     /*Variables */
