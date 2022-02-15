@@ -539,6 +539,8 @@ bool myIOT2::_subscribeMQTT()
 				}
 			}
 			notifyOnline();
+			delete[] NAME;
+			delete[] DEV;
 			return 1;
 		}
 		else
@@ -548,8 +550,8 @@ bool myIOT2::_subscribeMQTT()
 				Serial.print("failed, rc=");
 				Serial.println(mqttClient.state());
 			}
-			delete NAME;
-			delete DEV;
+			delete[] NAME;
+			delete[] DEV;
 			return 0;
 		}
 	}
@@ -608,7 +610,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	{
 		_getBootReason_resetKeeper(incoming_msg);
 	}
-	delete NAME;
+	delete[] NAME;
 
 	if (strcmp(incoming_msg, "ota") == 0)
 	{
@@ -725,7 +727,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 				time_t tmptime = atol(m);
 				char *T = get_timeStamp(tmptime);
 				strcat(t, T);
-				delete T;
+				delete[] T;
 			}
 			strcat(t, "}");
 			pub_debug(t);
@@ -771,13 +773,13 @@ void myIOT2::_pub_generic(char *topic, char *inmsg, bool retain, char *devname, 
 
 			const char *DEV = _devName();
 			sprintf(header, "[%s] [%s] ", T, DEV);
-			delete DEV;
+			delete[] DEV;
 		}
 		else
 		{
 			sprintf(header, "[%s] [%s] ", T, devname);
 		}
-		delete T;
+		delete[] T;
 		lenhdr = strlen(header);
 	}
 	else
@@ -818,7 +820,7 @@ void myIOT2::pub_state(char *inmsg, uint8_t i)
 	const char *DEV = _devName();
 	snprintf(_stateTopic, MaxTopicLength2, "%s/State", DEV);
 	snprintf(_stateTopic2, MaxTopicLength2, "%s/State_2", DEV);
-	delete DEV;
+	delete[] DEV;
 
 	char *st[] = {_stateTopic, _stateTopic2};
 	mqttClient.publish(st[i], inmsg, true);
@@ -924,6 +926,7 @@ const char *myIOT2::_availName()
 	char *ret = new char[MaxTopicLength2];
 	const char *DEV = _devName();
 	snprintf(ret, MaxTopicLength2, "%s/Avail", DEV);
+	delete[] DEV;
 	return ret;
 }
 
@@ -932,7 +935,7 @@ void myIOT2::notifyOnline()
 	const char *NAME = _availName();
 	mqttClient.publish(NAME, "online", true);
 	_write_log("online", 2, NAME);
-	delete NAME;
+	delete[] NAME;
 }
 void myIOT2::_getBootReason_resetKeeper(char *msg)
 {
@@ -977,8 +980,8 @@ void myIOT2::_write_log(char *inmsg, uint8_t x, const char *topic)
 	{
 		char *T = get_timeStamp();
 		sprintf(a, ">>%s<< [%s] %s", T, topic, inmsg);
-		delete T;
-		flog.write(a);
+		delete[] T;
+		flog.write(a,true);
 		if (useSerial)
 		{
 			Serial.println(a);
@@ -1059,7 +1062,7 @@ void myIOT2::sendReset(char *header)
 	sprintf(temp, "[%s] - Reset sent", header);
 	const char *DEV = _devName();
 	_write_log(temp, 2, DEV);
-	delete DEV;
+	delete[] DEV;
 	if (useSerial)
 	{
 		Serial.println(temp);

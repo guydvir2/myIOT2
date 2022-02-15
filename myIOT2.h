@@ -52,7 +52,7 @@ public:
    flashLOG clklog;
 
 public:
-    const char *ver = "iot_v1.44d";
+    const char *ver = "iot_v1.44e";
     char *myIOT_paramfile = "/myIOT_param.json";
 
     /*Variables */
