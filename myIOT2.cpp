@@ -82,13 +82,6 @@ void myIOT2::looper()
 			sendReset("NO NETWoRK");
 		}
 	}
-	// if (useAltermqttServer)
-	// {
-	// 	if (millis() > noNetwork_reset * MS2MINUTES)
-	// 	{
-	// 		sendReset("Reset- restore main MQTT server");
-	// 	}
-	// }
 	if (useDebug)
 	{
 		flog.looper(30); /* 30 seconds from last write or 70% of buffer */
@@ -366,14 +359,24 @@ bool myIOT2::_startNTP(const char *ntpServer, const char *ntpServer2)
 	}
 	return (_NTP_updated());
 }
-char *myIOT2::get_timeStamp(time_t t)
+// char *myIOT2::get_timeStamp(time_t t)
+// {
+// 	if (t == 0)
+// 	{
+// 		t = now();
+// 	}
+
+// 	char *ret = new char[20];
+// 	struct tm *tm = localtime(&t);
+// 	sprintf(ret, "%04d-%02d-%02d %02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+// 	return ret;
+// }
+char *myIOT2::get_timeStamp(char ret[], time_t t)
 {
 	if (t == 0)
 	{
 		t = now();
 	}
-
-	char *ret = new char[20];
 	struct tm *tm = localtime(&t);
 	sprintf(ret, "%04d-%02d-%02d %02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
 	return ret;
@@ -488,8 +491,11 @@ bool myIOT2::_subscribeMQTT()
 		{
 			strcpy(_addgroupTopic, "");
 		}
-		const char *NAME = _availName();
-		const char *DEV = _devName();
+		char DEV[MaxTopicLength];
+		char NAME[MaxTopicLength];
+		_devName(DEV);
+		_availName(NAME);
+
 		const char *topicArry[4] = {DEV, _ALLtopic, NAME, _addgroupTopic};
 
 		if (mqttClient.connect(tempname, _mqtt_user, _mqtt_pwd, topicArry[2], 1, true, "offline"))
@@ -539,8 +545,7 @@ bool myIOT2::_subscribeMQTT()
 				}
 			}
 			notifyOnline();
-			delete[] NAME;
-			delete[] DEV;
+
 			return 1;
 		}
 		else
@@ -550,8 +555,6 @@ bool myIOT2::_subscribeMQTT()
 				Serial.print("failed, rc=");
 				Serial.println(mqttClient.state());
 			}
-			delete[] NAME;
-			delete[] DEV;
 			return 0;
 		}
 	}
@@ -605,12 +608,12 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 		}
 	}
 
-	const char *NAME = _availName();
+	char NAME[MaxTopicLength];
+	_availName(NAME);
 	if (strcmp(topic, NAME) == 0 && useResetKeeper && firstRun)
 	{
 		_getBootReason_resetKeeper(incoming_msg);
 	}
-	delete[] NAME;
 
 	if (strcmp(incoming_msg, "ota") == 0)
 	{
@@ -723,11 +726,10 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 					strcat(t, "; ");
 				}
 				char m[13];
+				char clk[25];
 				clklog.readline(i, m);
 				time_t tmptime = atol(m);
-				char *T = get_timeStamp(tmptime);
-				strcat(t, T);
-				delete[] T;
+				strcat(t, get_timeStamp(clk, tmptime));
 			}
 			strcat(t, "}");
 			pub_debug(t);
@@ -767,19 +769,18 @@ void myIOT2::_pub_generic(char *topic, char *inmsg, bool retain, char *devname, 
 
 	if (!bare)
 	{
-		char *T = get_timeStamp();
+		char clk[25];
+		get_timeStamp(clk, 0);
 		if (strcmp(devname, "") == 0)
 		{
-
-			const char *DEV = _devName();
-			sprintf(header, "[%s] [%s] ", T, DEV);
-			delete[] DEV;
+			char DEV[MaxTopicLength];
+			_devName(DEV);
+			sprintf(header, "[%s] [%s] ", clk, DEV);
 		}
 		else
 		{
-			sprintf(header, "[%s] [%s] ", T, devname);
+			sprintf(header, "[%s] [%s] ", clk, devname);
 		}
-		delete[] T;
 		lenhdr = strlen(header);
 	}
 	else
@@ -817,10 +818,10 @@ void myIOT2::pub_state(char *inmsg, uint8_t i)
 {
 	char _stateTopic[MaxTopicLength2];
 	char _stateTopic2[MaxTopicLength2];
-	const char *DEV = _devName();
+	char DEV[MaxTopicLength];
+	_devName(DEV);
 	snprintf(_stateTopic, MaxTopicLength2, "%s/State", DEV);
 	snprintf(_stateTopic2, MaxTopicLength2, "%s/State_2", DEV);
-	delete[] DEV;
 
 	char *st[] = {_stateTopic, _stateTopic2};
 	mqttClient.publish(st[i], inmsg, true);
@@ -908,9 +909,8 @@ void myIOT2::pub_email(JsonDocument &email)
 	_pub_generic(_emailTopic, email_char, false, "", true);
 	_write_log(email_char, 0, _emailTopic);
 }
-const char *myIOT2::_devName()
+const char *myIOT2::_devName(char ret[])
 {
-	char *ret = new char[MaxTopicLength2];
 	if (strcmp(addGroupTopic, "") != 0)
 	{
 		snprintf(ret, MaxTopicLength2, "%s/%s/%s", prefixTopic, addGroupTopic, deviceTopic);
@@ -921,21 +921,20 @@ const char *myIOT2::_devName()
 	}
 	return ret;
 }
-const char *myIOT2::_availName()
+const char *myIOT2::_availName(char ret[])
 {
-	char *ret = new char[MaxTopicLength2];
-	const char *DEV = _devName();
+	char DEV[MaxTopicLength];
+	_devName(DEV);
 	snprintf(ret, MaxTopicLength2, "%s/Avail", DEV);
-	delete[] DEV;
 	return ret;
 }
 
 void myIOT2::notifyOnline()
 {
-	const char *NAME = _availName();
+	char NAME[MaxTopicLength];
+	_availName(NAME);
 	mqttClient.publish(NAME, "online", true);
 	_write_log("online", 2, NAME);
-	delete[] NAME;
 }
 void myIOT2::_getBootReason_resetKeeper(char *msg)
 {
@@ -978,10 +977,9 @@ void myIOT2::_write_log(char *inmsg, uint8_t x, const char *topic)
 
 	if (useDebug && debug_level <= x)
 	{
-		char *T = get_timeStamp();
-		sprintf(a, ">>%s<< [%s] %s", T, topic, inmsg);
-		delete[] T;
-		flog.write(a,true);
+		char clk[25];
+		sprintf(a, ">>%s<< [%s] %s", get_timeStamp(clk, 0), topic, inmsg);
+		flog.write(a, true);
 		if (useSerial)
 		{
 			Serial.println(a);
@@ -1060,9 +1058,9 @@ void myIOT2::sendReset(char *header)
 	char temp[150];
 
 	sprintf(temp, "[%s] - Reset sent", header);
-	const char *DEV = _devName();
+	char DEV[MaxTopicLength];
+	_devName(DEV);
 	_write_log(temp, 2, DEV);
-	delete[] DEV;
 	if (useSerial)
 	{
 		Serial.println(temp);

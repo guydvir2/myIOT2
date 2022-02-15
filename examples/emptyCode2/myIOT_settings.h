@@ -37,11 +37,11 @@ void startIOTservices()
     iot.useOTA = true;
     iot.useResetKeeper = true;
     iot.useextTopic = false;
-    iot.useDebug = false;
+    iot.useDebug = true;
     iot.debug_level = 0;
     iot.useNetworkReset = true;
     iot.noNetwork_reset = 10;
-    iot.useBootClockLog = false;
+    iot.useBootClockLog = true;
     iot.useAltermqttServer = false;
     iot.ignore_boot_msg = false;
     strcpy(iot.deviceTopic,DEV_TOPIC);

@@ -52,7 +52,7 @@ public:
    flashLOG clklog;
 
 public:
-    const char *ver = "iot_v1.44e";
+    const char *ver = "iot_v1.45";
     char *myIOT_paramfile = "/myIOT_param.json";
 
     /*Variables */
@@ -135,7 +135,8 @@ public: /* Functions */
     void pub_email(JsonDocument &email);
     void clear_ExtTopicbuff();
     long get_bootclockLOG(int x);
-    char *get_timeStamp(time_t t = 0);
+    // char *get_timeStamp(time_t t = 0);
+    char *get_timeStamp(char ret[], time_t t = 0);
     void convert_epoch2clock(long t1, long t2, char *time_str, char *days_str);
     time_t now();
 
@@ -159,8 +160,8 @@ private:
     void _getBootReason_resetKeeper(char *msg);
     void _write_log(char *inmsg, uint8_t x, const char *topic = "_deviceName");
     void _pub_generic(char *topic, char *inmsg, bool retain = false, char *devname = "", bool bare = false);
-    const char *_devName();
-    const char *_availName();
+    const char *_devName(char ret[]);
+    const char *_availName(char ret[]);
 
     // ~~~~~~~ Services  ~~~~~~~~~~~~~~~~~~~~~~~~
     void _startWDT();
