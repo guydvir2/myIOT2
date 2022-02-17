@@ -9,12 +9,12 @@
 myIOT2::myIOT2() : mqttClient(espClient), flog("/myIOTlog.txt"), clklog("/clkLOG.txt")
 {
 }
-void myIOT2::start_services(cb_func funct, const char *ssid, const char *password, const char *mqtt_user, const char *mqtt_passw, const char *mqtt_broker, int log_ents, int log_len)
+void myIOT2::start_services(cb_func funct, const char *ssid, const char *password, const char *mqtt_user, const char *mqtt_passw, const char *mqtt_broker, int log_ents)
 {
 	strcpy(_mqtt_server, mqtt_broker);
 	strcpy(_mqtt_user, mqtt_user);
 	strcpy(_mqtt_pwd, mqtt_passw);
-	strcpy(_ssid, ssid);
+	strcpy(_ssid,ssid);
 	strcpy(_wifi_pwd, password);
 	ext_mqtt = funct; // redirecting to ex-class function ( defined outside)
 
@@ -25,7 +25,7 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	}
 	if (useDebug)
 	{
-		flog.start(log_ents, log_len);
+		flog.start(log_ents);
 	}
 	_start_network_services();
 
@@ -39,8 +39,9 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	}
 	if (useBootClockLog && WiFi.isConnected())
 	{
-		clklog.start(10, 13); // Dont need looper. saved only once a boot
+		clklog.start(10); // Dont need looper. saved only once a boot
 		_update_bootclockLOG();
+		Serial.println("HERE");
 	}
 }
 void myIOT2::_post_boot_check()
@@ -359,18 +360,6 @@ bool myIOT2::_startNTP(const char *ntpServer, const char *ntpServer2)
 	}
 	return (_NTP_updated());
 }
-// char *myIOT2::get_timeStamp(time_t t)
-// {
-// 	if (t == 0)
-// 	{
-// 		t = now();
-// 	}
-
-// 	char *ret = new char[20];
-// 	struct tm *tm = localtime(&t);
-// 	sprintf(ret, "%04d-%02d-%02d %02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
-// 	return ret;
-// }
 char *myIOT2::get_timeStamp(char ret[], time_t t)
 {
 	if (t == 0)
@@ -428,30 +417,6 @@ bool myIOT2::_NTP_updated()
 }
 
 // ~~~~~~~ MQTT functions ~~~~~~~
-void myIOT2::_selectMQTTbroker()
-{
-	// const char *_server;
-	// _server = _mqtt_server;
-
-	// if (useAltermqttServer)
-	// {
-	// 	if (Ping.ping(_mqtt_server, 2))
-	// 	{
-	// 		_server = _mqtt_server;
-	// 	}
-	// 	else if (Ping.ping(_mqtt_server2), 5)
-	// 	{
-	// 		_server = _mqtt_server2;
-	// 	}
-	// }
-
-	// mqttClient.setServer(_mqtt_server, 1883);
-	// if (useSerial)
-	// {
-	// 	Serial.print("MQTT SERVER: ");
-	// 	Serial.println(_mqtt_server);
-	// }
-}
 bool myIOT2::_startMQTT()
 {
 	mqttClient.setServer(_mqtt_server, 1883);
@@ -491,8 +456,8 @@ bool myIOT2::_subscribeMQTT()
 		{
 			strcpy(_addgroupTopic, "");
 		}
-		char DEV[MaxTopicLength];
-		char NAME[MaxTopicLength];
+		char DEV[MaxTopicLength2];
+		char NAME[MaxTopicLength2];
 		_devName(DEV);
 		_availName(NAME);
 
@@ -608,7 +573,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 		}
 	}
 
-	char NAME[MaxTopicLength];
+	char NAME[MaxTopicLength2];
 	_availName(NAME);
 	if (strcmp(topic, NAME) == 0 && useResetKeeper && firstRun)
 	{
@@ -773,7 +738,7 @@ void myIOT2::_pub_generic(char *topic, char *inmsg, bool retain, char *devname, 
 		get_timeStamp(clk, 0);
 		if (strcmp(devname, "") == 0)
 		{
-			char DEV[MaxTopicLength];
+			char DEV[MaxTopicLength2];
 			_devName(DEV);
 			sprintf(header, "[%s] [%s] ", clk, DEV);
 		}
@@ -818,7 +783,7 @@ void myIOT2::pub_state(char *inmsg, uint8_t i)
 {
 	char _stateTopic[MaxTopicLength2];
 	char _stateTopic2[MaxTopicLength2];
-	char DEV[MaxTopicLength];
+	char DEV[MaxTopicLength2];
 	_devName(DEV);
 	snprintf(_stateTopic, MaxTopicLength2, "%s/State", DEV);
 	snprintf(_stateTopic2, MaxTopicLength2, "%s/State_2", DEV);
@@ -923,7 +888,7 @@ const char *myIOT2::_devName(char ret[])
 }
 const char *myIOT2::_availName(char ret[])
 {
-	char DEV[MaxTopicLength];
+	char DEV[MaxTopicLength2];
 	_devName(DEV);
 	snprintf(ret, MaxTopicLength2, "%s/Avail", DEV);
 	return ret;
@@ -931,7 +896,7 @@ const char *myIOT2::_availName(char ret[])
 
 void myIOT2::notifyOnline()
 {
-	char NAME[MaxTopicLength];
+	char NAME[MaxTopicLength2];
 	_availName(NAME);
 	mqttClient.publish(NAME, "online", true);
 	_write_log("online", 2, NAME);
@@ -979,7 +944,7 @@ void myIOT2::_write_log(char *inmsg, uint8_t x, const char *topic)
 	{
 		char clk[25];
 		sprintf(a, ">>%s<< [%s] %s", get_timeStamp(clk, 0), topic, inmsg);
-		flog.write(a, true);
+		flog.write(a);
 		if (useSerial)
 		{
 			Serial.println(a);
@@ -1058,7 +1023,7 @@ void myIOT2::sendReset(char *header)
 	char temp[150];
 
 	sprintf(temp, "[%s] - Reset sent", header);
-	char DEV[MaxTopicLength];
+	char DEV[MaxTopicLength2];
 	_devName(DEV);
 	_write_log(temp, 2, DEV);
 	if (useSerial)
