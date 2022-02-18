@@ -14,7 +14,7 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	strcpy(_mqtt_server, mqtt_broker);
 	strcpy(_mqtt_user, mqtt_user);
 	strcpy(_mqtt_pwd, mqtt_passw);
-	strcpy(_ssid,ssid);
+	strcpy(_ssid, ssid);
 	strcpy(_wifi_pwd, password);
 	ext_mqtt = funct; // redirecting to ex-class function ( defined outside)
 
@@ -39,9 +39,8 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	}
 	if (useBootClockLog && WiFi.isConnected())
 	{
-		clklog.start(10); // Dont need looper. saved only once a boot
+		clklog.start(20); // Dont need looper. saved only once a boot
 		_update_bootclockLOG();
-		Serial.println("HERE");
 	}
 }
 void myIOT2::_post_boot_check()
@@ -444,8 +443,11 @@ bool myIOT2::_subscribeMQTT()
 		uint64_t chipid = ESP.getEfuseMac();
 		sprintf(tempname, "ESP32_%04X", (uint16_t)(chipid >> 32));
 #endif
+		char DEV[MaxTopicLength2];
+		char NAME[MaxTopicLength2];
 		char _ALLtopic[MaxTopicLength2];
 		char _addgroupTopic[MaxTopicLength2];
+
 		snprintf(_ALLtopic, MaxTopicLength2, "%s/All", prefixTopic);
 
 		if (strcmp(addGroupTopic, "") != 0)
@@ -456,12 +458,11 @@ bool myIOT2::_subscribeMQTT()
 		{
 			strcpy(_addgroupTopic, "");
 		}
-		char DEV[MaxTopicLength2];
-		char NAME[MaxTopicLength2];
+
 		_devName(DEV);
 		_availName(NAME);
 
-		const char *topicArry[4] = {DEV, _ALLtopic, NAME, _addgroupTopic};
+		const char *topicArry[4] = {DEV, _ALLtopic, NAME, _addgroupTopic}; /* Subscribe to these topics (listen)*/
 
 		if (mqttClient.connect(tempname, _mqtt_user, _mqtt_pwd, topicArry[2], 1, true, "offline"))
 		{
@@ -609,7 +610,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	{
 		sprintf(msg, "Help: Commands #1 - [status, reset, ota, ver, ver2, help, help2, MCU_type, services, network]");
 		pub_msg(msg);
-		sprintf(msg, "Help: Commands #2 - [flash_format, size_debug_log, del_debug_log, show_debuglog, show_bootLog]");
+		sprintf(msg, "Help: Commands #2 - [flash_format, del_debuglog, show_debuglog, show_bootlog]");
 		pub_msg(msg);
 	}
 	else if (strcmp(incoming_msg, "MCU_type") == 0)
@@ -628,28 +629,17 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 		}
 		pub_msg(msg);
 	}
-	else if (strcmp(incoming_msg, "size_debug_log") == 0)
-	{
-		if (useDebug)
-		{
-			int num_lines = 0;
-			flog.getnumlines();
-			int filesize = 0;
-			flog.sizelog();
-			sprintf(msg,
-					"debug_log: active[%s], entries [#%d], file-size[%.2f kb]",
-					useDebug ? "Yes" : "No", num_lines,
-					(float)(filesize / 1000.0));
-			pub_msg(msg);
-		}
-	}
 	else if (strcmp(incoming_msg, "show_debuglog") == 0)
 	{
 		if (useDebug)
 		{
 			char m[250];
+			char clk[25];
+			get_timeStamp(clk);
 			int x = flog.getnumlines();
-			pub_debug("~~~ Start ~~~");
+			sprintf(m, " \n<<~~~~~~[%s] %s Debuglog : entries [#%d], file-size[%.2f kb] ~~~~~~~~~~>>\n ",
+					clk, deviceTopic, flog.getnumlines(), (float)(flog.sizelog() / 1000.0));
+			pub_debug(m);
 			for (int a = 0; a < x; a++)
 			{
 				flog.readline(a, m);
@@ -661,7 +651,8 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 				delay(20);
 			}
 			pub_msg("debug_log: extracted");
-			pub_debug("~~~ END ~~~");
+			sprintf(m, " \n<<~~~~~~ %s Debuglog End ~~~~~~~~~~>> ", deviceTopic);
+			pub_debug(m);
 		}
 	}
 	else if (strcmp(incoming_msg, "flash_format") == 0)
@@ -669,7 +660,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 		pub_msg("Flash: Starting flash Format. System will reset at end.");
 		sendReset("End Format");
 	}
-	else if (strcmp(incoming_msg, "del_debug_log") == 0)
+	else if (strcmp(incoming_msg, "del_debuglog") == 0)
 	{
 		if (useDebug)
 		{
@@ -677,28 +668,26 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 			pub_msg("debug_log: file deleted");
 		}
 	}
-	else if (strcmp(incoming_msg, "show_bootLog") == 0)
+	else if (strcmp(incoming_msg, "show_bootlog") == 0)
 	{
 		if (useBootClockLog)
 		{
-			uint8_t lsize = clklog.getnumlines();
-			char t[lsize * 23 + 20];
-			sprintf(t, "BootLog: {");
-			for (uint8_t i = 0; i < lsize; i++)
+			char m[250];
+			char clk[25];
+			get_timeStamp(clk);
+			int x = clklog.getnumlines();
+			sprintf(m, " \n<<~~~~~~[%s] %s bootlog : entries [#%d], file-size[%.2f kb] ~~~~~~~~~~>>\n ",
+					clk, deviceTopic, x, (float)(clklog.sizelog() / 1000.0));
+			pub_debug(m);
+
+			for (uint8_t i = 0; i < x; i++)
 			{
-				if (i != 0)
-				{
-					strcat(t, "; ");
-				}
-				char m[13];
-				char clk[25];
 				clklog.readline(i, m);
-				time_t tmptime = atol(m);
-				strcat(t, get_timeStamp(clk, tmptime));
+				pub_debug(get_timeStamp(clk, atol(m)));
 			}
-			strcat(t, "}");
-			pub_debug(t);
-			pub_msg("BootLog: Extracted");
+			sprintf(m, " \n<<~~~~~~ %s bootlog End ~~~~~~~~~~>> ", deviceTopic);
+			pub_debug(m);
+			pub_msg("[BootLog]: Extracted");
 		}
 		else
 		{
@@ -1062,32 +1051,9 @@ void myIOT2::_acceptOTA()
 }
 void myIOT2::startOTA()
 {
-	// char OTAname[100];
-	// int m = 0;
-	// // create OTAname from _devName()
-	// for (int i = ((String)_devName()).lastIndexOf("/") + 1; i < strlen(_devName()); i++)
-	// {
-	// 	OTAname[m] = _devName()[i];
-	// 	OTAname[m + 1] = '\0';
-	// 	m++;
-	// }
-
 	allowOTA_clock = millis();
-
-	// Port defaults to 8266
 	ArduinoOTA.setPort(8266);
-
-	// // Hostname defaults to esp8266-[ChipID]
-	// // ArduinoOTA.setHostname(OTAname);
 	ArduinoOTA.setHostname(deviceTopic);
-
-	// // No authentication by default
-	// // ArduinoOTA.setPassword("admin");
-
-	// // Password can be set with it's md5 value as well
-	// // MD5(admin) = 21232f297a57a5a743894a0e4a801fc3
-	// // ArduinoOTA.setPasswordHash("21232f297a57a5a743894a0e4a801fc3");
-
 	ArduinoOTA.onStart([]()
 					   {
 						   String type;
@@ -1096,18 +1062,11 @@ void myIOT2::startOTA()
 							   type = "sketch";
 						   }
 						   else
-						   { // U_SPIFFS
+						   { 
 							   type = "filesystem";
-						   }
-
-						   /* NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-						   //    if (useSerial) {
-						   // Serial.println("Start updating " + type);
-						   //    }
-						   // Serial.end(); 
-						   */ });
+						   } });
 	if (useSerial)
-	{ // for debug
+	{
 		ArduinoOTA.onEnd([]()
 						 { Serial.println("\nEnd"); });
 		ArduinoOTA.onProgress([](unsigned int progress, unsigned int total)
@@ -1135,10 +1094,6 @@ void myIOT2::startOTA()
 							   {
 								   Serial.println("End Failed");
 							   } });
-		// ArduinoOTA.begin();
-		// Serial.println("Ready");
-		// Serial.print("IP address: ");
-		// Serial.println(WiFi.localIP());
 	}
 
 	ArduinoOTA.begin();
@@ -1151,43 +1106,3 @@ void myIOT2::_startWDT()
 	// wdt.attach(1,_feedTheDog); // Start WatchDog
 #endif
 }
-
-// // ~~~~~~  EEPROM ~~~~~~ Stop USAGE
-// void myIOT2::start_EEPROM_eADR()
-// {
-// 	const int EEPROM_SIZE = 256;
-// 	EEPROM.begin(EEPROM_SIZE);
-// 	NTP_eADR = _start_eADR;
-
-// 	for (int i = 0; i < bootlog_len; i++)
-// 	{
-// 		_prevBootclock_eADR[i] = _start_eADR + 4 * (i + 1);
-// 	}
-// }
-// void myIOT2::EEPROMWritelong(int address, long value)
-// {
-// 	uint8_t four = (value & 0xFF);
-// 	uint8_t three = ((value >> 8) & 0xFF);
-// 	uint8_t two = ((value >> 16) & 0xFF);
-// 	uint8_t one = ((value >> 24) & 0xFF);
-
-// 	EEPROM.write(address, four);
-// 	EEPROM.write(address + 1, three);
-// 	EEPROM.write(address + 2, two);
-// 	EEPROM.write(address + 3, one);
-// 	EEPROM.commit();
-// }
-// long myIOT2::EEPROMReadlong(long address)
-// {
-// 	long four = EEPROM.read(address);
-// 	long three = EEPROM.read(address + 1);
-// 	long two = EEPROM.read(address + 2);
-// 	long one = EEPROM.read(address + 3);
-
-// 	return ((four << 0) & 0xFF) + ((three << 8) & 0xFFFF) + ((two << 16) & 0xFFFFFF) + ((one << 24) & 0xFFFFFFFF);
-// }
-// long myIOT2::get_bootclockLOG(int x)
-// {
-// 	// char t[20];
-// }
-// }

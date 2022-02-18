@@ -50,7 +50,7 @@ public:
 #endif
    flashLOG flog;
    flashLOG clklog;
-   char buff[5][150];
+//    char buff[5][150];
 
    public:
    const char *ver = "iot_v1.45";
@@ -74,7 +74,6 @@ public:
 
    uint8_t mqtt_detect_reset = 2;
    static const uint8_t num_param = 4;    // MQTT parameter count
-   static const uint8_t bootlog_len = 10; // nubmer of boot clock records
    static const uint8_t _size_extTopic = 2;
    static const uint8_t MaxTopicLength = 20;                  // topics
    static const uint8_t MaxTopicLength2 = 3 * MaxTopicLength; // topics
@@ -91,11 +90,11 @@ public:
 
    private:
    // WiFi MQTT broker parameters
-   char _ssid[MaxTopicLength];
-   char _wifi_pwd[MaxTopicLength];
-   char _mqtt_server[MaxTopicLength];
-   char _mqtt_user[MaxTopicLength];
-   char _mqtt_pwd[MaxTopicLength];
+   char _ssid[15];
+   char _wifi_pwd[15];
+   char _mqtt_server[20];
+   char _mqtt_user[15];
+   char _mqtt_pwd[15];
    cb_func ext_mqtt;
 
    // time interval parameters
@@ -114,7 +113,7 @@ public:
 
    public: /* Functions */
    myIOT2();
-   void start_services(cb_func funct, const char *ssid = SSID_ID, const char *password = PASS_WIFI, const char *mqtt_user = MQTT_USER, const char *mqtt_passw = MQTT_PASS, const char *mqtt_broker = MQTT_SERVER1, int log_ents = 50);
+   void start_services(cb_func funct, const char *ssid = SSID_ID, const char *password = PASS_WIFI, const char *mqtt_user = MQTT_USER, const char *mqtt_passw = MQTT_PASS, const char *mqtt_broker = MQTT_SERVER1, int log_ents = 100);
    void looper();
    void startOTA();
    void return_clock(char ret_tuple[20]);
