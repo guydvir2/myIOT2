@@ -22,12 +22,6 @@ void addiotnalMQTT(char *incoming_msg)
         // sprintf(msg, "ver #2: [%s], lib: [%s], boardType[%s]", "espVer", VER, boardType);
         // iot.pub_msg(msg);
     }
-    else if (strcmp(incoming_msg, "disco") == 0)
-    {
-        sprintf(msg, "Disconnect sent to broker");
-        iot.pub_msg(msg);
-        iot.mqttClient.disconnect();
-    }
 }
 void startIOTservices()
 {
