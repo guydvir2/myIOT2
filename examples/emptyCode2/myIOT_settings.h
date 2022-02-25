@@ -17,13 +17,38 @@ void addiotnalMQTT(char *incoming_msg)
         sprintf(msg, "BOOOOO");
         iot.pub_msg(msg);
     }
+    else if (strcmp(incoming_msg, "help2") == 0)
+    {
+        sprintf(msg, "help #2:show_flash_param");
+        iot.pub_msg(msg);
+    }
     else if (strcmp(incoming_msg, "ver2") == 0)
     {
-        // sprintf(msg, "ver #2: [%s], lib: [%s], boardType[%s]", "espVer", VER, boardType);
-        // iot.pub_msg(msg);
+        sprintf(msg, "ver #2:");
+        iot.pub_msg(msg);
+    }
+    else if (strcmp(incoming_msg, "show_flash_param") == 0)
+    {
+        String tempStr;
+        char *a[] = {iot.myIOT_paramfile, sketch_paramfile};
+        tempStr = "~~~Start~~~\n";
+        for (int e = 0; e < sizeof(a) / sizeof(a[0]); e++)
+        {
+            String sss;
+            StaticJsonDocument<JSON_SIZE_SKETCH> sketchJSON;
+            tempStr += String(a[e]) + String("\t");
+            iot.export_fPars(a[e], sketchJSON, JSON_SIZE_SKETCH);
+            serializeJson(sketchJSON, sss);
+            tempStr += sss + String("\n");
+        }
+        tempStr += "~~~End~~~";
+        int strln = tempStr.length();
+        char tempmsg[strln + 1];
+        tempStr.toCharArray(tempmsg, strln+1);
+        iot.pub_debug(tempmsg);
     }
 }
-void startIOTservices()
+void startIOTservices(JsonDocument &paramJSON)
 {
 #if USE_SIMPLE_IOT == 1
     iot.useSerial = true;
@@ -36,7 +61,6 @@ void startIOTservices()
     iot.useNetworkReset = true;
     iot.noNetwork_reset = 10;
     iot.useBootClockLog = true;
-    iot.useAltermqttServer = false;
     iot.ignore_boot_msg = false;
     strcpy(iot.deviceTopic,DEV_TOPIC);
     strcpy(iot.prefixTopic,PREFIX_TOPIC);
@@ -56,11 +80,11 @@ void startIOTservices()
     iot.noNetwork_reset = paramJSON["noNetwork_reset"];
     iot.useextTopic = paramJSON["useextTopic"];
     iot.useBootClockLog = paramJSON["useBootClockLog"];
+    iot.ignore_boot_msg = paramJSON["ignore_boot_msg"];
     strcpy(iot.deviceTopic, paramJSON["deviceTopic"]);
     strcpy(iot.prefixTopic, paramJSON["prefixTopic"]);
     strcpy(iot.addGroupTopic, paramJSON["groupTopic"]);
 #endif
-    // iot.start_services(addiotnalMQTT, "dvirz_iot", "GdSd13100301", "guy", "kupelu9e", "192.168.2.100");
     iot.start_services(addiotnalMQTT);
 }
 

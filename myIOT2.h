@@ -4,9 +4,15 @@
 #if defined(ARDUINO_ARCH_ESP8266)
 #define isESP8266 true
 #define isESP32 false
+#define isIOT33 false
 #elif defined(ESP32)
 #define isESP32 true
 #define isESP8266 false
+#define isIOT33 false
+#elif defined(ARDUINO_ARCH_SAMD)
+#define isESP32 false
+#define isESP8266 false
+#define isIOT33 true
 #else
 #error Architecture unrecognized by this code.
 #endif
@@ -28,14 +34,18 @@
 #include <ESPmDNS.h> // OTA libraries
 #include <ESP32Ping.h>
 #define TZ_Asia_Jerusalem PSTR("IST-2IDT,M3.4.4/26,M10.5.0")
+#elif isIOT33
+#include <SPI.h>
+#include <WiFiNINA.h>
+#define TZ_Asia_Jerusalem PSTR("IST-2IDT,M3.4.4/26,M10.5.0")
 #endif
 
 // ~~~~define generic cb function~~~~
 typedef void (*cb_func)(char msg1[50]);
 struct MQTT_msg
 {
-    char from_topic[40];
     char msg[200];
+    char from_topic[40];
     char device_topic[40];
 };
 
@@ -47,12 +57,15 @@ public:
     PubSubClient mqttClient;
 #if isESP8266
     Ticker wdt;
+    // TickTwo wdt;
+
 #endif
     flashLOG flog;
     flashLOG clklog;
+    MQTT_msg *extTopic_msgArray[1] = {nullptr};
 
 public:
-    const char *ver = "iot_v1.45a";
+    const char *ver = "iot_v1.46";
     char *myIOT_paramfile = "/myIOT_param.json";
 
     /*Variables */
@@ -84,8 +97,6 @@ public:
     char addGroupTopic[MaxTopicLength];
     char *extTopic[_size_extTopic];
     bool extTopic_newmsg_flag = false;
-
-    MQTT_msg *extTopic_msgArray[1] = {nullptr};
 
 private:
     // WiFi MQTT broker parameters
@@ -145,7 +156,7 @@ public: /* Functions */
     // ~~~~~~~~~~~~~~ Param ~~~~~~~~~~~~~~~~~~~~~
     uint8_t inline_read(char *inputstr);
     bool read_fPars(char *filename, String &defs, JsonDocument &DOC, int JSIZE = 500);
-    char *export_fPars(char *filename, JsonDocument &DOC, int JSIZE = 500);
+    void export_fPars(char *filename, JsonDocument &DOC, int JSIZE = 500);
 
 private:
     // ~~~~~~~~~~~~~~WIFI ~~~~~~~~~~~~~~~~~~~~~
