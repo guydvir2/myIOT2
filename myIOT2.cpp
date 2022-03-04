@@ -18,6 +18,10 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	strcpy(_wifi_pwd, password);
 	ext_mqtt = funct; // redirecting to ex-class function ( defined outside)
 
+	if (useFlashP)
+	{
+		update_fPars();
+	}
 	if (useSerial)
 	{
 		Serial.begin(115200);
@@ -27,6 +31,7 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	{
 		flog.start(log_ents);
 	}
+
 	_start_network_services();
 
 	if (useWDT)
@@ -247,7 +252,7 @@ bool myIOT2::_startWifi(const char *ssid, const char *password)
 	{
 		if (useSerial)
 		{
-			Serial.println("no wifi detected");
+			Serial.println(F("no wifi detected"));
 			Serial.printf("\nConnection status: %d\n", WiFi.status());
 		}
 		if (noNetwork_Clock == 0)
@@ -263,8 +268,8 @@ bool myIOT2::_startWifi(const char *ssid, const char *password)
 		if (useSerial)
 		{
 			Serial.println("");
-			Serial.println("WiFi connected");
-			Serial.print("IP address: ");
+			Serial.println(F("WiFi connected"));
+			Serial.print(F("IP address: "));
 			Serial.println(WiFi.localIP());
 		}
 		noNetwork_Clock = 0;
@@ -350,7 +355,7 @@ bool myIOT2::_startMQTT()
 	mqttClient.setKeepAlive(45);
 	if (useSerial)
 	{
-		Serial.print("MQTT SERVER: ");
+		Serial.print(F("MQTT SERVER: "));
 		Serial.println(_mqtt_server);
 	}
 	mqttClient.setCallback(std::bind(&myIOT2::_MQTTcb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
@@ -362,7 +367,7 @@ bool myIOT2::_subscribeMQTT()
 	{
 		if (useSerial)
 		{
-			Serial.print("Attempting MQTT connection...");
+			Serial.print(F("Attempting MQTT connection..."));
 		}
 		char tempname[15];
 #if isESP8266
@@ -373,14 +378,14 @@ bool myIOT2::_subscribeMQTT()
 #endif
 		char DEV[MaxTopicLength2];
 		char NAME[MaxTopicLength2];
-		char _ALLtopic[MaxTopicLength2];
-		char _addgroupTopic[MaxTopicLength2];
+		char _ALLtopic[strlen(prefixTopic) + 5];
+		char _addgroupTopic[2 * MaxTopicLength];
 
-		snprintf(_ALLtopic, MaxTopicLength2, "%s/All", prefixTopic);
+		snprintf(_ALLtopic, MaxTopicLength + 4, "%s/All", prefixTopic);
 
 		if (strcmp(addGroupTopic, "") != 0)
 		{
-			snprintf(_addgroupTopic, MaxTopicLength2, "%s/%s", prefixTopic, addGroupTopic);
+			snprintf(_addgroupTopic, 2 * MaxTopicLength, "%s/%s", prefixTopic, addGroupTopic);
 		}
 		else
 		{
@@ -421,11 +426,10 @@ bool myIOT2::_subscribeMQTT()
 			}
 			if (useSerial)
 			{
-				Serial.println("connected");
+				Serial.println(F("connected"));
 			}
 			if (firstRun)
 			{
-				char buf[16];
 				char msg[60];
 				sprintf(msg, "<< PowerON Boot >> IP:[%d.%d.%d.%d]", WiFi.localIP()[0], WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3]);
 				if (!ignore_boot_msg)
@@ -446,7 +450,7 @@ bool myIOT2::_subscribeMQTT()
 		{ // fail to connect MQTT
 			if (useSerial)
 			{
-				Serial.print("failed, rc=");
+				Serial.print(F("failed, rc="));
 				Serial.println(mqttClient.state());
 			}
 			return 0;
@@ -457,7 +461,7 @@ bool myIOT2::_subscribeMQTT()
 		if (useSerial)
 		{
 			// DEBUG
-			Serial.println("No need to reconnect. MQTT_already Connected");
+			Serial.println(F("No need to reconnect. MQTT_already Connected"));
 			// DEBUG
 		}
 		return 1;
@@ -470,7 +474,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 
 	if (useSerial)
 	{
-		Serial.print("Message arrived [");
+		Serial.print(F("Message arrived ["));
 		Serial.print(topic);
 		Serial.print("] ");
 	}
@@ -530,30 +534,30 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 				useWDT, useOTA, useSerial, useResetKeeper, useDebug, useNetworkReset, noNetwork_reset);
 		pub_msg(msg);
 
-		sprintf(msg, "Services[#2]: useBootLog[%d], extTopic[%d], AlterMQTTserver[%d], ignore_boot_msg[%d], debug_level[%d]",
-				useBootClockLog, useextTopic, useAltermqttServer, ignore_boot_msg);
+		sprintf(msg, "Services[#2]: useBootLog[%d], extTopic[%d], AlterMQTTserver[%d], ignore_boot_msg[%d], debug_level[%d], useFlashP[%d]",
+				useBootClockLog, useextTopic, useAltermqttServer, ignore_boot_msg, debug_level, useFlashP);
 		pub_msg(msg);
 	}
 	else if (strcmp(incoming_msg, "help") == 0)
 	{
 		sprintf(msg, "Help: Commands #1 - [status, reset, ota, ver, ver2, help, help2, MCU_type, services, network]");
 		pub_msg(msg);
-		sprintf(msg, "Help: Commands #2 - [flash_format, del_debuglog, show_debuglog, show_bootlog]");
+		sprintf(msg, "Help: Commands #2 - [del_debuglog, del_bootlog, show_debuglog, show_bootlog, show_flashParam]");
 		pub_msg(msg);
 	}
 	else if (strcmp(incoming_msg, "MCU_type") == 0)
 	{
 		if (isESP8266)
 		{
-			sprintf(msg, "MCU: ESP8266");
+			sprintf(msg, "[MCU]: ESP8266");
 		}
 		else if (isESP32)
 		{
-			sprintf(msg, "MCU: ESP32");
+			sprintf(msg, "[MCU]: ESP32");
 		}
 		else
 		{
-			sprintf(msg, "MCU: unKnown");
+			sprintf(msg, "[MCU]: unKnown");
 		}
 		pub_msg(msg);
 	}
@@ -561,65 +565,102 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	{
 		if (useDebug)
 		{
-			char m[250];
 			char clk[25];
 			get_timeStamp(clk);
 			int x = flog.getnumlines();
-			sprintf(m, " \n<<~~~~~~[%s] %s Debuglog : entries [#%d], file-size[%.2f kb] ~~~~~~~~~~>>\n ",
+			sprintf(msg, " \n<<~~~~~~[%s] %s Debuglog : entries [#%d], file-size[%.2f kb] ~~~~~~~~~~>>\n ",
 					clk, deviceTopic, flog.getnumlines(), (float)(flog.sizelog() / 1000.0));
-			pub_debug(m);
+			pub_debug(msg);
 			for (int a = 0; a < x; a++)
 			{
-				flog.readline(a, m);
-				pub_debug(m);
+				flog.readline(a, msg);
+				pub_debug(msg);
 				if (useSerial)
 				{
-					Serial.println(m);
+					Serial.println(msg);
 				}
 				delay(20);
 			}
-			pub_msg("debug_log: extracted");
-			sprintf(m, " \n<<~~~~~~ %s Debuglog End ~~~~~~~~~~>> ", deviceTopic);
-			pub_debug(m);
+			pub_msg("[debug_log]: extracted");
+			sprintf(msg, " \n<<~~~~~~ %s Debuglog End ~~~~~~~~~~>> ", deviceTopic);
+			pub_debug(msg);
 		}
 	}
-	else if (strcmp(incoming_msg, "flash_format") == 0)
+	else if (strcmp(incoming_msg, "show_flashParam") == 0)
 	{
-		pub_msg("Flash: Starting flash Format. System will reset at end.");
-		sendReset("End Format");
+		if (useFlashP)
+		{
+			char clk[25];
+			char tempstr1[500];
+			String s = "{\"Error\":true}";
+			StaticJsonDocument<500> sketchJSON;
+			char *sketch_paramfile = "/sketch_param.json";
+			char *a[] = {myIOT_paramfile, sketch_paramfile};
+			get_timeStamp(clk);
+			sprintf(msg, "\n<<~~~~~~[%s] %s On-Flash Parameters ~~~~~~~~~~>>", clk, deviceTopic);
+			pub_debug(msg);
+
+			for (int e = 0; e < sizeof(a) / sizeof(a[0]); e++)
+			{
+				pub_debug(a[e]);
+				read_fPars(a[e], sketchJSON, s);
+				serializeJson(sketchJSON, tempstr1);
+				Serial.print("memuse:");
+				Serial.println(sketchJSON.memoryUsage());
+				Serial.print("Size1: ");
+				Serial.println(strlen(tempstr1));
+				Serial.println(tempstr1);
+				pub_debug(tempstr1);
+			}
+			pub_msg("[On-Flash Parameters]: extracted");
+			sprintf(msg, "<<~~~~~~ %s On-Flash Paramteres End ~~~~~~~~~~>>", deviceTopic);
+			pub_debug(msg);
+			sketchJSON.clear();
+		}
+		else
+		{
+			pub_msg("[On-Flash Parameters]: Not using");
+		}
 	}
 	else if (strcmp(incoming_msg, "del_debuglog") == 0)
 	{
 		if (useDebug)
 		{
 			flog.delog();
-			pub_msg("debug_log: file deleted");
+			pub_msg("[debug_log]: file deleted");
+		}
+	}
+	else if (strcmp(incoming_msg, "del_bootlog") == 0)
+	{
+		if (useDebug)
+		{
+			clklog.delog();
+			pub_msg("[boot_log]: file deleted");
 		}
 	}
 	else if (strcmp(incoming_msg, "show_bootlog") == 0)
 	{
 		if (useBootClockLog)
 		{
-			char m[250];
 			char clk[25];
 			get_timeStamp(clk);
 			int x = clklog.getnumlines();
-			sprintf(m, " \n<<~~~~~~[%s] %s bootlog : entries [#%d], file-size[%.2f kb] ~~~~~~~~~~>>\n ",
+			sprintf(msg, " \n<<~~~~~~[%s] %s bootlog : entries [#%d], file-size[%.2f kb] ~~~~~~~~~~>>",
 					clk, deviceTopic, x, (float)(clklog.sizelog() / 1000.0));
-			pub_debug(m);
+			pub_debug(msg);
 
 			for (uint8_t i = 0; i < x; i++)
 			{
-				clklog.readline(i, m);
-				pub_debug(get_timeStamp(clk, atol(m)));
+				clklog.readline(i, msg);
+				pub_debug(get_timeStamp(clk, atol(msg)));
 			}
-			sprintf(m, " \n<<~~~~~~ %s bootlog End ~~~~~~~~~~>> ", deviceTopic);
-			pub_debug(m);
+			sprintf(msg, "<<~~~~~~ %s bootlog End ~~~~~~~~~~>> ", deviceTopic);
+			pub_debug(msg);
 			pub_msg("[BootLog]: Extracted");
 		}
 		else
 		{
-			pub_msg("BootLog: Not supported");
+			pub_msg("[BootLog]: Not supported");
 		}
 	}
 	else if (strcmp(incoming_msg, "network") == 0)
@@ -644,37 +685,28 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 void myIOT2::_pub_generic(char *topic, char *inmsg, bool retain, char *devname, bool bare)
 {
 	char header[100];
-	int lenhdr = 0;
-	int lenmsg = strlen(inmsg);
 	const int mqtt_defsize = mqttClient.getBufferSize();
 	const uint8_t mqtt_overhead_size = 23;
 
 	if (!bare)
 	{
 		char clk[25];
+		char DEV[MaxTopicLength2];
+		_devName(DEV);
 		get_timeStamp(clk, 0);
-		if (strcmp(devname, "") == 0)
-		{
-			char DEV[MaxTopicLength2];
-			_devName(DEV);
-			sprintf(header, "[%s] [%s] ", clk, DEV);
-		}
-		else
-		{
-			sprintf(header, "[%s] [%s] ", clk, devname);
-		}
-		lenhdr = strlen(header);
+		sprintf(header, "[%s] [%s] ", clk, strcmp(devname, "") == 0 ? DEV : devname);
 	}
 	else
 	{
 		sprintf(header, "");
 	}
-	char tmpmsg[lenmsg + lenhdr + 5];
+	char tmpmsg[strlen(inmsg) + strlen(header) + 6];
 	sprintf(tmpmsg, "%s%s", header, inmsg);
 
-	if (strlen(tmpmsg) + mqtt_overhead_size + strlen(topic) > mqtt_defsize)
+	unsigned int totlen = strlen(tmpmsg) + mqtt_overhead_size + strlen(topic);
+	if (totlen > mqtt_defsize)
 	{
-		mqttClient.setBufferSize(strlen(tmpmsg) + mqtt_overhead_size + strlen(topic));
+		mqttClient.setBufferSize(totlen);
 		mqttClient.publish(topic, tmpmsg, retain);
 		mqttClient.setBufferSize(mqtt_defsize);
 	}
@@ -685,8 +717,8 @@ void myIOT2::_pub_generic(char *topic, char *inmsg, bool retain, char *devname, 
 }
 void myIOT2::pub_msg(char *inmsg)
 {
-	char _msgTopic[MaxTopicLength2];
-	snprintf(_msgTopic, MaxTopicLength2, "%s/Messages", prefixTopic);
+	char _msgTopic[strlen(prefixTopic) + 10];
+	snprintf(_msgTopic, strlen(prefixTopic) + 10, "%s/Messages", prefixTopic);
 
 	_pub_generic(_msgTopic, inmsg);
 	_write_log(inmsg, 0, _msgTopic);
@@ -698,12 +730,13 @@ void myIOT2::pub_noTopic(char *inmsg, char *Topic, bool retain)
 }
 void myIOT2::pub_state(char *inmsg, uint8_t i)
 {
-	char _stateTopic[MaxTopicLength2];
-	char _stateTopic2[MaxTopicLength2];
+
 	char DEV[MaxTopicLength2];
 	_devName(DEV);
-	snprintf(_stateTopic, MaxTopicLength2, "%s/State", DEV);
-	snprintf(_stateTopic2, MaxTopicLength2, "%s/State_2", DEV);
+	char _stateTopic[strlen(DEV) + 7];
+	char _stateTopic2[strlen(DEV) + 9];
+	snprintf(_stateTopic, strlen(DEV) + 7, "%s/State", DEV);
+	snprintf(_stateTopic2, strlen(DEV) + 9, "%s/State_2", DEV);
 
 	char *st[] = {_stateTopic, _stateTopic2};
 	mqttClient.publish(st[i], inmsg, true);
@@ -711,8 +744,8 @@ void myIOT2::pub_state(char *inmsg, uint8_t i)
 }
 void myIOT2::pub_log(char *inmsg)
 {
-	char _logTopic[MaxTopicLength2];
-	snprintf(_logTopic, MaxTopicLength2, "%s/log", prefixTopic);
+	char _logTopic[strlen(prefixTopic) + 5];
+	snprintf(_logTopic, strlen(prefixTopic) + 5, "%s/log", prefixTopic);
 
 	_pub_generic(_logTopic, inmsg);
 	_write_log(inmsg, 1, _logTopic);
@@ -724,8 +757,8 @@ void myIOT2::pub_ext(char *inmsg, char *name, bool retain, uint8_t i)
 }
 void myIOT2::pub_debug(char *inmsg)
 {
-	char _debugTopic[MaxTopicLength2];
-	snprintf(_debugTopic, MaxTopicLength2, "%s/debug", prefixTopic);
+	char _debugTopic[strlen(prefixTopic) + 7];
+	snprintf(_debugTopic, strlen(prefixTopic) + 7, "%s/debug", prefixTopic);
 
 	if (strlen(inmsg) + 23 > mqttClient.getBufferSize())
 	{
@@ -741,8 +774,8 @@ void myIOT2::pub_debug(char *inmsg)
 }
 void myIOT2::pub_sms(String &inmsg, char *name)
 {
-	char _smsTopic[MaxTopicLength2];
-	snprintf(_smsTopic, MaxTopicLength2, "%s/sms", prefixTopic);
+	char _smsTopic[strlen(prefixTopic) + 5];
+	snprintf(_smsTopic, strlen(prefixTopic) + 5, "%s/sms", prefixTopic);
 	int len = inmsg.length() + 1;
 	char sms_char[len];
 	inmsg.toCharArray(sms_char, len);
@@ -751,27 +784,27 @@ void myIOT2::pub_sms(String &inmsg, char *name)
 }
 void myIOT2::pub_sms(char *inmsg, char *name)
 {
-	char _smsTopic[MaxTopicLength2];
-	snprintf(_smsTopic, MaxTopicLength2, "%s/sms", prefixTopic);
+	char _smsTopic[strlen(prefixTopic) + 5];
+	snprintf(_smsTopic, strlen(prefixTopic) + 5, "%s/sms", prefixTopic);
 	_pub_generic(_smsTopic, inmsg, false, name, true);
 	_write_log(inmsg, 0, _smsTopic);
 }
 void myIOT2::pub_sms(JsonDocument &sms)
 {
-	char _smsTopic[MaxTopicLength2];
-	snprintf(_smsTopic, MaxTopicLength2, "%s/sms", prefixTopic);
-	String output;
-	serializeJson(sms, output);
-	int len = output.length() + 1;
-	char sms_char[len];
-	output.toCharArray(sms_char, len);
+	// char _smsTopic[MaxTopicLength2];
+	// snprintf(_smsTopic, MaxTopicLength2, "%s/sms", prefixTopic);
+	// String output;
+	// serializeJson(sms, output);
+	// int len = output.length() + 1;
+	// char sms_char[len];
+	// output.toCharArray(sms_char, len);
 
-	_pub_generic(_smsTopic, sms_char, false, "", true);
+	// _pub_generic(_smsTopic, sms_char, false, "", true);
 }
 void myIOT2::pub_email(String &inmsg, char *name)
 {
-	char _emailTopic[MaxTopicLength2];
-	snprintf(_emailTopic, MaxTopicLength2, "%s/email", prefixTopic);
+	char _emailTopic[strlen(prefixTopic) + 7];
+	snprintf(_emailTopic, strlen(prefixTopic) + 7, "%s/email", prefixTopic);
 	int len = inmsg.length() + 1;
 	char email_char[len];
 	inmsg.toCharArray(email_char, len);
@@ -780,40 +813,40 @@ void myIOT2::pub_email(String &inmsg, char *name)
 }
 void myIOT2::pub_email(JsonDocument &email)
 {
-	char _emailTopic[MaxTopicLength2];
-	snprintf(_emailTopic, MaxTopicLength2, "%s/email", prefixTopic);
-	String output;
-	serializeJson(email, output);
-	int len = output.length() + 1;
-	char email_char[len];
-	output.toCharArray(email_char, len);
+	// char _emailTopic[MaxTopicLength2];
+	// snprintf(_emailTopic, MaxTopicLength2, "%s/email", prefixTopic);
+	// String output;
+	// serializeJson(email, output);
+	// int len = output.length() + 1;
+	// char email_char[len];
+	// output.toCharArray(email_char, len);
 
-	_pub_generic(_emailTopic, email_char, false, "", true);
-	_write_log(email_char, 0, _emailTopic);
+	// _pub_generic(_emailTopic, email_char, false, "", true);
+	// _write_log(email_char, 0, _emailTopic);
 }
 const char *myIOT2::_devName(char ret[])
 {
 	if (strcmp(addGroupTopic, "") != 0)
 	{
-		snprintf(ret, MaxTopicLength2, "%s/%s/%s", prefixTopic, addGroupTopic, deviceTopic);
+		snprintf(ret, strlen(prefixTopic) + strlen(addGroupTopic) + strlen(deviceTopic) + 5, "%s/%s/%s", prefixTopic, addGroupTopic, deviceTopic);
 	}
 	else
 	{
-		snprintf(ret, MaxTopicLength2, "%s/%s", prefixTopic, deviceTopic);
+		snprintf(ret, strlen(prefixTopic) + strlen(deviceTopic) + 3, "%s/%s", prefixTopic, deviceTopic);
 	}
 	return ret;
 }
 const char *myIOT2::_availName(char ret[])
 {
-	char DEV[MaxTopicLength2];
+	char DEV[MaxTopicLength2 + 6];
 	_devName(DEV);
-	snprintf(ret, MaxTopicLength2, "%s/Avail", DEV);
+	snprintf(ret, strlen(DEV) + 7, "%s/Avail", DEV);
 	return ret;
 }
 
 void myIOT2::notifyOnline()
 {
-	char NAME[MaxTopicLength2];
+	char NAME[MaxTopicLength2 + 6];
 	_availName(NAME);
 	mqttClient.publish(NAME, "online", true);
 	_write_log("online", 2, NAME);
@@ -878,54 +911,65 @@ void myIOT2::_update_bootclockLOG()
 #endif
 	clklog.write(clk_char, true);
 }
-bool myIOT2::read_fPars(char *filename, String &defs, JsonDocument &DOC, int JSIZE)
+bool myIOT2::read_fPars(char *filename, JsonDocument &_DOC, String &defs)
 {
-	myJSON param_on_flash(filename, useSerial, JSIZE);
-	param_on_flash.start();
-
-	if (param_on_flash.file_exists())
-	{
-		if (param_on_flash.readJSON_file(DOC))
-		{
-			return 1;
-		}
-		else
-		{
-			return 0;
-		}
-	}
-	else
+#if isESP8266
+	LittleFS.begin();
+#elif isESP32
+	LITTLEFS.begin(true);
+#endif
+	File readFile = LittleFS.open(filename, "r");
+	DeserializationError error = deserializeJson(_DOC, readFile);
+	readFile.close();
+	if (error)
 	{
 		if (useSerial)
 		{
-			Serial.printf("\nfile %s not found", filename);
+			Serial.println(F("Failed to read JSON file"));
+			Serial.println(filename);
+			Serial.println(error.c_str());
 		}
-		deserializeJson(DOC, defs);
+		deserializeJson(_DOC, defs); // Case of error - load defs from Variable
 		return 0;
 	}
-}
-void myIOT2::export_fPars(char *filename, JsonDocument &DOC, int JSIZE)
-{
-	myJSON param_on_flash(filename, true, JSIZE); /* read stored JSON from file */
-	param_on_flash.start();
-
-	if (param_on_flash.file_exists())
-	{
-		param_on_flash.readJSON_file(DOC);
-	}
 	else
 	{
-		if (useSerial)
-		{
-			Serial.printf("\nfile %s read NOT-OK", filename);
-		}
+		return 1;
 	}
 }
+void myIOT2::update_fPars()
+{
+	StaticJsonDocument<500> myIOT_P; /* !!! Check if this not has to change !!! */
+	String myIOT_defs = "{\"useFlashP\":false,\"useSerial\":true,\"useWDT\":false,\"useOTA\":true,\"useResetKeeper\":false,\"ignore_boot_msg\":false,\"useDebugLog\":true,\"useNetworkReset\":true,\"deviceTopic\":\"devTopic\",\"useextTopic\":false,\"useBootClockLog\":false,\"groupTopic\":\"group\",\"prefixTopic\":\"myHome\",\"debug_level\":0,\"noNetwork_reset\":10,\"ver\":0.5}";
+	bool a = read_fPars(myIOT_paramfile, myIOT_P, myIOT_defs); /* Read sketch defs */
 
+	useWDT = myIOT_P["useWDT"];
+	useOTA = myIOT_P["useOTA"];
+	useSerial = myIOT_P["useSerial"];
+	useFlashP = myIOT_P["useFlashP"];
+	useDebug = myIOT_P["useDebugLog"];
+	debug_level = myIOT_P["debug_level"];
+	useextTopic = myIOT_P["useextTopic"];
+	useResetKeeper = myIOT_P["useResetKeeper"];
+	useNetworkReset = myIOT_P["useNetworkReset"];
+	noNetwork_reset = myIOT_P["noNetwork_reset"];
+	useBootClockLog = myIOT_P["useBootClockLog"];
+	ignore_boot_msg = myIOT_P["ignore_boot_msg"];
+	strcpy(deviceTopic, myIOT_P["deviceTopic"]);
+	strcpy(prefixTopic, myIOT_P["prefixTopic"]);
+	strcpy(addGroupTopic, myIOT_P["groupTopic"]);
+
+	myIOT_P.clear();
+
+	if (useSerial && !a)
+	{
+		Serial.println(F("Error read Parameters from file. Defaults values loaded."));
+	}
+}
 // ~~~~~~ Reset and maintability ~~~~~~
 void myIOT2::sendReset(char *header)
 {
-	char temp[150];
+	char temp[75];
 
 	sprintf(temp, "[%s] - Reset sent", header);
 	char DEV[MaxTopicLength2];

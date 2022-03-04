@@ -21,9 +21,9 @@
 #include <PubSubClient.h> // MQTT
 #include <WiFiUdp.h>      // OTA
 #include <ArduinoOTA.h>   // OTA
+#include <ArduinoJson.h>
 #include "secretsIOT8266.h"
 #include <myLOG.h>
-#include <myJSON.h>
 
 #if isESP8266
 #include <ESP8266WiFi.h>
@@ -57,7 +57,6 @@ public:
     PubSubClient mqttClient;
 #if isESP8266
     Ticker wdt;
-    // TickTwo wdt;
 
 #endif
     flashLOG flog;
@@ -65,7 +64,7 @@ public:
     MQTT_msg *extTopic_msgArray[1] = {nullptr};
 
 public:
-    const char *ver = "iot_v1.46";
+    const char *ver = "iot_v1.5a";
     char *myIOT_paramfile = "/myIOT_param.json";
 
     /*Variables */
@@ -74,6 +73,7 @@ public:
     bool useOTA = true;
     bool useDebug = false;
     bool useSerial = false;
+    bool useFlashP = false;
     bool useextTopic = false;
     bool useResetKeeper = false;
     bool useNetworkReset = true; // allow reset due to no-network timeout
@@ -87,7 +87,7 @@ public:
     uint8_t mqtt_detect_reset = 2;
     static const uint8_t num_param = 4; // MQTT parameter count
     static const uint8_t _size_extTopic = 2;
-    static const uint8_t MaxTopicLength = 20;                  // topics
+    static const uint8_t MaxTopicLength = 15;                  // topics
     static const uint8_t MaxTopicLength2 = 3 * MaxTopicLength; // topics
     char inline_param[num_param][10];                          // values from user
 
@@ -128,7 +128,7 @@ public: /* Functions */
     void startOTA();
 
     static bool checkInternet(char *externalSite = "www.google.com", uint8_t pings = 3);
-    
+
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     void sendReset(char *header);
     void notifyOnline();
@@ -155,8 +155,8 @@ public: /* Functions */
 
     // ~~~~~~~~~~~~~~ Param ~~~~~~~~~~~~~~~~~~~~~
     uint8_t inline_read(char *inputstr);
-    bool read_fPars(char *filename, String &defs, JsonDocument &DOC, int JSIZE = 500);
-    void export_fPars(char *filename, JsonDocument &DOC, int JSIZE = 500);
+    bool read_fPars(char *filename, JsonDocument &DOC, String &defs);
+    void update_fPars();
 
 private:
     // ~~~~~~~~~~~~~~WIFI ~~~~~~~~~~~~~~~~~~~~~

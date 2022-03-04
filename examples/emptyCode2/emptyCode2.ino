@@ -6,21 +6,19 @@
 #endif
 #include "myIOT_settings.h"
 
-
 void setup()
 {
 #if USE_SIMPLE_IOT == 1
         startIOTservices();
 #elif USE_SIMPLE_IOT == 0
-        StaticJsonDocument<JSON_SIZE_IOT> myIOT_flash_parameters;
-        read_flashParameter(myIOT_flash_parameters);
-        startIOTservices(myIOT_flash_parameters);
+        read_flashParameter();
+        startIOTservices();
 #endif
 }
 
 void loop()
 {
         iot.looper();
-        delay(100);
+        // delay(100);
         // extTopic_looper();
 }
