@@ -59,12 +59,12 @@ public:
     Ticker wdt;
 
 #endif
-    flashLOG flog;
-    flashLOG clklog;
+    flashLOG flog; /* Stores Activity LOG */
+    flashLOG clklog; /* Stores Boot clock records */
     MQTT_msg *extTopic_msgArray[1] = {nullptr};
 
 public:
-    const char *ver = "iot_v1.5a";
+    const char *ver = "iot_v1.5b";
     char *myIOT_paramfile = "/myIOT_param.json";
 
     /*Variables */
@@ -146,7 +146,6 @@ public: /* Functions */
     void clear_ExtTopicbuff();
 
     // ~~~~~~~~~~~~~~ Clk ~~~~~~~~~~~~~~~~~~~~~
-    long get_bootclockLOG(int x);
     char *get_timeStamp(char ret[], time_t t = 0);
     void return_clock(char ret_tuple[20]);
     void return_date(char ret_tuple[20]);
@@ -157,6 +156,7 @@ public: /* Functions */
     uint8_t inline_read(char *inputstr);
     bool read_fPars(char *filename, JsonDocument &DOC, String &defs);
     void update_fPars();
+    String readFile(char *fileName);
 
 private:
     // ~~~~~~~~~~~~~~WIFI ~~~~~~~~~~~~~~~~~~~~~

@@ -478,7 +478,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 		Serial.print(topic);
 		Serial.print("] ");
 	}
-	for (unsigned int i = 0; i < length; i++)
+	for (int i = 0; i < length; i++)
 	{
 		if (useSerial)
 		{
@@ -542,7 +542,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	{
 		sprintf(msg, "Help: Commands #1 - [status, reset, ota, ver, ver2, help, help2, MCU_type, services, network]");
 		pub_msg(msg);
-		sprintf(msg, "Help: Commands #2 - [del_debuglog, del_bootlog, show_debuglog, show_bootlog, show_flashParam]");
+		sprintf(msg, "Help: Commands #2 - [del_debuglog, del_bootlog, show_debuglog, show_bootlog]");
 		pub_msg(msg);
 	}
 	else if (strcmp(incoming_msg, "MCU_type") == 0)
@@ -584,42 +584,6 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 			pub_msg("[debug_log]: extracted");
 			sprintf(msg, " \n<<~~~~~~ %s Debuglog End ~~~~~~~~~~>> ", deviceTopic);
 			pub_debug(msg);
-		}
-	}
-	else if (strcmp(incoming_msg, "show_flashParam") == 0)
-	{
-		if (useFlashP)
-		{
-			char clk[25];
-			char tempstr1[500];
-			String s = "{\"Error\":true}";
-			StaticJsonDocument<500> sketchJSON;
-			char *sketch_paramfile = "/sketch_param.json";
-			char *a[] = {myIOT_paramfile, sketch_paramfile};
-			get_timeStamp(clk);
-			sprintf(msg, "\n<<~~~~~~[%s] %s On-Flash Parameters ~~~~~~~~~~>>", clk, deviceTopic);
-			pub_debug(msg);
-
-			for (int e = 0; e < sizeof(a) / sizeof(a[0]); e++)
-			{
-				pub_debug(a[e]);
-				read_fPars(a[e], sketchJSON, s);
-				serializeJson(sketchJSON, tempstr1);
-				Serial.print("memuse:");
-				Serial.println(sketchJSON.memoryUsage());
-				Serial.print("Size1: ");
-				Serial.println(strlen(tempstr1));
-				Serial.println(tempstr1);
-				pub_debug(tempstr1);
-			}
-			pub_msg("[On-Flash Parameters]: extracted");
-			sprintf(msg, "<<~~~~~~ %s On-Flash Paramteres End ~~~~~~~~~~>>", deviceTopic);
-			pub_debug(msg);
-			sketchJSON.clear();
-		}
-		else
-		{
-			pub_msg("[On-Flash Parameters]: Not using");
 		}
 	}
 	else if (strcmp(incoming_msg, "del_debuglog") == 0)
@@ -684,29 +648,29 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 }
 void myIOT2::_pub_generic(char *topic, char *inmsg, bool retain, char *devname, bool bare)
 {
-	char header[100];
-	const int mqtt_defsize = mqttClient.getBufferSize();
+	char clk[25];
+	get_timeStamp(clk, 0);
 	const uint8_t mqtt_overhead_size = 23;
+	const int mqtt_defsize = mqttClient.getBufferSize();
+
+	char DEV[MaxTopicLength2];
+	_devName(DEV);
+	int x = strcmp(devname, "") == 0 ? strlen(DEV) + 1 : 0;
+	char tmpmsg[strlen(inmsg) + x + 8 + 25];
 
 	if (!bare)
 	{
-		char clk[25];
-		char DEV[MaxTopicLength2];
-		_devName(DEV);
-		get_timeStamp(clk, 0);
-		sprintf(header, "[%s] [%s] ", clk, strcmp(devname, "") == 0 ? DEV : devname);
+		sprintf(tmpmsg, "[%s] [%s] %s", clk, DEV, inmsg);
 	}
 	else
 	{
-		sprintf(header, "");
+		sprintf(tmpmsg, "%s", inmsg);
 	}
-	char tmpmsg[strlen(inmsg) + strlen(header) + 6];
-	sprintf(tmpmsg, "%s%s", header, inmsg);
 
-	unsigned int totlen = strlen(tmpmsg) + mqtt_overhead_size + strlen(topic);
-	if (totlen > mqtt_defsize)
+	x = strlen(tmpmsg) + mqtt_overhead_size + strlen(topic);
+	if (x > mqtt_defsize)
 	{
-		mqttClient.setBufferSize(totlen);
+		mqttClient.setBufferSize(x);
 		mqttClient.publish(topic, tmpmsg, retain);
 		mqttClient.setBufferSize(mqtt_defsize);
 	}
@@ -730,17 +694,20 @@ void myIOT2::pub_noTopic(char *inmsg, char *Topic, bool retain)
 }
 void myIOT2::pub_state(char *inmsg, uint8_t i)
 {
-
 	char DEV[MaxTopicLength2];
 	_devName(DEV);
-	char _stateTopic[strlen(DEV) + 7];
-	char _stateTopic2[strlen(DEV) + 9];
-	snprintf(_stateTopic, strlen(DEV) + 7, "%s/State", DEV);
-	snprintf(_stateTopic2, strlen(DEV) + 9, "%s/State_2", DEV);
+	char _stateTopic[strlen(DEV) + 9];
 
-	char *st[] = {_stateTopic, _stateTopic2};
-	mqttClient.publish(st[i], inmsg, true);
-	_write_log(inmsg, 2, st[i]);
+	if (i == 0)
+	{
+		snprintf(_stateTopic, strlen(DEV) + 7, "%s/State", DEV);
+	}
+	else if (i == 1)
+	{
+		snprintf(_stateTopic, strlen(DEV) + 9, "%s/State_2", DEV);
+	}
+	mqttClient.publish(_stateTopic, inmsg, true);
+	_write_log(inmsg, 2, _stateTopic);
 }
 void myIOT2::pub_log(char *inmsg)
 {
@@ -759,18 +726,7 @@ void myIOT2::pub_debug(char *inmsg)
 {
 	char _debugTopic[strlen(prefixTopic) + 7];
 	snprintf(_debugTopic, strlen(prefixTopic) + 7, "%s/debug", prefixTopic);
-
-	if (strlen(inmsg) + 23 > mqttClient.getBufferSize())
-	{
-		const int mqtt_defsize = mqttClient.getBufferSize();
-		mqttClient.setBufferSize(strlen(inmsg) + 23);
-		mqttClient.publish(_debugTopic, inmsg);
-		mqttClient.setBufferSize(mqtt_defsize);
-	}
-	else
-	{
-		mqttClient.publish(_debugTopic, inmsg);
-	}
+	_pub_generic(_debugTopic, inmsg, false, "", true);
 }
 void myIOT2::pub_sms(String &inmsg, char *name)
 {
@@ -915,10 +871,12 @@ bool myIOT2::read_fPars(char *filename, JsonDocument &_DOC, String &defs)
 {
 #if isESP8266
 	LittleFS.begin();
+	File readFile = LittleFS.open(filename, "r");
 #elif isESP32
 	LITTLEFS.begin(true);
+	File readFile = LITTLEFS.open(filename, "r");
 #endif
-	File readFile = LittleFS.open(filename, "r");
+
 	DeserializationError error = deserializeJson(_DOC, readFile);
 	readFile.close();
 	if (error)
@@ -966,10 +924,33 @@ void myIOT2::update_fPars()
 		Serial.println(F("Error read Parameters from file. Defaults values loaded."));
 	}
 }
+String myIOT2::readFile(char *fileName)
+{
+#if isESP8266
+	LittleFS.begin();
+	File file = LittleFS.open(fileName, "r");
+#elif isESP32
+	LITTLEFS.begin(true);
+	File file = LITTLEFS.open(fileName, "r");
+#endif
+
+	if (file)
+	{
+		String t = file.readString();
+		file.close();
+		return t;
+	}
+	else
+	{
+		file.close();
+		return "";
+	}
+}
+
 // ~~~~~~ Reset and maintability ~~~~~~
 void myIOT2::sendReset(char *header)
 {
-	char temp[75];
+	char temp[17 + strlen(header)];
 
 	sprintf(temp, "[%s] - Reset sent", header);
 	char DEV[MaxTopicLength2];
