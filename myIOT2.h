@@ -127,7 +127,7 @@ public: /* Functions */
     void looper();
     void startOTA();
 
-    static bool checkInternet(char *externalSite = "www.google.com", uint8_t pings = 3);
+    bool checkInternet(char *externalSite = "www.google.com", uint8_t pings = 3);
 
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     void sendReset(char *header);
