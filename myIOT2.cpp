@@ -114,6 +114,25 @@ bool myIOT2::_network_looper()
 	}
 	else
 	{
+		if (cur_NTP_status == false && cur_wifi_status == true) /* Wifi connected NTP failed */
+		{
+			if (NTP_err_clk == 0)
+			{
+				NTP_err_clk = millis();
+			}
+			else if (millis() - NTP_err_clk > 60 * MS2MINUTES)
+			{
+				sendReset("NTP_RESET");
+			}
+			else if (millis() - _lastNTP_try > 10 * MS2MINUTES)
+			{
+				_lastNTP_try = millis();
+				if (_startNTP())
+				{
+					NTP_err_clk = 0;
+				}
+			}
+		}
 		if (cur_wifi_status == false) /* No WiFi Connected */
 		{
 			if (noNetwork_Clock == 0) /* First Time */
@@ -181,26 +200,6 @@ bool myIOT2::_network_looper()
 						mqttClient.disconnect();
 						return 0;
 					}
-				}
-			}
-		}
-
-		if (cur_NTP_status == false && cur_wifi_status == true) /* Wifi connected NTP failed */
-		{
-			if (NTP_err_clk == 0)
-			{
-				NTP_err_clk = millis();
-			}
-			else if (millis() - NTP_err_clk > 60 * MS2MINUTES)
-			{
-				sendReset("NTP_RESET");
-			}
-			else if (millis() - _lastNTP_try > 10 * MS2MINUTES)
-			{
-				_lastNTP_try = millis();
-				if (_startNTP())
-				{
-					NTP_err_clk = 0;
 				}
 			}
 		}
@@ -534,15 +533,15 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 				useWDT, useOTA, useSerial, useResetKeeper, useDebug, useNetworkReset, noNetwork_reset);
 		pub_msg(msg);
 
-		sprintf(msg, "Services[#2]: useBootLog[%d], extTopic[%d], AlterMQTTserver[%d], ignore_boot_msg[%d], debug_level[%d], useFlashP[%d]",
-				useBootClockLog, useextTopic, useAltermqttServer, ignore_boot_msg, debug_level, useFlashP);
+		sprintf(msg, "Services[#2]: useBootLog[%d], extTopic[%d], ignore_boot_msg[%d], debug_level[%d], useFlashP[%d]",
+				useBootClockLog, useextTopic, ignore_boot_msg, debug_level, useFlashP);
 		pub_msg(msg);
 	}
 	else if (strcmp(incoming_msg, "help") == 0)
 	{
 		sprintf(msg, "Help: Commands #1 - [status, reset, ota, ver, ver2, help, help2, MCU_type, services, network]");
 		pub_msg(msg);
-		sprintf(msg, "Help: Commands #2 - [del_debuglog, del_bootlog, show_debuglog, show_bootlog]");
+		sprintf(msg, "Help: Commands #2 - [del_debuglog, del_bootlog, show_debuglog, show_bootlog, show_flashParam,{update_flash,[key],[value]}]");
 		pub_msg(msg);
 	}
 	else if (strcmp(incoming_msg, "MCU_type") == 0)
@@ -584,6 +583,32 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 			pub_msg("[debug_log]: extracted");
 			sprintf(msg, " \n<<~~~~~~ %s Debuglog End ~~~~~~~~~~>> ", deviceTopic);
 			pub_debug(msg);
+		}
+	}
+	else if (strcmp(incoming_msg, "show_flashParam") == 0)
+	{
+		if (useFlashP)
+		{
+			char clk[25];
+			get_timeStamp(clk);
+			char *filenames[] = {sketch_paramfile, myIOT_paramfile};
+			sprintf(msg, "\n<<~~~~~~ [%s] [%s] On-Flash Parameters ~~~~~>>", clk, deviceTopic);
+			pub_debug(msg);
+
+			for (uint8_t i = 0; i < 2; i++)
+			{
+				pub_debug(filenames[i]);
+				String tempstr1 = readFile(filenames[i]);
+				char buff[tempstr1.length() + 1];
+				tempstr1.toCharArray(buff, tempstr1.length() + 1);
+				pub_debug(buff);
+			}
+			pub_msg("[On-Flash Parameters]: extracted");
+			pub_debug("<<~~~~~~~~~~ End ~~~~~~~~~~>>");
+		}
+		else
+		{
+			pub_msg("[On-Flash Parameters]: not in use");
 		}
 	}
 	else if (strcmp(incoming_msg, "del_debuglog") == 0)
@@ -640,10 +665,81 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 
 		pub_msg(msg);
 	}
-
 	else
 	{
-		ext_mqtt(incoming_msg);
+		int num_p = inline_read(incoming_msg);
+
+		if (num_p > 1 && strcmp(inline_param[0], "update_flash") == 0 && useFlashP)
+		{
+			// Reading Parameter file
+			bool succ_chg = false;
+			char *allfiles[] = {myIOT_paramfile, sketch_paramfile};
+			DynamicJsonDocument myIOT_P(max(sketch_JSON_Psize, MY_IOT_JSON_SIZE));
+
+			for (uint8_t n = 0; n < 2; n++)
+			{
+				File readFile = LITFS.open(allfiles[n], "r");
+				DeserializationError error = deserializeJson(myIOT_P, readFile);
+				readFile.close();
+
+				if (error && useSerial)
+				{
+					Serial.println(error.c_str());
+				}
+				else
+				{
+					if (myIOT_P.containsKey(inline_param[1]))
+					{
+						uint8_t s = _getdataType(inline_param[2]);
+						if (s == 1)
+						{
+							if (strcmp(inline_param[2], "true") == 0)
+							{
+								myIOT_P[inline_param[1]] = true;
+							}
+							else
+							{
+								myIOT_P[inline_param[1]] = false;
+							}
+						}
+						else if (s == 2)
+						{
+							myIOT_P[inline_param[1]] = inline_param[2];
+						}
+						else if (s == 3)
+						{
+							myIOT_P[inline_param[1]] = (float)atof(inline_param[2]);
+						}
+						else if (s == 4)
+						{
+							myIOT_P[inline_param[1]] = (int)atoi(inline_param[2]);
+						}
+
+						File writefile = LITFS.open(allfiles[n], "w");
+						if (!writefile || (serializeJson(myIOT_P, writefile) == 0))
+						{
+							pub_msg("[Flash]: Write to file [FAIL]");
+						}
+						writefile.close();
+						succ_chg = true;
+						sprintf(msg, "[Flash]: parameter[%s] updated to[%s] [OK]", inline_param[1], inline_param[2]);
+						pub_msg(msg);
+					}
+					else if (n == 1)
+					{
+						sprintf(msg, "[Flash]: parameter[%s] [not Found]", inline_param[1]);
+					}
+				}
+			}
+			if (!succ_chg)
+			{
+				pub_msg("[Flash]: parameter updated [FAIL]. Key does not exist");
+			}
+		}
+		else
+		{
+			ext_mqtt(incoming_msg);
+		}
 	}
 }
 void myIOT2::_pub_generic(char *topic, char *inmsg, bool retain, char *devname, bool bare)
@@ -840,6 +936,44 @@ uint8_t myIOT2::inline_read(char *inputstr)
 	}
 	return i;
 }
+uint8_t myIOT2::_getdataType(const char *y)
+{
+	/* Return values:
+	0 - error
+	1 - bool
+	2 - string
+	3 - float
+	4 - int
+	*/
+
+	int i = atoi(y);
+	float f = atof(y);
+
+	if (isAlpha(y[0]))
+	{
+		if (strcmp(y, "true") == 0 || strcmp(y, "false") == 0)
+		{
+			return 1;
+		}
+		else
+		{
+			return 2;
+		}
+		return 0;
+	}
+	else
+	{
+		if (i != f)
+		{
+			return 3;
+		}
+		else
+		{
+			return 4;
+		}
+		return 0;
+	}
+}
 
 // ~~~~~~~~~~ Data Storage ~~~~~~~~~
 void myIOT2::_write_log(char *inmsg, uint8_t x, const char *topic)
@@ -867,18 +1001,13 @@ void myIOT2::_update_bootclockLOG()
 #endif
 	clklog.write(clk_char, true);
 }
-bool myIOT2::read_fPars(char *filename, JsonDocument &_DOC, String &defs)
+bool myIOT2::read_fPars(char *filename, JsonDocument &_DOC, char defs[])
 {
-#if isESP8266
-	LittleFS.begin();
-	File readFile = LittleFS.open(filename, "r");
-#elif isESP32
-	LITTLEFS.begin(true);
-	File readFile = LITTLEFS.open(filename, "r");
-#endif
-
+	_startFS();
+	File readFile = LITFS.open(filename, "r");
 	DeserializationError error = deserializeJson(_DOC, readFile);
 	readFile.close();
+
 	if (error)
 	{
 		if (useSerial)
@@ -897,8 +1026,12 @@ bool myIOT2::read_fPars(char *filename, JsonDocument &_DOC, String &defs)
 }
 void myIOT2::update_fPars()
 {
-	StaticJsonDocument<500> myIOT_P; /* !!! Check if this not has to change !!! */
-	String myIOT_defs = "{\"useFlashP\":false,\"useSerial\":true,\"useWDT\":false,\"useOTA\":true,\"useResetKeeper\":false,\"ignore_boot_msg\":false,\"useDebugLog\":true,\"useNetworkReset\":true,\"deviceTopic\":\"devTopic\",\"useextTopic\":false,\"useBootClockLog\":false,\"groupTopic\":\"group\",\"prefixTopic\":\"myHome\",\"debug_level\":0,\"noNetwork_reset\":10,\"ver\":0.5}";
+	StaticJsonDocument<MY_IOT_JSON_SIZE> myIOT_P; /* !!! Check if this not has to change !!! */
+	char myIOT_defs[] = "{\"useFlashP\":false,\"useSerial\":true,\"useWDT\":false,\"useOTA\":true,\
+						\"useResetKeeper\":false,\"ignore_boot_msg\":false,\"useDebugLog\":true,\
+						\"useNetworkReset\":true,\"deviceTopic\":\"devTopic\",\"useextTopic\":false,\
+						\"useBootClockLog\":false,\"groupTopic\":\"group\",\"prefixTopic\":\"myHome\",\
+						\"debug_level\":0,\"noNetwork_reset\":10,\"ver\":0.5}";
 	bool a = read_fPars(myIOT_paramfile, myIOT_P, myIOT_defs); /* Read sketch defs */
 
 	useWDT = myIOT_P["useWDT"];
@@ -916,7 +1049,7 @@ void myIOT2::update_fPars()
 	strcpy(deviceTopic, myIOT_P["deviceTopic"]);
 	strcpy(prefixTopic, myIOT_P["prefixTopic"]);
 	strcpy(addGroupTopic, myIOT_P["groupTopic"]);
-
+	strcpy(sketch_paramfile, "/sketch_param.json");
 	myIOT_P.clear();
 
 	if (useSerial && !a)
@@ -926,13 +1059,8 @@ void myIOT2::update_fPars()
 }
 String myIOT2::readFile(char *fileName)
 {
-#if isESP8266
-	LittleFS.begin();
-	File file = LittleFS.open(fileName, "r");
-#elif isESP32
-	LITTLEFS.begin(true);
-	File file = LITTLEFS.open(fileName, "r");
-#endif
+	_startFS();
+	File file = LITFS.open(fileName, "r");
 
 	if (file)
 	{
@@ -945,6 +1073,14 @@ String myIOT2::readFile(char *fileName)
 		file.close();
 		return "";
 	}
+}
+void myIOT2::_startFS()
+{
+#if isESP8266
+	LittleFS.begin();
+#elif isESP32
+	LITTLEFS.begin(true);
+#endif
 }
 
 // ~~~~~~ Reset and maintability ~~~~~~

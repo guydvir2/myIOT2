@@ -29,10 +29,12 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h> // OTA libraries
 #include <TZ.h>
+#define LITFS LittleFS
 #elif isESP32
 #include <WiFi.h>
 #include <ESPmDNS.h> // OTA libraries
 #include <ESP32Ping.h>
+#define LITFS LITTLEFS
 #define TZ_Asia_Jerusalem PSTR("IST-2IDT,M3.4.4/26,M10.5.0")
 #elif isIOT33
 #include <SPI.h>
@@ -52,6 +54,7 @@ struct MQTT_msg
 class myIOT2
 {
 #define MS2MINUTES 60000UL
+#define MY_IOT_JSON_SIZE 624
 public:
     WiFiClient espClient;
     PubSubClient mqttClient;
@@ -59,13 +62,14 @@ public:
     Ticker wdt;
 
 #endif
-    flashLOG flog; /* Stores Activity LOG */
+    flashLOG flog;   /* Stores Activity LOG */
     flashLOG clklog; /* Stores Boot clock records */
     MQTT_msg *extTopic_msgArray[1] = {nullptr};
 
 public:
-    const char *ver = "iot_v1.5b";
+    const char *ver = "iot_v1.5d";
     char *myIOT_paramfile = "/myIOT_param.json";
+    char *sketch_paramfile = "/sketch_param.json";
 
     /*Variables */
     // ~~~~~~ Services ~~~~~~~~~
@@ -79,21 +83,21 @@ public:
     bool useNetworkReset = true; // allow reset due to no-network timeout
     bool useBootClockLog = false;
     bool ignore_boot_msg = false;
-    bool useAltermqttServer = false;
-
+    
+    int sketch_JSON_Psize = 1250;
     uint8_t debug_level = 0;      // 0- All, 1- system states; 2- log only
     uint8_t noNetwork_reset = 30; // minutes
-
     uint8_t mqtt_detect_reset = 2;
+
     static const uint8_t num_param = 4; // MQTT parameter count
     static const uint8_t _size_extTopic = 2;
     static const uint8_t MaxTopicLength = 15;                  // topics
     static const uint8_t MaxTopicLength2 = 3 * MaxTopicLength; // topics
-    char inline_param[num_param][10];                          // values from user
+    char inline_param[num_param][20];                          // values from user
 
     // MQTT Topic variables
     char prefixTopic[MaxTopicLength];
-    char deviceTopic[MaxTopicLength];
+    char deviceTopic[MaxTopicLength + 5];
     char addGroupTopic[MaxTopicLength];
     char *extTopic[_size_extTopic];
     bool extTopic_newmsg_flag = false;
@@ -154,9 +158,10 @@ public: /* Functions */
 
     // ~~~~~~~~~~~~~~ Param ~~~~~~~~~~~~~~~~~~~~~
     uint8_t inline_read(char *inputstr);
-    bool read_fPars(char *filename, JsonDocument &DOC, String &defs);
+    bool read_fPars(char *filename, JsonDocument &DOC, char defs[]);
     void update_fPars();
     String readFile(char *fileName);
+    uint8_t _getdataType(const char *y);
 
 private:
     // ~~~~~~~~~~~~~~WIFI ~~~~~~~~~~~~~~~~~~~~~
@@ -182,6 +187,7 @@ private:
     void _update_bootclockLOG();
     void _post_boot_check();
     void _feedTheDog();
+    void _startFS();
 };
 // void watchdog_timer_triggered_helper(myIOT2 *watchdog)
 // {

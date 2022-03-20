@@ -18,7 +18,7 @@ void update_vars(JsonDocument &DOC)
 void read_flashParameter()
 {
   StaticJsonDocument<JSON_SIZE_SKETCH> sketchJSON;
-  String sketch_defs = "{\"paramA\":\"BBB\",\"paramB\":5555}";
+  char sketch_defs[] = "{\"paramA\":\"BBB\",\"paramB\":5555}";
   bool a = iot.read_fPars(sketch_paramfile, sketchJSON, sketch_defs);
   // serializeJsonPretty(DOC, Serial);
   // Serial.flush();

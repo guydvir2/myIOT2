@@ -8,7 +8,7 @@
 
 void setup()
 {
-#if USE_SIMPLE_IOT == 1
+#if USE_SIMPLE_IOT == 0
         startIOTservices();
 #elif USE_SIMPLE_IOT == 0
         read_flashParameter();
