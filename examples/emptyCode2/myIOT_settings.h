@@ -1,11 +1,9 @@
 #include <myIOT2.h>
-
-myIOT2 iot;
-
-#define DEV_TOPIC "empty3"
+#define DEV_TOPIC "wemos"
 #define GROUP_TOPIC ""
 #define PREFIX_TOPIC "myHome"
 
+myIOT2 iot;
 MQTT_msg extTopic_msg; /* ExtTopic*/
 
 void addiotnalMQTT(char *incoming_msg)
@@ -31,7 +29,7 @@ void addiotnalMQTT(char *incoming_msg)
 void startIOTservices()
 {
 #if USE_SIMPLE_IOT == 1
-    iot.useSerial = true;
+    iot.useSerial = false;
     iot.useWDT = true;
     iot.useOTA = true;
     iot.useResetKeeper = true;

@@ -213,7 +213,12 @@ bool myIOT2::_start_network_services()
 
 	if (_startWifi(_ssid, _wifi_pwd))
 	{
-		a = _startNTP();
+		// a = _startNTP();
+		a = true;
+		if (!_NTP_updated())
+		{
+			_startNTP();
+		}
 		b = _startMQTT();
 		_Wifi_and_mqtt_OK = a && b;
 	}
@@ -229,8 +234,8 @@ bool myIOT2::_startWifi(const char *ssid, const char *password)
 		Serial.print("Connecting to ");
 		Serial.println(ssid);
 	}
-	WiFi.mode(WIFI_OFF); // <---- NEW
-	delay(100);
+	// WiFi.mode(WIFI_OFF); // <---- NEW
+	// delay(100);
 	WiFi.mode(WIFI_STA);
 	WiFi.disconnect(true);
 	delay(100);
@@ -667,7 +672,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	}
 	else
 	{
-		int num_p = inline_read(incoming_msg);
+		num_p = inline_read(incoming_msg);
 
 		if (num_p > 1 && strcmp(inline_param[0], "update_flash") == 0 && useFlashP)
 		{

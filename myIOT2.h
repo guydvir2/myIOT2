@@ -67,7 +67,7 @@ public:
     MQTT_msg *extTopic_msgArray[1] = {nullptr};
 
 public:
-    const char *ver = "iot_v1.5d";
+    const char *ver = "iot_v1.51b";
     char *myIOT_paramfile = "/myIOT_param.json";
     char *sketch_paramfile = "/sketch_param.json";
 
@@ -83,7 +83,7 @@ public:
     bool useNetworkReset = true; // allow reset due to no-network timeout
     bool useBootClockLog = false;
     bool ignore_boot_msg = false;
-    
+
     int sketch_JSON_Psize = 1250;
     uint8_t debug_level = 0;      // 0- All, 1- system states; 2- log only
     uint8_t noNetwork_reset = 30; // minutes
@@ -94,12 +94,13 @@ public:
     static const uint8_t MaxTopicLength = 15;                  // topics
     static const uint8_t MaxTopicLength2 = 3 * MaxTopicLength; // topics
     char inline_param[num_param][20];                          // values from user
+    uint8_t num_p = 0;
 
     // MQTT Topic variables
     char prefixTopic[MaxTopicLength];
     char deviceTopic[MaxTopicLength + 5];
     char addGroupTopic[MaxTopicLength];
-    char *extTopic[_size_extTopic];
+    char *extTopic[_size_extTopic] = {nullptr, nullptr};
     bool extTopic_newmsg_flag = false;
 
 private:
