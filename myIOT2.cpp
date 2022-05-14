@@ -231,7 +231,7 @@ bool myIOT2::_startWifi(const char *ssid, const char *password)
 	if (useSerial)
 	{
 		Serial.println();
-		Serial.print("Connecting to ");
+		Serial.print(F("Connecting to "));
 		Serial.println(ssid);
 	}
 	// WiFi.mode(WIFI_OFF); // <---- NEW
@@ -404,7 +404,7 @@ bool myIOT2::_subscribeMQTT()
 		if (mqttClient.connect(tempname, _mqtt_user, _mqtt_pwd, topicArry[2], 1, true, "offline"))
 		{
 			// Connecting sequence
-			for (int i = 0; i < sizeof(topicArry) / sizeof(char *); i++)
+			for (uint8_t i = 0; i < sizeof(topicArry) / sizeof(char *); i++)
 			{
 				if (strcmp(topicArry[i], "") != 0)
 				{
@@ -420,7 +420,7 @@ bool myIOT2::_subscribeMQTT()
 			}
 			if (useextTopic)
 			{
-				for (int i = 0; i < sizeof(extTopic) / sizeof(char *); i++)
+				for (uint8_t i = 0; i < sizeof(extTopic) / sizeof(char *); i++)
 				{
 					if (extTopic[i] != nullptr)
 					{
@@ -482,7 +482,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 		Serial.print(topic);
 		Serial.print("] ");
 	}
-	for (int i = 0; i < length; i++)
+	for (unsigned int i = 0; i < length; i++)
 	{
 		if (useSerial)
 		{
@@ -519,7 +519,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 
 	if (strcmp(incoming_msg, "ota") == 0)
 	{
-		sprintf(msg, "OTA allowed for %ld seconds", OTA_upload_interval * MS2MINUTES / 1000);
+		sprintf(msg,"OTA allowed for %ld seconds", OTA_upload_interval * MS2MINUTES / 1000);
 		pub_msg(msg);
 		allowOTA_clock = millis();
 	}
@@ -678,8 +678,8 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 		{
 			// Reading Parameter file
 			bool succ_chg = false;
-			char *allfiles[] = {myIOT_paramfile, sketch_paramfile};
-			DynamicJsonDocument myIOT_P(max(sketch_JSON_Psize, MY_IOT_JSON_SIZE));
+			char *allfiles[2] = {myIOT_paramfile, sketch_paramfile};
+			DynamicJsonDocument myIOT_P(max(SKETCH_JSON_SIZE, MY_IOT_JSON_SIZE));
 
 			for (uint8_t n = 0; n < 2; n++)
 			{
@@ -756,7 +756,7 @@ void myIOT2::_pub_generic(char *topic, char *inmsg, bool retain, char *devname, 
 
 	char DEV[MaxTopicLength2];
 	_devName(DEV);
-	int x = strcmp(devname, "") == 0 ? strlen(DEV) + 1 : 0;
+	int x = devname == nullptr ? strlen(DEV) + 1 : 0;
 	char tmpmsg[strlen(inmsg) + x + 8 + 25];
 
 	if (!bare)
@@ -790,7 +790,7 @@ void myIOT2::pub_msg(char *inmsg)
 }
 void myIOT2::pub_noTopic(char *inmsg, char *Topic, bool retain)
 {
-	_pub_generic(Topic, inmsg, retain, "", true);
+	_pub_generic(Topic, inmsg, retain, nullptr, true);
 	_write_log(inmsg, 0, Topic);
 }
 void myIOT2::pub_state(char *inmsg, uint8_t i)
@@ -827,60 +827,61 @@ void myIOT2::pub_debug(char *inmsg)
 {
 	char _debugTopic[strlen(prefixTopic) + 7];
 	snprintf(_debugTopic, strlen(prefixTopic) + 7, "%s/debug", prefixTopic);
-	_pub_generic(_debugTopic, inmsg, false, "", true);
+	_pub_generic(_debugTopic, inmsg, false, nullptr, true);
 }
-void myIOT2::pub_sms(String &inmsg, char *name)
-{
-	char _smsTopic[strlen(prefixTopic) + 5];
-	snprintf(_smsTopic, strlen(prefixTopic) + 5, "%s/sms", prefixTopic);
-	int len = inmsg.length() + 1;
-	char sms_char[len];
-	inmsg.toCharArray(sms_char, len);
-	_pub_generic(_smsTopic, sms_char, false, name, true);
-	_write_log(sms_char, 0, _smsTopic);
-}
-void myIOT2::pub_sms(char *inmsg, char *name)
-{
-	char _smsTopic[strlen(prefixTopic) + 5];
-	snprintf(_smsTopic, strlen(prefixTopic) + 5, "%s/sms", prefixTopic);
-	_pub_generic(_smsTopic, inmsg, false, name, true);
-	_write_log(inmsg, 0, _smsTopic);
-}
-void myIOT2::pub_sms(JsonDocument &sms)
-{
-	// char _smsTopic[MaxTopicLength2];
-	// snprintf(_smsTopic, MaxTopicLength2, "%s/sms", prefixTopic);
-	// String output;
-	// serializeJson(sms, output);
-	// int len = output.length() + 1;
-	// char sms_char[len];
-	// output.toCharArray(sms_char, len);
+// void myIOT2::pub_sms(String &inmsg, char *name)
+// {
+// 	char _smsTopic[strlen(prefixTopic) + 5];
+// 	snprintf(_smsTopic, strlen(prefixTopic) + 5, "%s/sms", prefixTopic);
+// 	int len = inmsg.length() + 1;
+// 	char sms_char[len];
+// 	inmsg.toCharArray(sms_char, len);
+// 	_pub_generic(_smsTopic, sms_char, false, name, true);
+// 	_write_log(sms_char, 0, _smsTopic);
+// }
+// void myIOT2::pub_sms(char *inmsg, char *name)
+// {
+// 	char _smsTopic[strlen(prefixTopic) + 5];
+// 	snprintf(_smsTopic, strlen(prefixTopic) + 5, "%s/sms", prefixTopic);
+// 	_pub_generic(_smsTopic, inmsg, false, name, true);
+// 	_write_log(inmsg, 0, _smsTopic);
+// }
+// void myIOT2::pub_sms(JsonDocument &sms)
+// {
+// 	// char _smsTopic[MaxTopicLength2];
+// 	// snprintf(_smsTopic, MaxTopicLength2, "%s/sms", prefixTopic);
+// 	// String output;
+// 	// serializeJson(sms, output);
+// 	// int len = output.length() + 1;
+// 	// char sms_char[len];
+// 	// output.toCharArray(sms_char, len);
 
-	// _pub_generic(_smsTopic, sms_char, false, "", true);
-}
-void myIOT2::pub_email(String &inmsg, char *name)
-{
-	char _emailTopic[strlen(prefixTopic) + 7];
-	snprintf(_emailTopic, strlen(prefixTopic) + 7, "%s/email", prefixTopic);
-	int len = inmsg.length() + 1;
-	char email_char[len];
-	inmsg.toCharArray(email_char, len);
-	_pub_generic(_emailTopic, email_char, false, name, true);
-	_write_log(email_char, 0, _emailTopic);
-}
-void myIOT2::pub_email(JsonDocument &email)
-{
-	// char _emailTopic[MaxTopicLength2];
-	// snprintf(_emailTopic, MaxTopicLength2, "%s/email", prefixTopic);
-	// String output;
-	// serializeJson(email, output);
-	// int len = output.length() + 1;
-	// char email_char[len];
-	// output.toCharArray(email_char, len);
+// 	// _pub_generic(_smsTopic, sms_char, false, "", true);
+// }
+// void myIOT2::pub_email(String &inmsg, char *name)
+// {
+// 	char _emailTopic[strlen(prefixTopic) + 7];
+// 	snprintf(_emailTopic, strlen(prefixTopic) + 7, "%s/email", prefixTopic);
+// 	int len = inmsg.length() + 1;
+// 	char email_char[len];
+// 	inmsg.toCharArray(email_char, len);
+// 	_pub_generic(_emailTopic, email_char, false, name, true);
+// 	_write_log(email_char, 0, _emailTopic);
+// }
+// void myIOT2::pub_email(JsonDocument &email)
+// {
+// 	// char _emailTopic[MaxTopicLength2];
+// 	// snprintf(_emailTopic, MaxTopicLength2, "%s/email", prefixTopic);
+// 	// String output;
+// 	// serializeJson(email, output);
+// 	// int len = output.length() + 1;
+// 	// char email_char[len];
+// 	// output.toCharArray(email_char, len);
 
-	// _pub_generic(_emailTopic, email_char, false, "", true);
-	// _write_log(email_char, 0, _emailTopic);
-}
+// 	// _pub_generic(_emailTopic, email_char, false, "", true);
+// 	// _write_log(email_char, 0, _emailTopic);
+// }
+
 const char *myIOT2::_devName(char ret[])
 {
 	if (strcmp(addGroupTopic, "") != 0)

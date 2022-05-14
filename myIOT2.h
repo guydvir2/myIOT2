@@ -16,7 +16,7 @@
 #else
 #error Architecture unrecognized by this code.
 #endif
-
+#include <Arduino.h>
 #include <Ticker.h>       //WDT
 #include <PubSubClient.h> // MQTT
 #include <WiFiUdp.h>      // OTA
@@ -55,6 +55,8 @@ class myIOT2
 {
 #define MS2MINUTES 60000UL
 #define MY_IOT_JSON_SIZE 624
+#define SKETCH_JSON_SIZE 1250
+
 public:
     WiFiClient espClient;
     PubSubClient mqttClient;
@@ -67,9 +69,9 @@ public:
     MQTT_msg *extTopic_msgArray[1] = {nullptr};
 
 public:
-    const char *ver = "iot_v1.51b";
-    char *myIOT_paramfile = "/myIOT_param.json";
-    char *sketch_paramfile = "/sketch_param.json";
+    char ver[12] = "iot_v1.51c";
+    char myIOT_paramfile[20] = "/myIOT_param.json";
+    char sketch_paramfile[20] = "/sketch_param.json";
 
     /*Variables */
     // ~~~~~~ Services ~~~~~~~~~
@@ -84,7 +86,6 @@ public:
     bool useBootClockLog = false;
     bool ignore_boot_msg = false;
 
-    int sketch_JSON_Psize = 1250;
     uint8_t debug_level = 0;      // 0- All, 1- system states; 2- log only
     uint8_t noNetwork_reset = 30; // minutes
     uint8_t mqtt_detect_reset = 2;
@@ -98,10 +99,11 @@ public:
 
     // MQTT Topic variables
     char prefixTopic[MaxTopicLength];
-    char deviceTopic[MaxTopicLength + 5];
     char addGroupTopic[MaxTopicLength];
-    char *extTopic[_size_extTopic] = {nullptr, nullptr};
+    char deviceTopic[MaxTopicLength + 5];
+
     bool extTopic_newmsg_flag = false;
+    char *extTopic[_size_extTopic] = {nullptr, nullptr};
 
 private:
     // WiFi MQTT broker parameters
@@ -141,13 +143,13 @@ public: /* Functions */
     void pub_msg(char *inmsg);
     void pub_noTopic(char *inmsg, char *Topic, bool retain = false);
     void pub_log(char *inmsg);
-    void pub_ext(char *inmsg, char *name = "", bool retain = false, uint8_t i = 0);
+    void pub_ext(char *inmsg, char *name = nullptr, bool retain = false, uint8_t i = 0);
     void pub_debug(char *inmsg);
-    void pub_sms(String &inmsg, char *name = "");
-    void pub_sms(char *inmsg, char *name = "");
-    void pub_sms(JsonDocument &sms);
-    void pub_email(String &inmsg, char *name = "");
-    void pub_email(JsonDocument &email);
+    // void pub_sms(String &inmsg, char *name = nullptr);
+    // void pub_sms(char *inmsg, char *name = nullptr);
+    // void pub_sms(JsonDocument &sms);
+    // void pub_email(String &inmsg, char *name = nullptr);
+    // void pub_email(JsonDocument &email);
     void clear_ExtTopicbuff();
 
     // ~~~~~~~~~~~~~~ Clk ~~~~~~~~~~~~~~~~~~~~~
@@ -178,7 +180,7 @@ private:
     void _MQTTcb(char *topic, uint8_t *payload, unsigned int length);
     void _getBootReason_resetKeeper(char *msg);
     void _write_log(char *inmsg, uint8_t x, const char *topic = "_deviceName");
-    void _pub_generic(char *topic, char *inmsg, bool retain = false, char *devname = "", bool bare = false);
+    void _pub_generic(char *topic, char *inmsg, bool retain = false, char *devname = nullptr, bool bare = false);
     const char *_devName(char ret[]);
     const char *_availName(char ret[]);
 
