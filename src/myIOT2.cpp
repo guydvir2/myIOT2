@@ -8,7 +8,9 @@
 // ~~~~~~ myIOT2 CLASS ~~~~~~~~~~~ //
 myIOT2::myIOT2() : mqttClient(espClient),
 				   flog("/myIOTlog.txt"),
-				   clklog("/clkLOG.txt")
+				   clklog("/clkLOG.txt"),
+				   _MQTTConnCheck(Chrono::SECONDS),
+				   _WifiConnCheck(Chrono::SECONDS)
 {
 }
 void myIOT2::start_services(cb_func funct, const char *ssid, const char *password, const char *mqtt_user, const char *mqtt_passw, const char *mqtt_broker, int log_ents)
@@ -84,9 +86,9 @@ void myIOT2::looper()
 	}
 	if (_network_looper() == false)
 	{
-		if (noNetwork_Clock > 0 && useNetworkReset && (millis() - noNetwork_Clock > noNetwork_reset * MS2MINUTES))
+		if ((_WifiConnCheck.isRunning() && _WifiConnCheck.hasPassed(noNetwork_reset)) || (_MQTTConnCheck.isRunning() && _MQTTConnCheck.hasPassed(noNetwork_reset)))
 		{ // no Wifi or no MQTT will cause a reset
-			sendReset("NO NETWoRK");
+			sendReset("Reset due to NO NETWoRK");
 		}
 	}
 	if (useDebug)
@@ -130,24 +132,29 @@ bool myIOT2::_network_looper()
 	if (cur_mqtt_status && cur_wifi_status) /* All good */
 	{
 		mqttClient.loop();
-		noNetwork_Clock = 0; // counter resposnble to reset
+		_WifiConnCheck.stop();
+		_MQTTConnCheck.stop();
 		return 1;
 	}
 	else
 	{
 		if (cur_wifi_status == false) /* No WiFi Connected */
 		{
-			if (noNetwork_Clock == 0) /* First Time */
+			if (!_WifiConnCheck.isRunning())
 			{
-				noNetwork_Clock = millis();
-				return 0;
+				_WifiConnCheck.restart();
 			}
 			else
 			{
-				if (millis() > _lastReco_try + retryConnectWiFi * MS2MINUTES) /* try ater time interval */
+				if (_WifiConnCheck.hasPassed(retryConnectWiFi))
 				{
-					_lastReco_try = millis();
-					return _start_network_services();
+					_WifiConnCheck.restart();
+					bool a = _start_network_services();
+					if (a)
+					{
+						_WifiConnCheck.stop();
+					}
+					return a;
 				}
 				else
 				{
@@ -157,46 +164,44 @@ bool myIOT2::_network_looper()
 		}
 		else if (cur_mqtt_status == false) /* No MQTT */
 		{
-			if (millis() - _lastReco_try > 1000 * time_retry_mqtt) /* Retry timeout */
+			if (!_MQTTConnCheck.isRunning())
 			{
-				_lastReco_try = millis();
-				if (_Wifi_and_mqtt_OK == false) /* Case of fail at boot */
+				_MQTTConnCheck.restart();
+			}
+			else
+			{
+				if (_MQTTConnCheck.hasPassed(time_retry_mqtt))
 				{
-					return _start_network_services();
-				}
-				else
-				{
-					if (_subMQTT()) /* succeed to reconnect */
+					_MQTTConnCheck.restart();
+					if (_Wifi_and_mqtt_OK == false) /* Case of fail at boot */
 					{
-						mqttClient.loop();
-						if (noNetwork_Clock != 0)
+						return _start_network_services();
+					}
+					else
+					{
+						if (_subMQTT()) /* succeed to reconnect */
 						{
-							int not_con_period = (int)((millis() - noNetwork_Clock) / 1000UL);
+							mqttClient.loop();
+
+							int not_con_period = (int)((millis() - _MQTTConnCheck.elapsed()) / 1000UL);
 							if (not_con_period > 30)
 							{
 								char b[50];
 								sprintf(b, "MQTT reconnect after [%d] sec", not_con_period);
 								pub_log(b);
 							}
+							_MQTTConnCheck.stop();
+							return 1;
 						}
-						_lastReco_try = 0;
-						noNetwork_Clock = 0;
-						return 1;
-					}
-					else
-					{
-						if (noNetwork_Clock == 0)
+						else
 						{
-							noNetwork_Clock = millis();
+							if (_MQTTConnCheck.hasPassed(60))
+							{
+								flog.write("network shutdown", true);
+								_shutdown_wifi();
+							}
+							return 0;
 						}
-						// mqttClient.disconnect();
-						// delay(1000);
-						if (millis() - noNetwork_Clock > 60000)
-						{
-							flog.write("network shutdown", true);
-							_shutdown_wifi();
-						}
-						return 0;
 					}
 				}
 			}
@@ -252,9 +257,9 @@ bool myIOT2::_startWifi(const char *ssid, const char *password)
 			Serial.println(F("no wifi detected"));
 			Serial.printf("\nConnection status: %d\n", WiFi.status());
 		}
-		if (noNetwork_Clock == 0)
+		if (!_WifiConnCheck.isRunning())
 		{
-			noNetwork_Clock = millis();
+			_WifiConnCheck.restart();
 		}
 		return 0;
 	}
@@ -269,7 +274,7 @@ bool myIOT2::_startWifi(const char *ssid, const char *password)
 			Serial.print(F("IP address: "));
 			Serial.println(WiFi.localIP());
 		}
-		noNetwork_Clock = 0;
+		_WifiConnCheck.stop();
 		return 1;
 	}
 }
@@ -338,8 +343,10 @@ void myIOT2::convert_epoch2clock(long t1, long t2, char *time_str, char *days_st
 	hours = (int)((time_delta - days * sec2days) / sec2hours);
 	minutes = (int)((time_delta - days * sec2days - hours * sec2hours) / sec2minutes);
 	seconds = (int)(time_delta - days * sec2days - hours * sec2hours - minutes * sec2minutes);
-
-	sprintf(days_str, "%01dd", days);
+	if (days_str != nullptr)
+	{
+		sprintf(days_str, "%01dd", days);
+	}
 	sprintf(time_str, "%02d:%02d:%02d", hours, minutes, seconds);
 }
 time_t myIOT2::now()
@@ -393,8 +400,8 @@ bool myIOT2::_subMQTT()
 #endif
 		if (mqttClient.connect(tempname, _mqtt_user, _mqtt_pwd, sub_topics[2], 1, true, "offline"))
 		{
-			_subArray(sub_topics, 5);
-			_subArray(sub_data_topics, 3);
+			_subArray(sub_topics, MAX_NUM_TOPICS);
+			_subArray(sub_data_topics, MAX_NUM_TOPICS);
 
 			if (useSerial)
 			{
@@ -758,67 +765,11 @@ void myIOT2::pub_log(char *inmsg)
 }
 void myIOT2::pub_debug(char *inmsg)
 {
-	// char _debugTopic[strlen(sub_topics[0]) + 7];
-	// snprintf(_debugTopic, strlen(sub_topics[0]) + 7, "%s/debug", sub_topics[0]);
 	_pub_generic(pub_topics[2], inmsg, false, nullptr, true);
 }
-// void myIOT2::pub_sms(String &inmsg, char *name)
-// {
-// 	char _smsTopic[strlen(prefixTopic) + 5];
-// 	snprintf(_smsTopic, strlen(prefixTopic) + 5, "%s/sms", prefixTopic);
-// 	int len = inmsg.length() + 1;
-// 	char sms_char[len];
-// 	inmsg.toCharArray(sms_char, len);
-// 	_pub_generic(_smsTopic, sms_char, false, name, true);
-// 	_write_log(sms_char, 0, _smsTopic);
-// }
-// void myIOT2::pub_sms(char *inmsg, char *name)
-// {
-// 	char _smsTopic[strlen(prefixTopic) + 5];
-// 	snprintf(_smsTopic, strlen(prefixTopic) + 5, "%s/sms", prefixTopic);
-// 	_pub_generic(_smsTopic, inmsg, false, name, true);
-// 	_write_log(inmsg, 0, _smsTopic);
-// }
-// void myIOT2::pub_sms(JsonDocument &sms)
-// {
-// 	// char _smsTopic[MaxTopicLength2];
-// 	// snprintf(_smsTopic, MaxTopicLength2, "%s/sms", prefixTopic);
-// 	// String output;
-// 	// serializeJson(sms, output);
-// 	// int len = output.length() + 1;
-// 	// char sms_char[len];
-// 	// output.toCharArray(sms_char, len);
-
-// 	// _pub_generic(_smsTopic, sms_char, false, "", true);
-// }
-// void myIOT2::pub_email(String &inmsg, char *name)
-// {
-// 	char _emailTopic[strlen(prefixTopic) + 7];
-// 	snprintf(_emailTopic, strlen(prefixTopic) + 7, "%s/email", prefixTopic);
-// 	int len = inmsg.length() + 1;
-// 	char email_char[len];
-// 	inmsg.toCharArray(email_char, len);
-// 	_pub_generic(_emailTopic, email_char, false, name, true);
-// 	_write_log(email_char, 0, _emailTopic);
-// }
-// void myIOT2::pub_email(JsonDocument &email)
-// {
-// 	// char _emailTopic[MaxTopicLength2];
-// 	// snprintf(_emailTopic, MaxTopicLength2, "%s/email", prefixTopic);
-// 	// String output;
-// 	// serializeJson(email, output);
-// 	// int len = output.length() + 1;
-// 	// char email_char[len];
-// 	// output.toCharArray(email_char, len);
-
-// 	// _pub_generic(_emailTopic, email_char, false, "", true);
-// 	// _write_log(email_char, 0, _emailTopic);
-// }
 
 void myIOT2::notifyOnline()
 {
-	// char NAME[MaxTopicLength2 + 6];
-	// _availName(NAME);
 	mqttClient.publish(sub_topics[2], "online", true);
 	_write_log("online", 2, sub_topics[2]);
 }
@@ -895,8 +846,11 @@ void myIOT2::_write_log(char *inmsg, uint8_t x, const char *topic)
 	if (useDebug && debug_level <= x)
 	{
 		char clk[25];
+		char clk2[20];
+		char days[10];
 		get_timeStamp(clk, 0);
-		sprintf(a, ">>%s<< [%s] %s", clk, topic, inmsg);
+		convert_epoch2clock(millis() / 1000, 0, clk2, days);
+		sprintf(a, ">>%s<< [uptime: %s %s] [%s] %s", clk, days, clk2, topic, inmsg);
 		flog.write(a);
 		if (useSerial)
 		{
@@ -1018,7 +972,7 @@ void myIOT2::sendReset(char *header)
 void myIOT2::_feedTheDog()
 {
 	wdtResetCounter++;
-#if defined (ESP8266)
+#if defined(ESP8266)
 	if (wdtResetCounter >= wdtMaxRetries)
 	{
 		sendReset("Dog goes woof");

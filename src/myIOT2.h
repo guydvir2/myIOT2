@@ -9,6 +9,7 @@
 #include <ArduinoJson.h>
 #include "secretsIOT8266.h"
 #include <myLOG.h>
+#include <Chrono.h>
 
 #if defined(ESP8266)
 #include <ESP8266WiFi.h>
@@ -88,6 +89,8 @@ private:
     char _mqtt_server[20];
 
     cb_func ext_mqtt;
+    Chrono _WifiConnCheck;
+    Chrono _MQTTConnCheck;
 
     // time interval parameters
     const uint8_t WIFItimeOut = 20;         // sec try to connect WiFi
@@ -126,7 +129,7 @@ public: /* Functions */
     void return_date(char ret_tuple[20]);
     void get_timeStamp(char ret[], time_t t = 0);
     void return_clock(char ret_tuple[20]);
-    void convert_epoch2clock(long t1, long t2, char *time_str, char *days_str);
+    void convert_epoch2clock(long t1, long t2, char *time_str, char *days_str = nullptr);
 
     // ~~~~~~~~~~~~~~ Param ~~~~~~~~~~~~~~~~~~~~~
     uint8_t inline_read(char *inputstr);
