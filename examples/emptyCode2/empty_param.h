@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <ArduinoJson.h>
 #include <myJSON.h>
 
 #define JSON_SIZE_SKETCH 256

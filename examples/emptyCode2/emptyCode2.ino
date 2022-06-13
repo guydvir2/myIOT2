@@ -21,5 +21,4 @@ void loop()
 {
         iot.looper();
         // delay(100);
-        // extTopic_looper();
 }

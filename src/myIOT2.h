@@ -118,12 +118,8 @@ public: /* Functions */
     void pub_noTopic(char *inmsg, char *Topic, bool retain = false);
     void pub_log(char *inmsg);
     void pub_debug(char *inmsg);
-    // void pub_sms(String &inmsg, char *name = nullptr);
     // void pub_sms(char *inmsg, char *name = nullptr);
-    // void pub_sms(JsonDocument &sms);
     // void pub_email(String &inmsg, char *name = nullptr);
-    // void pub_email(JsonDocument &email);
-    void clear_ExtTopicbuff();
 
     // ~~~~~~~~~~~~~~ Clk ~~~~~~~~~~~~~~~~~~~~~
     time_t now();
@@ -156,16 +152,14 @@ private:
     void _getBootReason_resetKeeper(char *msg);
     void _write_log(char *inmsg, uint8_t x, const char *topic = "_deviceName");
     void _pub_generic(const char *topic, char *inmsg, bool retain = false, char *devname = nullptr, bool bare = false);
-    const char *_devName(char ret[]);
-    const char *_availName(char ret[]);
 
     // ~~~~~~~ Services  ~~~~~~~~~~~~~~~~~~~~~~~~
+    void _startFS();
     void _startWDT();
     void _acceptOTA();
     void _update_bootclockLOG();
     void _post_boot_check();
     void _feedTheDog();
-    void _startFS();
 };
 // void watchdog_timer_triggered_helper(myIOT2 *watchdog)
 // {
