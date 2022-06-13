@@ -286,6 +286,7 @@ void myIOT2::_shutdown_wifi()
 	WiFi.disconnect(true);
 	delay(200);
 }
+
 // ~~~~~~~ NTP & Clock  ~~~~~~~~
 bool myIOT2::_startNTP(const char *ntpServer, const char *ntpServer2)
 {
@@ -309,18 +310,6 @@ void myIOT2::get_timeStamp(char ret[], time_t t)
 	}
 	struct tm *tm = localtime(&t);
 	sprintf(ret, "%04d-%02d-%02d %02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
-}
-void myIOT2::return_clock(char ret_tuple[20])
-{
-	time_t t = now();
-	struct tm *tm = localtime(&t);
-	sprintf(ret_tuple, "%02d:%02d:%02d", tm->tm_hour, tm->tm_min, tm->tm_sec);
-}
-void myIOT2::return_date(char ret_tuple[20])
-{
-	time_t t = now();
-	struct tm *tm = localtime(&t);
-	sprintf(ret_tuple, "%02d-%02d-%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
 }
 bool myIOT2::pingSite(char *externalSite, uint8_t pings)
 {
@@ -896,7 +885,7 @@ void myIOT2::update_fPars()
 	StaticJsonDocument<MY_IOT_JSON_SIZE> myIOT_P; /* !!! Check if this not has to change !!! */
 	char myIOT_defs[] = "{\"useFlashP\":false,\"useSerial\":true,\"useWDT\":false,\"useOTA\":true,\
 						\"useResetKeeper\":false,\"ignore_boot_msg\":false,\"useDebugLog\":true,\
-						\"useNetworkReset\":true,\"deviceTopic\":\"devTopic\",\"useextTopic\":false,\
+						\"useNetworkReset\":true,\"deviceTopic\":\"devTopic\",\
 						\"useBootClockLog\":false,\"groupTopic\":\"group\",\"prefixTopic\":\"myHome\",\
 						\"debug_level\":0,\"noNetwork_reset\":10,\"ver\":0.5}";
 	bool a = read_fPars(myIOT_paramfile, myIOT_P, myIOT_defs); /* Read sketch defs */

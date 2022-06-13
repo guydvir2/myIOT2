@@ -126,9 +126,7 @@ public: /* Functions */
 
     // ~~~~~~~~~~~~~~ Clk ~~~~~~~~~~~~~~~~~~~~~
     time_t now();
-    void return_date(char ret_tuple[20]);
     void get_timeStamp(char ret[], time_t t = 0);
-    void return_clock(char ret_tuple[20]);
     void convert_epoch2clock(long t1, long t2, char *time_str, char *days_str = nullptr);
 
     // ~~~~~~~~~~~~~~ Param ~~~~~~~~~~~~~~~~~~~~~
