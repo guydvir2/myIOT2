@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "../../../../../../../Dropbox/Arduino/libraries/myIOT2"
+		},
+		{
+			"name": "myIOT3",
+			"path": "../../.."
+		}
+	],
+	"settings": {}
+}
