@@ -33,16 +33,16 @@
 class myIOT2
 {
 #define MAX_NUM_TOPICS 5
-#define MS2MINUTES 60000UL
-#define MY_IOT_JSON_SIZE 624
+#define MY_IOT_JSON_SIZE 1250
 #define SKETCH_JSON_SIZE 1250
+#define MS2MINUTES 60000
 
 public:
     WiFiClient espClient;
     PubSubClient mqttClient;
     flashLOG flog;   /* Stores Activity LOG */
     flashLOG clklog; /* Stores Boot clock records */
-#if isESP8266
+#if defined(ESP8266)
     Ticker wdt;
 #endif
 
@@ -91,14 +91,14 @@ private:
     cb_func ext_mqtt;
     Chrono _WifiConnCheck;
     Chrono _MQTTConnCheck;
+    Chrono _NTPCheck;
 
     // time interval parameters
     const uint8_t WIFItimeOut = 20;         // sec try to connect WiFi
-    const uint8_t retryConnectWiFi = 1;     // minutes between fail Wifi reconnect reties
+    const uint8_t retryConnectWiFi = 60;     // seconds between fail Wifi reconnect reties
     const uint8_t OTA_upload_interval = 10; // minute to try OTA
     const uint8_t wdtMaxRetries = 20;       // seconds to bITE
-    unsigned long noNetwork_Clock = 0;      // clock
-    unsigned long allowOTA_clock = 0;       // clock
+    unsigned long allowOTA_clock = 0; // clock
     volatile uint8_t wdtResetCounter = 0;
 
     // holds status
@@ -131,10 +131,10 @@ public: /* Functions */
 
     // ~~~~~~~~~~~~~~ Param ~~~~~~~~~~~~~~~~~~~~~
     uint8_t inline_read(char *inputstr);
-    bool read_fPars(char *filename, JsonDocument &DOC, char defs[]);
+    bool extract_JSON_from_flash(char *filename, JsonDocument &DOC);
     void update_fPars();
+    void update_vars_flash_parameters(JsonDocument &DOC);
     String readFile(char *fileName);
-    uint8_t _getdataType(const char *y);
 
 private:
     // ~~~~~~~~~~~~~~WIFI ~~~~~~~~~~~~~~~~~~~~~
@@ -161,6 +161,12 @@ private:
     void _update_bootclockLOG();
     void _post_boot_check();
     void _feedTheDog();
+
+    // ~~~~~~~~~~~~~~ Param ~~~~~~~~~~~~~~~~~~~~~
+    uint8_t _getdataType(const char *y);
+    bool _update_flashParameter(const char *key, const char *new_value);
+    bool _change_flashP_value(const char *key, const char *new_value, JsonDocument &DOC);
+    bool _saveFile(char *filename, JsonDocument &DOC);
 };
 // void watchdog_timer_triggered_helper(myIOT2 *watchdog)
 // {

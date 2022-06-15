@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <myJSON.h>
 
 #define JSON_SIZE_SKETCH 256
 
@@ -17,14 +16,18 @@ void update_vars(JsonDocument &DOC)
 void read_flashParameter()
 {
   StaticJsonDocument<JSON_SIZE_SKETCH> sketchJSON;
-  char sketch_defs[] = "{\"paramA\":\"BBB\",\"paramB\":5555}";
-  bool a = iot.read_fPars(sketch_paramfile, sketchJSON, sketch_defs);
-  // serializeJsonPretty(DOC, Serial);
-  // Serial.flush();
-  update_vars(sketchJSON);
 
-  if (!a)
+  char sketch_defs[] = "{\
+                          \"paramA\":\"BBB\",\
+                          \"paramB\":5555\
+                        }";
+
+  if (!iot.extract_JSON_from_flash(sketch_paramfile, sketchJSON))
   {
+    deserializeJson(sketchJSON, sketch_defs);
     iot.pub_log("Error read Parameters from file. Defaults values loaded.");
   }
+  // serializeJsonPretty(sketchJSON, Serial);
+  // Serial.flush();
+  update_vars(sketchJSON);
 }

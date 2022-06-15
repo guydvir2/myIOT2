@@ -1,18 +1,33 @@
 {
+    "pub_topics": [
+        "myHome/Messages",
+        "myHome/log",
+        "myHome/debug",
+        "myHome/SMS"
+    ],
+    "sub_topics": [
+        "myHome/Windows/testWindows",
+        "myHome/All",
+        "myHome/Windows/testWindows/Avail",
+        "myHome/Windows/testWindows/State",
+        "myHome/Windows"
+    ],
+    "sub_data_topics": [
+        "myHome/Windows/testWindows/data_1",
+        "myHome/Windows/testWindows/data_2",
+        "myHome/Windows/testWindows/data_3"
+    ],
     "useSerial": true,
     "useWDT": true,
     "useOTA": true,
-    "useFlashP":true,
+    "useFlashP": true,
     "useResetKeeper": true,
     "useDebugLog": true,
-    "useNetworkReset":true,
+    "useNetworkReset": true,
     "useBootClockLog": true,
     "useextTopic": false,
-    "ignore_boot_msg":false,
-    "deviceTopic": "emptyF",
-    "groupTopic": "test",
-    "prefixTopic": "myHome",
-    "debug_level":0,
-    "noNetwork_reset":30,
-    "ver":0.5
+    "ignore_boot_msg": false,
+    "debug_level": 0,
+    "noNetwork_reset": 30,
+    "ver": 0.6
 }

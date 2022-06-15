@@ -7,10 +7,10 @@
 
 // ~~~~~~ myIOT2 CLASS ~~~~~~~~~~~ //
 myIOT2::myIOT2() : mqttClient(espClient),
-				   flog("/myIOTlog.txt"),
-				   clklog("/clkLOG.txt"),
+				   flog("/myIOTlog.txt"), clklog("/clkLOG.txt"),
 				   _MQTTConnCheck(Chrono::SECONDS),
-				   _WifiConnCheck(Chrono::SECONDS)
+				   _WifiConnCheck(Chrono::SECONDS),
+				   _NTPCheck(Chrono::SECONDS)
 {
 }
 void myIOT2::start_services(cb_func funct, const char *ssid, const char *password, const char *mqtt_user, const char *mqtt_passw, const char *mqtt_broker, int log_ents)
@@ -101,31 +101,24 @@ void myIOT2::looper()
 // ~~~~~~~ Wifi functions ~~~~~~~
 bool myIOT2::_network_looper()
 {
-	static unsigned long NTP_err_clk = 0;
-	static unsigned long _lastNTP_try = 0;
-	static unsigned long _lastReco_try = 0;
 	const uint8_t time_retry_mqtt = 15; // sec
+	const uint8_t time_retry_NTP = 60;	// sec
+	const int time_reset_NTP = 360;		// sec
 
-	bool cur_NTP_status = _NTP_updated();
 	bool cur_wifi_status = WiFi.isConnected();
 	bool cur_mqtt_status = mqttClient.connected();
 
-	if (cur_NTP_status == false && cur_wifi_status == true) /* Wifi connected NTP failed */
+	if (_NTPCheck.isRunning())
 	{
-		if (NTP_err_clk == 0)
-		{
-			NTP_err_clk = millis();
-		}
-		else if (millis() - NTP_err_clk > 60 * MS2MINUTES)
+		if (_NTPCheck.hasPassed(time_reset_NTP)) /* Reset after 1 hour */
 		{
 			sendReset("NTP_RESET");
 		}
-		else if (millis() - _lastNTP_try > 10 * MS2MINUTES)
+		else if (_NTPCheck.hasPassed(time_retry_NTP)) /* Retry update every 1 minute*/
 		{
-			_lastNTP_try = millis();
-			if (_startNTP())
+			if (!_NTP_updated())
 			{
-				NTP_err_clk = 0;
+				_startNTP();
 			}
 		}
 	}
@@ -199,6 +192,7 @@ bool myIOT2::_network_looper()
 							{
 								flog.write("network shutdown", true);
 								_shutdown_wifi();
+								_start_network_services();
 							}
 							return 0;
 						}
@@ -300,7 +294,16 @@ bool myIOT2::_startNTP(const char *ntpServer, const char *ntpServer2)
 #endif
 		delay(250);
 	}
-	return (_NTP_updated());
+	if (!_NTP_updated())
+	{
+		_NTPCheck.restart();
+		return 0;
+	}
+	else
+	{
+		_NTPCheck.stop();
+		return 1;
+	}
 }
 void myIOT2::get_timeStamp(char ret[], time_t t)
 {
@@ -620,70 +623,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 
 		if (num_p > 1 && strcmp(inline_param[0], "update_flash") == 0 && useFlashP)
 		{
-			// Reading Parameter file
-			bool succ_chg = false;
-			char *allfiles[2] = {myIOT_paramfile, sketch_paramfile};
-			DynamicJsonDocument myIOT_P(max(SKETCH_JSON_SIZE, MY_IOT_JSON_SIZE));
-
-			for (uint8_t n = 0; n < 2; n++)
-			{
-				File readFile = LITFS.open(allfiles[n], "r");
-				DeserializationError error = deserializeJson(myIOT_P, readFile);
-				readFile.close();
-
-				if (error && useSerial)
-				{
-					Serial.println(error.c_str());
-				}
-				else
-				{
-					if (myIOT_P.containsKey(inline_param[1]))
-					{
-						uint8_t s = _getdataType(inline_param[2]);
-						if (s == 1)
-						{
-							if (strcmp(inline_param[2], "true") == 0)
-							{
-								myIOT_P[inline_param[1]] = true;
-							}
-							else
-							{
-								myIOT_P[inline_param[1]] = false;
-							}
-						}
-						else if (s == 2)
-						{
-							myIOT_P[inline_param[1]] = inline_param[2];
-						}
-						else if (s == 3)
-						{
-							myIOT_P[inline_param[1]] = (float)atof(inline_param[2]);
-						}
-						else if (s == 4)
-						{
-							myIOT_P[inline_param[1]] = (int)atoi(inline_param[2]);
-						}
-
-						File writefile = LITFS.open(allfiles[n], "w");
-						if (!writefile || (serializeJson(myIOT_P, writefile) == 0))
-						{
-							pub_msg("[Flash]: Write to file [FAIL]");
-						}
-						writefile.close();
-						succ_chg = true;
-						sprintf(msg, "[Flash]: parameter[%s] updated to[%s] [OK]", inline_param[1], inline_param[2]);
-						pub_msg(msg);
-					}
-					else if (n == 1)
-					{
-						sprintf(msg, "[Flash]: parameter[%s] [not Found]", inline_param[1]);
-					}
-				}
-			}
-			if (!succ_chg)
-			{
-				pub_msg("[Flash]: parameter updated [FAIL]. Key does not exist");
-			}
+			_update_flashParameter(inline_param[1], inline_param[2]);
 		}
 		else
 		{
@@ -857,11 +797,12 @@ void myIOT2::_update_bootclockLOG()
 #endif
 	clklog.write(clk_char, true);
 }
-bool myIOT2::read_fPars(char *filename, JsonDocument &_DOC, char defs[])
+
+bool myIOT2::extract_JSON_from_flash(char *filename, JsonDocument &DOC)
 {
 	_startFS();
 	File readFile = LITFS.open(filename, "r");
-	DeserializationError error = deserializeJson(_DOC, readFile);
+	DeserializationError error = deserializeJson(DOC, readFile);
 	readFile.close();
 
 	if (error)
@@ -872,44 +813,164 @@ bool myIOT2::read_fPars(char *filename, JsonDocument &_DOC, char defs[])
 			Serial.println(filename);
 			Serial.println(error.c_str());
 		}
-		deserializeJson(_DOC, defs); // Case of error - load defs from Variable
 		return 0;
 	}
 	else
 	{
+		// update_vars_flash_parameters(DOC);
+		// serializeJsonPretty(DOC, Serial);
+
 		return 1;
+	}
+}
+void myIOT2::update_vars_flash_parameters(JsonDocument &DOC)
+{
+	useWDT = DOC["useWDT"];
+	useOTA = DOC["useOTA"];
+	useSerial = DOC["useSerial"];
+	useFlashP = DOC["useFlashP"];
+	useDebug = DOC["useDebugLog"];
+	debug_level = DOC["debug_level"];
+	useResetKeeper = DOC["useResetKeeper"];
+	useNetworkReset = DOC["useNetworkReset"];
+	noNetwork_reset = DOC["noNetwork_reset"];
+	useBootClockLog = DOC["useBootClockLog"];
+	ignore_boot_msg = DOC["ignore_boot_msg"];
+
+	for (uint8_t i = 0; i < DOC["pub_topics"].size(); i++)
+	{
+		pub_topics[i] = DOC["pub_topics"][i];
+	}
+	for (uint8_t i = 0; i < DOC["sub_topics"].size(); i++)
+	{
+		sub_topics[i] = DOC["sub_topics"][i];
+	}
+	for (uint8_t i = 0; i < DOC["sub_data_topics"].size(); i++)
+	{
+		sub_data_topics[i] = DOC["sub_data_topics"][i];
 	}
 }
 void myIOT2::update_fPars()
 {
 	StaticJsonDocument<MY_IOT_JSON_SIZE> myIOT_P; /* !!! Check if this not has to change !!! */
-	char myIOT_defs[] = "{\"useFlashP\":false,\"useSerial\":true,\"useWDT\":false,\"useOTA\":true,\
-						\"useResetKeeper\":false,\"ignore_boot_msg\":false,\"useDebugLog\":true,\
-						\"useNetworkReset\":true,\"deviceTopic\":\"devTopic\",\
-						\"useBootClockLog\":false,\"groupTopic\":\"group\",\"prefixTopic\":\"myHome\",\
-						\"debug_level\":0,\"noNetwork_reset\":10,\"ver\":0.5}";
-	bool a = read_fPars(myIOT_paramfile, myIOT_P, myIOT_defs); /* Read sketch defs */
 
-	useWDT = myIOT_P["useWDT"];
-	useOTA = myIOT_P["useOTA"];
-	useSerial = myIOT_P["useSerial"];
-	useFlashP = myIOT_P["useFlashP"];
-	useDebug = myIOT_P["useDebugLog"];
-	debug_level = myIOT_P["debug_level"];
-	useResetKeeper = myIOT_P["useResetKeeper"];
-	useNetworkReset = myIOT_P["useNetworkReset"];
-	noNetwork_reset = myIOT_P["noNetwork_reset"];
-	useBootClockLog = myIOT_P["useBootClockLog"];
-	ignore_boot_msg = myIOT_P["ignore_boot_msg"];
+	char myIOT_defs[] = "{\
+						\"useFlashP\":false,\
+						\"useSerial\":true,\
+						\"useWDT\":false,\
+						\"useOTA\":true,\
+						\"useResetKeeper\":false,\
+						\"ignore_boot_msg\":false,\
+						\"useDebugLog\":true,\
+						\"useNetworkReset\":true,\
+						\"deviceTopic\":\"devTopic\",\
+						\"useBootClockLog\":false,\
+						\"groupTopic\":\"group\",\
+						\"prefixTopic\":\"myHome\",\
+						\"debug_level\":0,\
+						\"noNetwork_reset\":10,\
+						\"ver\":0.5\
+						}";
 
-	strcpy(sketch_paramfile, "/sketch_param.json");
-	myIOT_P.clear();
-
-	if (useSerial && !a)
+	if (!extract_JSON_from_flash(myIOT_paramfile, myIOT_P)) /* Case pulling from flash fails */
 	{
-		Serial.println(F("Error read Parameters from file. Defaults values loaded."));
+		deserializeJson(myIOT_P, myIOT_defs);
+		if (useSerial)
+		{
+			Serial.println(F("Error read Parameters from file. Defaults values loaded."));
+		}
 	}
+
+	update_vars_flash_parameters(myIOT_P);
+	myIOT_P.clear();
 }
+bool myIOT2::_change_flashP_value(const char *key, const char *new_value, JsonDocument &DOC)
+{
+	uint8_t s = _getdataType(new_value);
+	if (s == 1)
+	{
+		if (strcmp(new_value, "true") == 0)
+		{
+			DOC[key] = true;
+		}
+		else
+		{
+			DOC[key] = false;
+		}
+		return 1;
+	}
+	else if (s == 2)
+	{
+		DOC[key] = new_value;
+		return 1;
+	}
+	else if (s == 3)
+	{
+		DOC[key] = (float)atof(new_value);
+		return 1;
+	}
+	else if (s == 4)
+	{
+		DOC[key] = (int)atoi(new_value);
+		return 1;
+	}
+	return 0;
+}
+bool myIOT2::_saveFile(char *filename, JsonDocument &DOC)
+{
+	File writefile = LITFS.open(filename, "w");
+	if (!writefile || (serializeJson(DOC, writefile) == 0))
+	{
+		writefile.close();
+		return 0;
+	}
+	writefile.close();
+	return 1;
+}
+bool myIOT2::_update_flashParameter(const char *key, const char *new_value)
+{
+	char msg[100];
+	bool succ_chg = false;
+	char *allfiles[2] = {myIOT_paramfile, sketch_paramfile};
+	DynamicJsonDocument myIOT_P(max(SKETCH_JSON_SIZE, MY_IOT_JSON_SIZE));
+
+	for (uint8_t n = 0; n < 2; n++)
+	{
+		if (extract_JSON_from_flash(allfiles[n], myIOT_P))
+		{
+			if (myIOT_P.containsKey(key))
+			{
+				if (_change_flashP_value(key, new_value, myIOT_P))
+				{
+					if (_saveFile(allfiles[n], myIOT_P))
+					{
+						succ_chg = true;
+						sprintf(msg, "[Flash]: parameter[%s] updated to[%s] [OK]", key, new_value);
+					}
+					else
+					{
+						succ_chg = false;
+						sprintf(msg, "[Flash]: parameter[%s] [Failed] to updated. Save file error", key);
+					}
+				}
+				else
+				{
+					succ_chg = false;
+					sprintf(msg, "[Flash]: parameter[%s] replace [Failed]", key);
+				}
+				pub_msg(msg);
+			}
+		}
+		else if (n == 1)
+		{
+			succ_chg = false;
+			sprintf(msg, "[Flash]: parameter[%s] [NOT FOUND]", key);
+			pub_msg(msg);
+		}
+	}
+	return succ_chg;
+}
+
 String myIOT2::readFile(char *fileName)
 {
 	_startFS();
