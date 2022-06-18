@@ -32,7 +32,10 @@
 
 class myIOT2
 {
-#define MAX_NUM_TOPICS 5
+#define MAX_PUB_TOPICS 3
+#define MAX_SUB_TOPICS 5
+#define MAX_SUB_DATA_TOPICS 2
+#define MAX_TOPIC_LEN 40
 #define MY_IOT_JSON_SIZE 1250
 #define SKETCH_JSON_SIZE 1250
 #define MS2MINUTES 60000
@@ -76,9 +79,10 @@ public:
     char inline_param[num_param][20];   // values from user
 
     // MQTT Topic variables
-    const char *sub_topics[MAX_NUM_TOPICS] = {};
-    const char *pub_topics[MAX_NUM_TOPICS] = {};
-    const char *sub_data_topics[MAX_NUM_TOPICS] = {};
+    const char *fullPa
+    const char *pub_topics[MAX_PUB_TOPICS];
+    char sub_topics[MAX_SUB_TOPICS][MAX_TOPIC_LEN];
+    // char sub_data_topics[MAX_SUB_DATA_TOPICS][MAX_TOPIC_LEN];
 
 private:
     // WiFi MQTT broker parameters
@@ -95,10 +99,10 @@ private:
 
     // time interval parameters
     const uint8_t WIFItimeOut = 20;         // sec try to connect WiFi
-    const uint8_t retryConnectWiFi = 60;     // seconds between fail Wifi reconnect reties
+    const uint8_t retryConnectWiFi = 60;    // seconds between fail Wifi reconnect reties
     const uint8_t OTA_upload_interval = 10; // minute to try OTA
     const uint8_t wdtMaxRetries = 20;       // seconds to bITE
-    unsigned long allowOTA_clock = 0; // clock
+    unsigned long allowOTA_clock = 0;       // clock
     volatile uint8_t wdtResetCounter = 0;
 
     // holds status
@@ -132,7 +136,7 @@ public: /* Functions */
     // ~~~~~~~~~~~~~~ Param ~~~~~~~~~~~~~~~~~~~~~
     uint8_t inline_read(char *inputstr);
     bool extract_JSON_from_flash(char *filename, JsonDocument &DOC);
-    void update_fPars();
+    void get_flashParameters();
     void update_vars_flash_parameters(JsonDocument &DOC);
     String readFile(char *fileName);
 
@@ -147,7 +151,7 @@ private:
 
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     bool _startMQTT();
-    void _subArray(const char *arr[], uint8_t n);
+    void _subArray(char *arr[], uint8_t n);
     bool _subMQTT();
     void _MQTTcb(char *topic, uint8_t *payload, unsigned int length);
     void _getBootReason_resetKeeper(char *msg);
@@ -158,9 +162,10 @@ private:
     void _startFS();
     void _startWDT();
     void _acceptOTA();
-    void _update_bootclockLOG();
+    void _store_bootclockLOG();
     void _post_boot_check();
     void _feedTheDog();
+    void _extract_log(flashLOG &LOG, const char *title, bool _isTimelog = false);
 
     // ~~~~~~~~~~~~~~ Param ~~~~~~~~~~~~~~~~~~~~~
     uint8_t _getdataType(const char *y);

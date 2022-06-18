@@ -24,7 +24,7 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 
 	if (useFlashP)
 	{
-		update_fPars();
+		get_flashParameters();
 	}
 	if (useSerial)
 	{
@@ -49,7 +49,7 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	if (useBootClockLog && WiFi.isConnected())
 	{
 		clklog.start(20); // Dont need looper. saved only once a boot
-		_update_bootclockLOG();
+		_store_bootclockLOG();
 	}
 }
 void myIOT2::_post_boot_check()
@@ -95,7 +95,7 @@ void myIOT2::looper()
 	{
 		flog.looper(30); /* 30 seconds from last write or 70% of buffer */
 	}
-	_post_boot_check();
+	// _post_boot_check();
 }
 
 // ~~~~~~~ Wifi functions ~~~~~~~
@@ -204,19 +204,15 @@ bool myIOT2::_network_looper()
 }
 bool myIOT2::_start_network_services()
 {
-	bool a = false;
-	bool b = false;
 	_Wifi_and_mqtt_OK = false;
 
 	if (_startWifi(_ssid, _wifi_pwd))
 	{
-		a = true;
 		if (!_NTP_updated())
 		{
 			_startNTP();
 		}
-		b = _startMQTT();
-		_Wifi_and_mqtt_OK = a && b;
+		_Wifi_and_mqtt_OK = _startMQTT();
 	}
 	return _Wifi_and_mqtt_OK;
 }
@@ -363,21 +359,21 @@ bool myIOT2::_startMQTT()
 	mqttClient.setCallback(std::bind(&myIOT2::_MQTTcb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 	return _subMQTT();
 }
-void myIOT2::_subArray(const char *arr[], uint8_t n)
+void myIOT2::_subArray(char *arr[], uint8_t n)
 {
-	for (uint8_t i = 0; i < n; i++)
-	{
-		if (arr[i] != nullptr)
-		{
-			mqttClient.subscribe(arr[i]);
-			if (useSerial)
-			{
-				// DEBUG
-				Serial.println(arr[i]);
-				// DEBUG
-			}
-		}
-	}
+	// for (uint8_t i = 0; i < n; i++)
+	// {
+	// 	// if (arr[i] != nullptr)
+	// 	// {
+	// 	// 	mqttClient.subscribe(arr[i]);
+	// 	// 	if (useSerial)
+	// 	// 	{
+	// 	// 		// DEBUG
+	// 	// 		Serial.println(arr[i]);
+	// 	// 		// DEBUG
+	// 	// 	}
+	// 	// }
+	// }
 }
 bool myIOT2::_subMQTT()
 {
@@ -392,13 +388,37 @@ bool myIOT2::_subMQTT()
 #endif
 		if (mqttClient.connect(tempname, _mqtt_user, _mqtt_pwd, sub_topics[2], 1, true, "offline"))
 		{
-			_subArray(sub_topics, MAX_NUM_TOPICS);
-			_subArray(sub_data_topics, MAX_NUM_TOPICS);
-
 			if (useSerial)
 			{
 				Serial.println(F("connected"));
 			}
+			for (uint8_t i = 0; i < MAX_SUB_TOPICS; i++)
+			{
+				if (sub_topics[i] != nullptr)
+				{
+					mqttClient.subscribe(sub_topics[i]);
+					if (useSerial)
+					{
+						// DEBUG
+						Serial.println(sub_topics[i]);
+						// DEBUG
+					}
+				}
+			}
+			for (uint8_t i = 0; i < MAX_SUB_DATA_TOPICS; i++)
+			{
+				if (sub_data_topics[i] != nullptr)
+				{
+					mqttClient.subscribe(sub_data_topics[i]);
+					if (useSerial)
+					{
+						// DEBUG
+						Serial.println(sub_data_topics[i]);
+						// DEBUG
+					}
+				}
+			}
+
 			if (firstRun)
 			{
 				char msg[60];
@@ -515,52 +535,45 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	{
 		if (useDebug)
 		{
-			char clk[25];
-			get_timeStamp(clk);
-			int x = flog.get_num_saved_records();
-			sprintf(msg, " \n<<~~~~~~[%s] %s Debuglog : entries [#%d], file-size[%.2f kb] ~~~~~~~~~~>>\n ",
-					clk, sub_topics[0], flog.get_num_saved_records(), (float)(flog.sizelog() / 1000.0));
-			pub_debug(msg);
-			for (int a = 0; a < x; a++)
-			{
-				flog.readline(a, msg);
-				pub_debug(msg);
-				if (useSerial)
-				{
-					Serial.println(msg);
-				}
-				delay(20);
-			}
-			pub_msg("[debug_log]: extracted");
-			sprintf(msg, " \n<<~~~~~~ %s Debuglog End ~~~~~~~~~~>> ", sub_topics[0]);
-			pub_debug(msg);
+			_extract_log(flog, "debug_log");
+		}
+		else
+		{
+			pub_msg("[DebugLog]: Not supported");
 		}
 	}
 	else if (strcmp(incoming_msg, "show_flashParam") == 0)
 	{
-		if (useFlashP)
-		{
-			char clk[25];
-			get_timeStamp(clk);
-			char *filenames[] = {sketch_paramfile, myIOT_paramfile};
-			sprintf(msg, "\n<<~~~~~~ [%s] [%s] On-Flash Parameters ~~~~~>>", clk, sub_topics[0]);
-			pub_debug(msg);
+		// if (useFlashP)
+		// {
+		// 	char clk[25];
+		// 	get_timeStamp(clk);
+		// 	char *filenames[] = {sketch_paramfile, myIOT_paramfile};
+		// 	sprintf(msg, "\n<<~~~~~~ [%s] [%s] On-Flash Parameters ~~~~~>>", clk, sub_topics[0]);
+		// 	pub_debug(msg);
 
-			for (uint8_t i = 0; i < 2; i++)
-			{
-				pub_debug(filenames[i]);
-				String tempstr1 = readFile(filenames[i]);
-				char buff[tempstr1.length() + 1];
-				tempstr1.toCharArray(buff, tempstr1.length() + 1);
-				pub_debug(buff);
-			}
-			pub_msg("[On-Flash Parameters]: extracted");
-			pub_debug("<<~~~~~~~~~~ End ~~~~~~~~~~>>");
-		}
-		else
-		{
-			pub_msg("[On-Flash Parameters]: not in use");
-		}
+		// 	for (uint8_t i = 0; i < 2; i++)
+		// 	{
+		// 		StaticJsonDocument<max(MY_IOT_JSON_SIZE, MY_IOT_JSON_SIZE)> DOC;
+		// 		pub_debug(filenames[i]);
+		// 		extract_JSON_from_flash(filenames[i], DOC);
+		// 		// String tempstr1 = readFile(filenames[i]);
+		// 		char outmsg[500];
+		// 		// serializeJsonPretty(DOC, Serial);
+		// 		serializeJson(DOC, outmsg);
+		// 		Serial.println(outmsg);
+		// 		// char buff[tempstr1.length() + 1];
+		// 		// tempstr1.toCharArray(buff, tempstr1.length() + 1);
+		// 		// pub_debug(buff);
+		// 		pub_debug(outmsg);
+		// 	}
+		// 	pub_msg("[On-Flash Parameters]: extracted");
+		// 	pub_debug("<<~~~~~~~~~~ End ~~~~~~~~~~>>");
+		// }
+		// else
+		// {
+		// 	pub_msg("[On-Flash Parameters]: not in use");
+		// }
 	}
 	else if (strcmp(incoming_msg, "del_debuglog") == 0)
 	{
@@ -582,22 +595,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	{
 		if (useBootClockLog)
 		{
-			char clk[25];
-			get_timeStamp(clk);
-			int x = clklog.get_num_saved_records();
-			sprintf(msg, " \n<<~~~~~~[%s] %s bootlog : entries [#%d], file-size[%.2f kb] ~~~~~~~~~~>>",
-					clk, sub_topics[0], x, (float)(clklog.sizelog() / 1000.0));
-			pub_debug(msg);
-
-			for (uint8_t i = 0; i < x; i++)
-			{
-				clklog.readline(i, msg);
-				get_timeStamp(clk, atol(msg));
-				pub_debug(clk);
-			}
-			sprintf(msg, "<<~~~~~~ %s bootlog End ~~~~~~~~~~>> ", sub_topics[0]);
-			pub_debug(msg);
-			pub_msg("[BootLog]: Extracted");
+			_extract_log(clklog, "boot_log", true);
 		}
 		else
 		{
@@ -787,7 +785,7 @@ void myIOT2::_write_log(char *inmsg, uint8_t x, const char *topic)
 		}
 	}
 }
-void myIOT2::_update_bootclockLOG()
+void myIOT2::_store_bootclockLOG()
 {
 	char clk_char[25];
 #if defined(ESP8266)
@@ -809,52 +807,68 @@ bool myIOT2::extract_JSON_from_flash(char *filename, JsonDocument &DOC)
 	{
 		if (useSerial)
 		{
-			Serial.println(F("Failed to read JSON file"));
+			Serial.print(F("Failed to read JSON file: "));
 			Serial.println(filename);
 			Serial.println(error.c_str());
+			Serial.flush();
+			delay(100);
 		}
 		return 0;
 	}
 	else
 	{
-		// update_vars_flash_parameters(DOC);
-		// serializeJsonPretty(DOC, Serial);
-
 		return 1;
 	}
 }
 void myIOT2::update_vars_flash_parameters(JsonDocument &DOC)
 {
-	useWDT = DOC["useWDT"];
-	useOTA = DOC["useOTA"];
-	useSerial = DOC["useSerial"];
-	useFlashP = DOC["useFlashP"];
-	useDebug = DOC["useDebugLog"];
-	debug_level = DOC["debug_level"];
-	useResetKeeper = DOC["useResetKeeper"];
-	useNetworkReset = DOC["useNetworkReset"];
-	noNetwork_reset = DOC["noNetwork_reset"];
-	useBootClockLog = DOC["useBootClockLog"];
-	ignore_boot_msg = DOC["ignore_boot_msg"];
+	useWDT = DOC["useWDT"].as<bool>();
+	useOTA = DOC["useOTA"].as<bool>();
+	useSerial = DOC["useSerial"].as<bool>();
+	useFlashP = DOC["useFlashP"].as<bool>();
+	useDebug = DOC["useDebugLog"].as<bool>();
+	debug_level = DOC["debug_level"].as<uint8_t>();
+	useResetKeeper = DOC["useResetKeeper"].as<bool>();
+	useNetworkReset = DOC["useNetworkReset"].as<bool>();
+	noNetwork_reset = DOC["noNetwork_reset"].as<uint8_t>();
+	useBootClockLog = DOC["useBootClockLog"].as<bool>();
+	ignore_boot_msg = DOC["ignore_boot_msg"].as<bool>();
 
-	for (uint8_t i = 0; i < DOC["pub_topics"].size(); i++)
-	{
-		pub_topics[i] = DOC["pub_topics"][i];
-	}
-	for (uint8_t i = 0; i < DOC["sub_topics"].size(); i++)
-	{
-		sub_topics[i] = DOC["sub_topics"][i];
-	}
-	for (uint8_t i = 0; i < DOC["sub_data_topics"].size(); i++)
-	{
-		sub_data_topics[i] = DOC["sub_data_topics"][i];
-	}
+	// for (uint8_t i = 0; i < DOC["pub_topics"].size(); i++)
+	// {
+	// 	strlcpy(pub_topics[i], DOC["pub_topics"][i], MAX_TOPIC_LEN);
+	// }
+	// for (uint8_t i = 0; i < DOC["sub_topics"].size(); i++)
+	// {
+	// 	strlcpy(sub_topics[i], DOC["sub_topics"][i], MAX_TOPIC_LEN);
+	// }
+	// for (uint8_t i = 0; i < DOC["sub_data_topics"].size(); i++)
+	// {
+	// 	strlcpy(sub_data_topics[i], DOC["sub_data_topics"][i], MAX_TOPIC_LEN);
+	// }
 }
-void myIOT2::update_fPars()
+void myIOT2::get_flashParameters()
 {
 	StaticJsonDocument<MY_IOT_JSON_SIZE> myIOT_P; /* !!! Check if this not has to change !!! */
 
-	char myIOT_defs[] = "{\
+	if (!extract_JSON_from_flash(myIOT_paramfile, myIOT_P)) /* Case pulling from flash fails */
+	{
+		const char myIOT_defs[] = "{\
+						\"pub_topics\":[\
+										\"myHome/Messages\",\
+										\"myHome/log\",\
+										\"myHome/debug\"\
+										],\
+						\"sub_topics\": [\
+        								\"myHome/group/client\",\
+        								\"myHome/All\",\
+        								\"myHome/group\"\
+    									],\
+						\"sub_data_topics\": [\
+						        		\"Avail\",\
+        								\"State\",\
+										\"data_1\"\
+										],\
 						\"useFlashP\":false,\
 						\"useSerial\":true,\
 						\"useWDT\":false,\
@@ -863,24 +877,18 @@ void myIOT2::update_fPars()
 						\"ignore_boot_msg\":false,\
 						\"useDebugLog\":true,\
 						\"useNetworkReset\":true,\
-						\"deviceTopic\":\"devTopic\",\
-						\"useBootClockLog\":false,\
-						\"groupTopic\":\"group\",\
-						\"prefixTopic\":\"myHome\",\
+						\"useBootClockLog\":true,\
 						\"debug_level\":0,\
 						\"noNetwork_reset\":10,\
-						\"ver\":0.5\
+						\"ver\":0.66\
 						}";
 
-	if (!extract_JSON_from_flash(myIOT_paramfile, myIOT_P)) /* Case pulling from flash fails */
-	{
 		deserializeJson(myIOT_P, myIOT_defs);
 		if (useSerial)
 		{
 			Serial.println(F("Error read Parameters from file. Defaults values loaded."));
 		}
 	}
-
 	update_vars_flash_parameters(myIOT_P);
 	myIOT_P.clear();
 }
@@ -996,7 +1004,37 @@ void myIOT2::_startFS()
 	LITFS.begin(true);
 #endif
 }
+void myIOT2::_extract_log(flashLOG &_flog, const char *_title, bool _isTimelog)
+{
+	char clk[25];
+	char msg[200];
+	get_timeStamp(clk);
+	int x = _flog.get_num_saved_records();
 
+	sprintf(msg, " \n<<~~~~~~[%s] %s %s : entries [#%d], file-size[%.2f kb] ~~~~~~~~~~>>\n ",
+			clk, sub_topics[0], _title, x, (float)(_flog.sizelog() / 1000.0));
+
+	pub_debug(msg);
+	for (int a = 0; a < x; a++)
+	{
+		_flog.readline(a, msg);
+		if (_isTimelog)
+		{
+			strcpy(clk, msg);
+			get_timeStamp(msg, atol(clk));
+		}
+		pub_debug(msg);
+
+		if (useSerial)
+		{
+			Serial.println(msg);
+		}
+		delay(20);
+	}
+	pub_msg("[log]: extracted");
+	sprintf(msg, " \n<<~~~~~~ %s %s End ~~~~~~~~~~>> ", _title, sub_topics[0]);
+	pub_debug(msg);
+}
 // ~~~~~~ Reset and maintability ~~~~~~
 void myIOT2::sendReset(char *header)
 {
