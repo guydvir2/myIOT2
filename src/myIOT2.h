@@ -81,9 +81,9 @@ public:
     char inline_param[num_param][20];   // values from user
 
     // MQTT Topic variables
-    const char fullPathTopic[40];
-    // const char *pub_topics[MAX_PUB_TOPICS];
-    // char sub_topics[MAX_SUB_TOPICS][MAX_TOPIC_LEN];
+    // const char fullPathTopic[40];
+    const char *pub_topics[MAX_PUB_TOPICS];
+    char sub_topics[MAX_SUB_TOPICS][MAX_TOPIC_LEN];
     // char sub_data_topics[MAX_SUB_DATA_TOPICS][MAX_TOPIC_LEN];
 
 private:
@@ -137,9 +137,9 @@ public: /* Functions */
 
     // ~~~~~~~~~~~~~~ Param ~~~~~~~~~~~~~~~~~~~~~
     uint8_t inline_read(char *inputstr);
-    // bool extract_JSON_from_flash(char *filename, JsonDocument &DOC);
-    // void get_flashParameters();
-    // void update_vars_flash_parameters(JsonDocument &DOC);
+    bool extract_JSON_from_flash(char *filename, JsonDocument &DOC);
+    void get_flashParameters();
+    void update_vars_flash_parameters(JsonDocument &DOC);
     String readFile(char *fileName);
 
 private:
@@ -154,10 +154,10 @@ private:
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     bool _startMQTT();
     // void _constructTopics(JsonDocument &DOC);
-    // void _subArray(char *arr[], uint8_t n);
-    // bool _subMQTT();
-    // void _MQTTcb(char *topic, uint8_t *payload, unsigned int length);
-    // void _getBootReason_resetKeeper(char *msg);
+    void _subArray(char *arr[], uint8_t n);
+    bool _subMQTT();
+    void _MQTTcb(char *topic, uint8_t *payload, unsigned int length);
+    void _getBootReason_resetKeeper(char *msg);
     void _write_log(char *inmsg, uint8_t x, const char *topic = "_deviceName");
     void _pub_generic(const char *topic, char *inmsg, bool retain = false, char *devname = nullptr, bool bare = false);
 
