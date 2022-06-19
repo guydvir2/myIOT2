@@ -8,6 +8,7 @@
 #include <ArduinoOTA.h>   // OTA
 #include <ArduinoJson.h>
 #include "secretsIOT8266.h"
+// #include "defTopics.h"
 #include <myLOG.h>
 #include <Chrono.h>
 
@@ -32,8 +33,8 @@
 
 class myIOT2
 {
-#define MAX_PUB_TOPICS 3
-#define MAX_SUB_TOPICS 5
+#define MAX_PUB_TOPICS 5
+#define MAX_SUB_TOPICS 3
 #define MAX_SUB_DATA_TOPICS 2
 #define MAX_TOPIC_LEN 40
 #define MY_IOT_JSON_SIZE 1250
@@ -45,6 +46,7 @@ public:
     PubSubClient mqttClient;
     flashLOG flog;   /* Stores Activity LOG */
     flashLOG clklog; /* Stores Boot clock records */
+
 #if defined(ESP8266)
     Ticker wdt;
 #endif
@@ -53,7 +55,7 @@ public:
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 public:
-    char ver[12] = "iot_v1.60a";
+    char ver[12] = "iot_v1.60b";
     char myIOT_paramfile[20] = "/myIOT_param.json";
     char sketch_paramfile[20] = "/sketch_param.json";
 
@@ -79,9 +81,9 @@ public:
     char inline_param[num_param][20];   // values from user
 
     // MQTT Topic variables
-    const char *fullPa
-    const char *pub_topics[MAX_PUB_TOPICS];
-    char sub_topics[MAX_SUB_TOPICS][MAX_TOPIC_LEN];
+    const char fullPathTopic[40];
+    // const char *pub_topics[MAX_PUB_TOPICS];
+    // char sub_topics[MAX_SUB_TOPICS][MAX_TOPIC_LEN];
     // char sub_data_topics[MAX_SUB_DATA_TOPICS][MAX_TOPIC_LEN];
 
 private:
@@ -135,9 +137,9 @@ public: /* Functions */
 
     // ~~~~~~~~~~~~~~ Param ~~~~~~~~~~~~~~~~~~~~~
     uint8_t inline_read(char *inputstr);
-    bool extract_JSON_from_flash(char *filename, JsonDocument &DOC);
-    void get_flashParameters();
-    void update_vars_flash_parameters(JsonDocument &DOC);
+    // bool extract_JSON_from_flash(char *filename, JsonDocument &DOC);
+    // void get_flashParameters();
+    // void update_vars_flash_parameters(JsonDocument &DOC);
     String readFile(char *fileName);
 
 private:
@@ -151,10 +153,11 @@ private:
 
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     bool _startMQTT();
-    void _subArray(char *arr[], uint8_t n);
-    bool _subMQTT();
-    void _MQTTcb(char *topic, uint8_t *payload, unsigned int length);
-    void _getBootReason_resetKeeper(char *msg);
+    // void _constructTopics(JsonDocument &DOC);
+    // void _subArray(char *arr[], uint8_t n);
+    // bool _subMQTT();
+    // void _MQTTcb(char *topic, uint8_t *payload, unsigned int length);
+    // void _getBootReason_resetKeeper(char *msg);
     void _write_log(char *inmsg, uint8_t x, const char *topic = "_deviceName");
     void _pub_generic(const char *topic, char *inmsg, bool retain = false, char *devname = nullptr, bool bare = false);
 

@@ -1,0 +1,22 @@
+{
+    "pub_gen_topics": [
+        "myHome/Messages",
+        "myHome/log",
+        "myHome/debug",
+        "myHome/sms"
+    ],
+    "pub_topics": [
+        "myHome/Windows/testWindows/Avail",
+        "myHome/Windows/testWindows/State"
+    ],
+    "sub_topics": [
+        "myHome/Windows/testWindows",
+        "myHome/Windows"
+    ],
+    "sub_data_topics": [
+        "myHome/Windows/testWindows/Avail",
+        "myHome/Windows/testWindows/State",
+        "myHome/Windows/testWindows/data_1"
+    ],
+    "ver": 0.1
+}

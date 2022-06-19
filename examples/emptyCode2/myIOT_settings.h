@@ -11,13 +11,7 @@
 #define TOPIC_SUB_GROUP_0 PREFIX_TOPIC GROUP_TOPIC
 // ~~~~~~~~~~~~~~
 
-// Publish Topics
-#define TOPIC_PUB_LOG PREFIX_TOPIC "log"
-#define TOPIC_PUB_MSG PREFIX_TOPIC "Messages"
-#define TOPIC_PUB_DBG PREFIX_TOPIC "debug"
-#define TOPIC_PUB_SMS PREFIX_TOPIC "sms"
-#define TOPIC_PUB_EML PREFIX_TOPIC "email"
-// ~~~~~~~~~~~~~~
+
 
 // sub_data_topics
 #define TOPIC_SUB_DATA_0 TOPIC_SUB_FULLPATH "/data_1" // data, retained
@@ -67,21 +61,17 @@ void startIOTservices()
     iot.useBootClockLog = true;
     iot.ignore_boot_msg = false;
 
-    iot.pub_topics[0] = TOPIC_PUB_MSG;
-    iot.pub_topics[1] = TOPIC_PUB_LOG;
-    iot.pub_topics[2] = TOPIC_PUB_DBG;
-    iot.pub_topics[3] = TOPIC_PUB_SMS;
-    iot.pub_topics[4] = TOPIC_PUB_EML;
+ 
 
-    iot.sub_topics[0] = TOPIC_SUB_FULLPATH;
-    iot.sub_topics[1] = TOPIC_SUB_ALL;
-    iot.sub_topics[2] = TOPIC_SUB_AVAIL;
-    iot.sub_topics[3] = TOPIC_SUB_STATE;
-    iot.sub_topics[4] = TOPIC_SUB_GROUP_0;
+    // iot.sub_topics[0] = TOPIC_SUB_FULLPATH;
+    // iot.sub_topics[1] = TOPIC_SUB_ALL;
+    // iot.sub_topics[2] = TOPIC_SUB_AVAIL;
+    // iot.sub_topics[3] = TOPIC_SUB_STATE;
+    // iot.sub_topics[4] = TOPIC_SUB_GROUP_0;
 
-    iot.sub_data_topics[0] = TOPIC_SUB_DATA_0;
-    iot.sub_data_topics[1] = TOPIC_SUB_DATA_1;
-    iot.sub_data_topics[2] = TOPIC_SUB_DATA_2;
+    // iot.sub_data_topics[0] = TOPIC_SUB_DATA_0;
+    // iot.sub_data_topics[1] = TOPIC_SUB_DATA_1;
+    // iot.sub_data_topics[2] = TOPIC_SUB_DATA_2;
 
 #else
     iot.useFlashP = true;

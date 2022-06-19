@@ -1,21 +1,12 @@
 {
-    "pub_topics": [
-        "myHome/Messages",
-        "myHome/log",
-        "myHome/debug",
-        "myHome/SMS"
-    ],
     "sub_topics": [
         "myHome/Windows/testWindows",
-        "myHome/All",
-        "myHome/Windows/testWindows/Avail",
-        "myHome/Windows/testWindows/State",
         "myHome/Windows"
     ],
     "sub_data_topics": [
-        "myHome/Windows/testWindows/data_1",
-        "myHome/Windows/testWindows/data_2",
-        "myHome/Windows/testWindows/data_3"
+        "data_1",
+        "data_2",
+        "data_3"
     ],
     "useSerial": true,
     "useWDT": true,
