@@ -8,7 +8,6 @@
 #include <ArduinoOTA.h>   // OTA
 #include <ArduinoJson.h>
 #include "secretsIOT8266.h"
-// #include "defTopics.h"
 #include <myLOG.h>
 #include <Chrono.h>
 
@@ -81,6 +80,7 @@ public:
     char inline_param[num_param][20];   // values from user
 
     // MQTT Topic variables
+    // ~~~~~~~~~~~~~~~~~~~~~~
     // const char fullPathTopic[40];
     const char *pub_topics[MAX_PUB_TOPICS];
     char sub_topics[MAX_SUB_TOPICS][MAX_TOPIC_LEN];

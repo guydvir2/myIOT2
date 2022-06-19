@@ -48,31 +48,31 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 		_store_bootclockLOG();
 	}
 }
-// void myIOT2::_post_boot_check()
-// {
-// 	static bool checkAgain = true;
-// 	if (checkAgain)
-// 	{
-// 		if (mqtt_detect_reset != 2)
-// 		{
-// 			char a[30];
-// 			checkAgain = false;
-// 			if (mqtt_detect_reset == 0)
-// 			{
-// 				sprintf(a, "Boot Type: [%s]", "Normal Boot");
-// 			}
-// 			else if (mqtt_detect_reset == 1)
-// 			{
-// 				sprintf(a, "Boot Type: [%s]", "Quick Reboot");
-// 			}
+void myIOT2::_post_boot_check()
+{
+	// static bool checkAgain = true;
+	// if (checkAgain)
+	// {
+	// 	if (mqtt_detect_reset != 2)
+	// 	{
+	// 		char a[30];
+	// 		checkAgain = false;
+	// 		if (mqtt_detect_reset == 0)
+	// 		{
+	// 			sprintf(a, "Boot Type: [%s]", "Normal Boot");
+	// 		}
+	// 		else if (mqtt_detect_reset == 1)
+	// 		{
+	// 			sprintf(a, "Boot Type: [%s]", "Quick Reboot");
+	// 		}
 
-// 			if (ignore_boot_msg == false)
-// 			{
-// 				pub_log(a);
-// 			}
-// 		}
-// 	}
-// }
+	// 		if (ignore_boot_msg == false)
+	// 		{
+	// 			pub_log(a);
+	// 		}
+	// 	}
+	// }
+}
 void myIOT2::looper()
 {
 	wdtResetCounter = 0; // reset WDT watchDog
@@ -138,12 +138,11 @@ bool myIOT2::_network_looper()
 				if (_WifiConnCheck.hasPassed(retryConnectWiFi))
 				{
 					_WifiConnCheck.restart();
-					bool a = _start_network_services();
-					if (a)
+					if (_start_network_services())
 					{
 						_WifiConnCheck.stop();
 					}
-					return a;
+					return 1;
 				}
 				else
 				{
@@ -162,7 +161,7 @@ bool myIOT2::_network_looper()
 				if (_MQTTConnCheck.hasPassed(time_retry_mqtt))
 				{
 					_MQTTConnCheck.restart();
-					if (_Wifi_and_mqtt_OK == false) /* Case of fail at boot */
+					if (!_Wifi_and_mqtt_OK) /* Case of fail at boot */
 					{
 						return _start_network_services();
 					}
@@ -208,7 +207,7 @@ bool myIOT2::_start_network_services()
 		{
 			_startNTP();
 		}
-		// _Wifi_and_mqtt_OK = _startMQTT();
+		_Wifi_and_mqtt_OK = _startMQTT();
 	}
 	return _Wifi_and_mqtt_OK;
 }
@@ -343,6 +342,15 @@ bool myIOT2::_NTP_updated()
 }
 
 // // ~~~~~~~ MQTT functions ~~~~~~~
+void myIOT2::_constructTopics(JsonDocument &DOC)
+{
+	strcpy(fullPathTopic,DOC["sub_topics"][0]);
+	pub_topics[0] = TOPIC_PUB_MSG;
+    pub_topics[1] = TOPIC_PUB_LOG;
+    pub_topics[2] = TOPIC_PUB_DBG;
+    pub_topics[3] = TOPIC_PUB_SMS;
+    pub_topics[4] = TOPIC_PUB_EML;
+}
 bool myIOT2::_startMQTT()
 {
 	mqttClient.setServer(_mqtt_server, 1883);
@@ -791,39 +799,31 @@ void myIOT2::_store_bootclockLOG()
 #endif
 	clklog.write(clk_char, true);
 }
-// void myIOT2::_constructTopics(JsonDocument &DOC)
-// {
-// 	strcpy(fullPathTopic,DOC["sub_topics"][0]);
-// 	pub_topics[0] = TOPIC_PUB_MSG;
-//     pub_topics[1] = TOPIC_PUB_LOG;
-//     pub_topics[2] = TOPIC_PUB_DBG;
-//     pub_topics[3] = TOPIC_PUB_SMS;
-//     pub_topics[4] = TOPIC_PUB_EML;
-// }
-// bool myIOT2::extract_JSON_from_flash(char *filename, JsonDocument &DOC)
-// {
-// 	_startFS();
-// 	File readFile = LITFS.open(filename, "r");
-// 	DeserializationError error = deserializeJson(DOC, readFile);
-// 	readFile.close();
 
-// 	if (error)
-// 	{
-// 		if (useSerial)
-// 		{
-// 			Serial.print(F("Failed to read JSON file: "));
-// 			Serial.println(filename);
-// 			Serial.println(error.c_str());
-// 			Serial.flush();
-// 			delay(100);
-// 		}
-// 		return 0;
-// 	}
-// 	else
-// 	{
-// 		return 1;
-// 	}
-// }
+bool myIOT2::extract_JSON_from_flash(char *filename, JsonDocument &DOC)
+{
+	_startFS();
+	File readFile = LITFS.open(filename, "r");
+	DeserializationError error = deserializeJson(DOC, readFile);
+	readFile.close();
+
+	if (error)
+	{
+		if (useSerial)
+		{
+			Serial.print(F("Failed to read JSON file: "));
+			Serial.println(filename);
+			Serial.println(error.c_str());
+			Serial.flush();
+			delay(100);
+		}
+		return 0;
+	}
+	else
+	{
+		return 1;
+	}
+}
 void myIOT2::update_vars_flash_parameters(JsonDocument &DOC)
 {
 	useWDT = DOC["useWDT"].as<bool>();
@@ -995,37 +995,37 @@ void myIOT2::_startFS()
 	LITFS.begin(true);
 #endif
 }
-// void myIOT2::_extract_log(flashLOG &_flog, const char *_title, bool _isTimelog)
-// {
-// 	char clk[25];
-// 	char msg[200];
-// 	get_timeStamp(clk);
-// 	int x = _flog.get_num_saved_records();
+void myIOT2::_extract_log(flashLOG &_flog, const char *_title, bool _isTimelog)
+{
+	char clk[25];
+	char msg[200];
+	get_timeStamp(clk);
+	int x = _flog.get_num_saved_records();
 
-// 	sprintf(msg, " \n<<~~~~~~[%s] %s %s : entries [#%d], file-size[%.2f kb] ~~~~~~~~~~>>\n ",
-// 			clk, sub_topics[0], _title, x, (float)(_flog.sizelog() / 1000.0));
+	sprintf(msg, " \n<<~~~~~~[%s] %s %s : entries [#%d], file-size[%.2f kb] ~~~~~~~~~~>>\n ",
+			clk, sub_topics[0], _title, x, (float)(_flog.sizelog() / 1000.0));
 
-// 	pub_debug(msg);
-// 	for (int a = 0; a < x; a++)
-// 	{
-// 		_flog.readline(a, msg);
-// 		if (_isTimelog)
-// 		{
-// 			strcpy(clk, msg);
-// 			get_timeStamp(msg, atol(clk));
-// 		}
-// 		pub_debug(msg);
+	pub_debug(msg);
+	for (int a = 0; a < x; a++)
+	{
+		_flog.readline(a, msg);
+		if (_isTimelog)
+		{
+			strcpy(clk, msg);
+			get_timeStamp(msg, atol(clk));
+		}
+		pub_debug(msg);
 
-// 		if (useSerial)
-// 		{
-// 			Serial.println(msg);
-// 		}
-// 		delay(20);
-// 	}
-// 	pub_msg("[log]: extracted");
-// 	sprintf(msg, " \n<<~~~~~~ %s %s End ~~~~~~~~~~>> ", _title, sub_topics[0]);
-// 	pub_debug(msg);
-// }
+		if (useSerial)
+		{
+			Serial.println(msg);
+		}
+		delay(20);
+	}
+	pub_msg("[log]: extracted");
+	sprintf(msg, " \n<<~~~~~~ %s %s End ~~~~~~~~~~>> ", _title, sub_topics[0]);
+	pub_debug(msg);
+}
 // // ~~~~~~ Reset and maintability ~~~~~~
 void myIOT2::sendReset(char *header)
 {

@@ -1,4 +1,4 @@
-#include <myIOT2.h>
+#include "defTopics.h"
 #define DEV_TOPIC "wemos"
 #define GROUP_TOPIC "TopFloor/"
 #define PREFIX_TOPIC "myHome/"
@@ -10,8 +10,6 @@
 #define TOPIC_SUB_STATE TOPIC_SUB_FULLPATH "/State" // last CMD, retained
 #define TOPIC_SUB_GROUP_0 PREFIX_TOPIC GROUP_TOPIC
 // ~~~~~~~~~~~~~~
-
-
 
 // sub_data_topics
 #define TOPIC_SUB_DATA_0 TOPIC_SUB_FULLPATH "/data_1" // data, retained
