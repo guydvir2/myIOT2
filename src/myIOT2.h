@@ -32,13 +32,9 @@
 
 class myIOT2
 {
-#define MAX_PUB_TOPICS 5
-#define MAX_PUB_INDIV_TOPICS 2
-#define MAX_SUB_TOPICS 3
-#define MAX_SUB_DATA_TOPICS 2
-#define MAX_TOPIC_LEN 40
-#define MY_IOT_JSON_SIZE 1250
+#define MY_IOT_JSON_SIZE 600
 #define SKETCH_JSON_SIZE 1250
+#define MY_IOT_TOPIC_JSON 600
 #define MS2MINUTES 60000
 
 public:
@@ -65,7 +61,7 @@ public:
     bool useWDT = true;
     bool useOTA = true;
     bool useDebug = false;
-    bool useSerial = false;
+    bool useSerial = true;
     bool useFlashP = false;
     bool useResetKeeper = false;
     bool useNetworkReset = true; // allow reset due to no-network timeout
@@ -83,7 +79,7 @@ public:
 
     // MQTT Topic variables
     // ~~~~~~~~~~~~~~~~~~~~~~
-    StaticJsonDocument<700> TOPICS_JSON;
+    StaticJsonDocument<MY_IOT_TOPIC_JSON> TOPICS_JSON;
 
 private:
     // WiFi MQTT broker parameters
@@ -154,7 +150,6 @@ private:
     bool _startMQTT();
     void _constructTopics_fromFlash(JsonDocument &DOC);
     void _constructTopics_fromCode();
-    void _subArray(char *arr[], uint8_t n);
     bool _subMQTT();
     void _MQTTcb(char *topic, uint8_t *payload, unsigned int length);
     void _getBootReason_resetKeeper(char *msg);
@@ -172,7 +167,7 @@ private:
 
     // ~~~~~~~~~~~~~~ Param ~~~~~~~~~~~~~~~~~~~~~
     uint8_t _getdataType(const char *y);
-    bool _update_flashParameter(const char *key, const char *new_value);
+    bool _cmdline_flashUpdate(const char *key, const char *new_value);
     bool _change_flashP_value(const char *key, const char *new_value, JsonDocument &DOC);
     bool _saveFile(char *filename, JsonDocument &DOC);
 };

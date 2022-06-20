@@ -12,7 +12,7 @@ void setup()
 #if USE_SIMPLE_IOT == 1
         // startIOTservices();
 #elif USE_SIMPLE_IOT == 0
-        // read_flashParameter();
+        read_flashParameter();
         startIOTservices();
 #endif
 }
