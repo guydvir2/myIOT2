@@ -906,7 +906,7 @@ void myIOT2::update_vars_flash_parameters(JsonDocument &DOC)
 void myIOT2::get_flashParameters()
 {
 	StaticJsonDocument<MY_IOT_JSON_SIZE> myIOT_P; /* !!! Check if this not has to change !!! */
-	delay(200);
+	delay(50);
 
 	if (useSerial)
 	{
@@ -935,7 +935,7 @@ void myIOT2::get_flashParameters()
 	{
 		if (useSerial)
 		{
-			Serial.println(F("Error read Parameters from file. Defaults values loaded."));
+			Serial.println(F(">>> Error read Parameters from file. Defaults values loaded."));
 		}
 	}
 	myIOT_P.clear();
