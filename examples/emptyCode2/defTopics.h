@@ -14,6 +14,6 @@
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // Publish individual Topics
-#define SUB_AVAIL "/Avail"
-#define SUB_STATE "/State"
+#define PUB_AVAIL "/Avail"
+#define PUB_STATE "/State"
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

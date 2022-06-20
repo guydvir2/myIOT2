@@ -33,6 +33,7 @@
 class myIOT2
 {
 #define MAX_PUB_TOPICS 5
+#define MAX_PUB_INDIV_TOPICS 2
 #define MAX_SUB_TOPICS 3
 #define MAX_SUB_DATA_TOPICS 2
 #define MAX_TOPIC_LEN 40
@@ -54,7 +55,8 @@ public:
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 public:
-    char ver[12] = "iot_v1.60b";
+    char ver[12] = "iot_v1.60c";
+    char myIOT_topics[22] = "/myIOT2_topics.json";
     char myIOT_paramfile[20] = "/myIOT_param.json";
     char sketch_paramfile[20] = "/sketch_param.json";
 
@@ -81,10 +83,7 @@ public:
 
     // MQTT Topic variables
     // ~~~~~~~~~~~~~~~~~~~~~~
-    // const char fullPathTopic[40];
-    const char *pub_topics[MAX_PUB_TOPICS];
-    char sub_topics[MAX_SUB_TOPICS][MAX_TOPIC_LEN];
-    // char sub_data_topics[MAX_SUB_DATA_TOPICS][MAX_TOPIC_LEN];
+    StaticJsonDocument<700> TOPICS_JSON;
 
 private:
     // WiFi MQTT broker parameters
@@ -153,7 +152,8 @@ private:
 
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     bool _startMQTT();
-    // void _constructTopics(JsonDocument &DOC);
+    void _constructTopics_fromFlash(JsonDocument &DOC);
+    void _constructTopics_fromCode();
     void _subArray(char *arr[], uint8_t n);
     bool _subMQTT();
     void _MQTTcb(char *topic, uint8_t *payload, unsigned int length);

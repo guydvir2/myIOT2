@@ -6,7 +6,12 @@
 #endif
 
 // ~~~~~~ myIOT2 CLASS ~~~~~~~~~~~ //
-myIOT2::myIOT2() : mqttClient(espClient), flog("/myIOTlog.txt"), clklog("/clkLOG.txt"), _MQTTConnCheck(Chrono::SECONDS), _WifiConnCheck(Chrono::SECONDS), _NTPCheck(Chrono::SECONDS)
+myIOT2::myIOT2() : mqttClient(espClient),
+				   flog("/myIOTlog.txt"),
+				   clklog("/clkLOG.txt"),
+				   _MQTTConnCheck(Chrono::SECONDS),
+				   _WifiConnCheck(Chrono::SECONDS),
+				   _NTPCheck(Chrono::SECONDS)
 {
 }
 void myIOT2::start_services(cb_func funct, const char *ssid, const char *password, const char *mqtt_user, const char *mqtt_passw, const char *mqtt_broker, int log_ents)
@@ -82,10 +87,10 @@ void myIOT2::looper()
 	}
 	if (_network_looper() == false)
 	{
-		if ((_WifiConnCheck.isRunning() && _WifiConnCheck.hasPassed(noNetwork_reset)) || (_MQTTConnCheck.isRunning() && _MQTTConnCheck.hasPassed(noNetwork_reset)))
-		{ // no Wifi or no MQTT will cause a reset
-			sendReset("Reset due to NO NETWoRK");
-		}
+		// if ((_WifiConnCheck.isRunning() && _WifiConnCheck.hasPassed(noNetwork_reset)) || (_MQTTConnCheck.isRunning() && _MQTTConnCheck.hasPassed(noNetwork_reset)))
+		// { // no Wifi or no MQTT will cause a reset
+		// 	sendReset("Reset due to NO NETWoRK");
+		// }
 	}
 	if (useDebug)
 	{
@@ -104,98 +109,124 @@ bool myIOT2::_network_looper()
 	bool cur_wifi_status = WiFi.isConnected();
 	bool cur_mqtt_status = mqttClient.connected();
 
-	if (_NTPCheck.isRunning())
-	{
-		if (_NTPCheck.hasPassed(time_reset_NTP)) /* Reset after 1 hour */
-		{
-			sendReset("NTP_RESET");
-		}
-		else if (_NTPCheck.hasPassed(time_retry_NTP)) /* Retry update every 1 minute*/
-		{
-			if (!_NTP_updated())
-			{
-				_startNTP();
-			}
-		}
-	}
-	if (cur_mqtt_status && cur_wifi_status) /* All good */
+
+	if (mqttClient.connected())
 	{
 		mqttClient.loop();
-		_WifiConnCheck.stop();
-		_MQTTConnCheck.stop();
 		return 1;
 	}
 	else
 	{
-		if (cur_wifi_status == false) /* No WiFi Connected */
-		{
-			if (!_WifiConnCheck.isRunning())
-			{
-				_WifiConnCheck.restart();
-			}
-			else
-			{
-				if (_WifiConnCheck.hasPassed(retryConnectWiFi))
-				{
-					_WifiConnCheck.restart();
-					if (_start_network_services())
-					{
-						_WifiConnCheck.stop();
-					}
-					return 1;
-				}
-				else
-				{
-					return 0;
-				}
-			}
-		}
-		else if (cur_mqtt_status == false) /* No MQTT */
-		{
-			if (!_MQTTConnCheck.isRunning())
-			{
-				_MQTTConnCheck.restart();
-			}
-			else
-			{
-				if (_MQTTConnCheck.hasPassed(time_retry_mqtt))
-				{
-					_MQTTConnCheck.restart();
-					if (!_Wifi_and_mqtt_OK) /* Case of fail at boot */
-					{
-						return _start_network_services();
-					}
-					else
-					{
-						if (_subMQTT()) /* succeed to reconnect */
-						{
-							mqttClient.loop();
-
-							int not_con_period = (int)((millis() - _MQTTConnCheck.elapsed()) / 1000UL);
-							if (not_con_period > 30)
-							{
-								char b[50];
-								sprintf(b, "MQTT reconnect after [%d] sec", not_con_period);
-								pub_log(b);
-							}
-							_MQTTConnCheck.stop();
-							return 1;
-						}
-						else
-						{
-							if (_MQTTConnCheck.hasPassed(60))
-							{
-								flog.write("network shutdown", true);
-								_shutdown_wifi();
-								_start_network_services();
-							}
-							return 0;
-						}
-					}
-				}
-			}
-		}
+		return (_startMQTT());
 	}
+	// if (_NTPCheck.isRunning())
+	// {
+	// 	if (_NTPCheck.hasPassed(time_reset_NTP)) /* Reset after 1 hour */
+	// 	{
+	// 		sendReset("NTP_RESET");
+	// 	}
+	// 	else if (_NTPCheck.hasPassed(time_retry_NTP)) /* Retry update every 1 minute*/
+	// 	{
+	// 		if (!_NTP_updated())
+	// 		{
+	// 			_startNTP();
+	// 		}
+	// 	}
+	// }
+	// if (cur_mqtt_status && cur_wifi_status) /* All good */
+	// {
+	// 	mqttClient.loop();
+	// 	_WifiConnCheck.restart();
+	// 	_WifiConnCheck.stop();
+	// 	_MQTTConnCheck.restart();
+	// 	_MQTTConnCheck.stop();
+	// 	Serial.println("OK LOOP");
+	// 	return 1;
+	// }
+	// else
+	// {
+	// 	// Serial.println("BAD");
+	// 	// return 0;
+	// 	if (cur_wifi_status == false) /* No WiFi Connected */
+	// 	{
+	// 		if (!_WifiConnCheck.isRunning())
+	// 		{
+	// 			_WifiConnCheck.restart();
+	// 		}
+	// 		else
+	// 		{
+	// 			if (_WifiConnCheck.hasPassed(retryConnectWiFi))
+	// 			{
+	// 				_WifiConnCheck.restart();
+	// 				if (_start_network_services())
+	// 				{
+	// 					_WifiConnCheck.stop();
+	// 				}
+	// 				return 1;
+	// 			}
+	// 			else
+	// 			{
+	// 				return 0;
+	// 			}
+	// 		}
+	// 	}
+	// 	else if (cur_mqtt_status == false) /* No MQTT */
+	// 	{
+	// 		if (!_MQTTConnCheck.isRunning())
+	// 		{
+	// 			Serial.println("RESTARTING MQTT");
+	// 			_MQTTConnCheck.restart();
+	// 			return 0;
+	// 		}
+	// 		else
+	// 		{
+	// 			if (_MQTTConnCheck.hasPassed(time_retry_mqtt))
+	// 			{
+	// 				_MQTTConnCheck.restart();
+	// 				if (!_Wifi_and_mqtt_OK) /* Case of fail at boot */
+	// 				{
+	// 					return _start_network_services();
+	// 				}
+	// 				else
+	// 				{
+	// 					if (_subMQTT()) /* succeed to reconnect */
+	// 					{
+	// 						mqttClient.loop();
+
+	// 						int not_con_period = (int)((millis() - _MQTTConnCheck.elapsed()) / 1000UL);
+	// 						if (not_con_period > 30)
+	// 						{
+	// 							char b[50];
+	// 							sprintf(b, "MQTT reconnect after [%d] sec", not_con_period);
+	// 							pub_log(b);
+	// 						}
+	// 						_MQTTConnCheck.restart();
+	// 						_MQTTConnCheck.stop();
+	// 						delay(100);
+	// 						return 1;
+	// 					}
+	// 					else
+	// 					{
+	// 						if (_MQTTConnCheck.hasPassed(60))
+	// 						{
+	// 							flog.write("network shutdown", true);
+	// 							_shutdown_wifi();
+	// 							_start_network_services();
+	// 						}
+	// 						return 0;
+	// 					}
+	// 				}
+	// 			}
+	// 			else
+	// 			{
+	// 				return 0;
+	// 			}
+	// 			return 0;
+	// 		}
+	// 		return 0;
+	// 	}
+	// 	return 0;
+	// }
 }
 bool myIOT2::_start_network_services()
 {
@@ -208,6 +239,8 @@ bool myIOT2::_start_network_services()
 			_startNTP();
 		}
 		_Wifi_and_mqtt_OK = _startMQTT();
+		Serial.print("RESULT IS");
+		Serial.println(_Wifi_and_mqtt_OK);
 	}
 	return _Wifi_and_mqtt_OK;
 }
@@ -265,10 +298,10 @@ bool myIOT2::_startWifi(const char *ssid, const char *password)
 }
 void myIOT2::_shutdown_wifi()
 {
-	WiFi.mode(WIFI_OFF); // <---- NEW
-	delay(200);
+	// WiFi.mode(WIFI_OFF); // <---- NEW
+	// delay(200);
 	WiFi.mode(WIFI_STA);
-	WiFi.disconnect(true);
+	// WiFi.disconnect(true);
 	delay(200);
 }
 
@@ -342,14 +375,65 @@ bool myIOT2::_NTP_updated()
 }
 
 // // ~~~~~~~ MQTT functions ~~~~~~~
-void myIOT2::_constructTopics(JsonDocument &DOC)
+
+void myIOT2::_constructTopics_fromFlash(JsonDocument &DOC)
 {
-	strcpy(fullPathTopic,DOC["sub_topics"][0]);
-	pub_topics[0] = TOPIC_PUB_MSG;
-    pub_topics[1] = TOPIC_PUB_LOG;
-    pub_topics[2] = TOPIC_PUB_DBG;
-    pub_topics[3] = TOPIC_PUB_SMS;
-    pub_topics[4] = TOPIC_PUB_EML;
+	delay(200);
+	Serial.println("Creating Topics: ");
+	if (extract_JSON_from_flash(myIOT_topics, DOC))
+	{
+		Serial.println("OK");
+	}
+	else
+	{
+		Serial.println("READ FAIL");
+	}
+	// serializeJsonPretty(TOPICS_JSON, Serial);
+
+	// for (uint8_t i = 0; i < MAX_SUB_TOPICS; i++)
+	// {
+	// 	strcpy(sub_topics[i], "");
+	// }
+
+	// uint8_t _s = DOC["sub_topics"].size();
+	// if (_s != 0)
+	// {
+	// 	for (uint8_t i = 0; i < _s; i++)
+	// 	{
+	// 		strlcpy(sub_topics[i], DOC["sub_topics"][i], MAX_TOPIC_LEN);
+	// 		Serial.println(sub_topics[i]);
+	// 		Serial.flush();
+	// 		delay(50);
+	// 	}
+	// }
+	// else
+	// {
+	// 	strlcpy(sub_topics[0], "emptyTopic", MAX_TOPIC_LEN);
+	// }
+
+	// const static uint8_t S = DOC["sub_data_topics"].size();
+	// static char newTopics[2][20];
+
+	// for (uint8_t i = 0; i < S; i++)
+	// {
+	// 	strlcpy(newTopics[i], DOC["sub_data_topics"][i], MAX_TOPIC_LEN);
+	// 	testSub[i] = newTopics[i];
+	// 	Serial.println(testSub[i]);
+
+	// 	Serial.flush();
+	// 	delay(50);
+	// }
+
+	// char t[MAX_TOPIC_LEN];
+
+	// sprintf(t, "%s/%s", TOPICS_JSON["pub_gen_topics"][0], "Avail");
+	// strlcpy(pub_indiv_topic[0], t, MAX_TOPIC_LEN);
+	// sprintf(t, "%s/%s", TOPICS_JSON["pub_gen_topics"][0], "State");
+	// strlcpy(pub_indiv_topic[1], t, MAX_TOPIC_LEN);
+
+	// Serial.println(pub_indiv_topic[0]);
+	// Serial.println(pub_indiv_topic[1]);
+	// Serial.flush();
 }
 bool myIOT2::_startMQTT()
 {
@@ -390,38 +474,23 @@ bool myIOT2::_subMQTT()
 		uint64_t chipid = ESP.getEfuseMac();
 		sprintf(tempname, "ESP32_%04X", (uint16_t)(chipid >> 32));
 #endif
-		if (mqttClient.connect(tempname, _mqtt_user, _mqtt_pwd, sub_topics[2], 1, true, "offline"))
+		if (mqttClient.connect(tempname, _mqtt_user, _mqtt_pwd, TOPICS_JSON["pub_topics"][0].as<const char *>(), 1, true, "offline"))
 		{
 			if (useSerial)
 			{
 				Serial.println(F("connected"));
 			}
-			// for (uint8_t i = 0; i < MAX_SUB_TOPICS; i++)
-			// {
-			// 	if (sub_topics[i] != nullptr)
-			// 	{
-			// 		mqttClient.subscribe(sub_topics[i]);
-			// 		if (useSerial)
-			// 		{
-			// 			// DEBUG
-			// 			Serial.println(sub_topics[i]);
-			// 			// DEBUG
-			// 		}
-			// 	}
-			// }
-			// for (uint8_t i = 0; i < MAX_SUB_DATA_TOPICS; i++)
-			// {
-			// 	if (sub_data_topics[i] != nullptr)
-			// 	{
-			// 		mqttClient.subscribe(sub_data_topics[i]);
-			// 		if (useSerial)
-			// 		{
-			// 			// DEBUG
-			// 			Serial.println(sub_data_topics[i]);
-			// 			// DEBUG
-			// 		}
-			// 	}
-			// }
+			for (uint8_t i = 0; i < TOPICS_JSON["sub_topics"].size(); i++)
+			{
+				mqttClient.subscribe(TOPICS_JSON["sub_topics"][i].as<const char *>());
+				if (useSerial)
+				{
+					// DEBUG
+					const char *t = TOPICS_JSON["sub_topics"][i].as<const char *>();
+					Serial.println(t);
+					// DEBUG
+				}
+			}
 
 			if (firstRun)
 			{
@@ -487,7 +556,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	{
 		Serial.println("");
 	}
-	if (strcmp(topic, sub_topics[2]) == 0 && useResetKeeper && firstRun)
+	if (strcmp(topic, TOPICS_JSON["pub_topics"][0].as<const char *>()) == 0 && useResetKeeper && firstRun)
 	{
 		_getBootReason_resetKeeper(incoming_msg);
 	}
@@ -640,12 +709,12 @@ void myIOT2::_pub_generic(const char *topic, char *inmsg, bool retain, char *dev
 	const uint8_t mqtt_overhead_size = 23;
 	const int mqtt_defsize = mqttClient.getBufferSize();
 
-	int x = devname == nullptr ? strlen(sub_topics[0]) + 1 : 0;
+	int x = devname == nullptr ? strlen(TOPICS_JSON["sub_topics"][0].as<const char *>()) + 1 : 0;
 	char tmpmsg[strlen(inmsg) + x + 8 + 25];
 
 	if (!bare)
 	{
-		sprintf(tmpmsg, "[%s] [%s] %s", clk, sub_topics[0], inmsg);
+		sprintf(tmpmsg, "[%s] [%s] %s", clk, TOPICS_JSON["sub_topics"][0].as<const char *>(), inmsg);
 	}
 	else
 	{
@@ -666,8 +735,8 @@ void myIOT2::_pub_generic(const char *topic, char *inmsg, bool retain, char *dev
 }
 void myIOT2::pub_msg(char *inmsg)
 {
-	_pub_generic(pub_topics[0], inmsg);
-	_write_log(inmsg, 0, pub_topics[0]);
+	_pub_generic(TOPICS_JSON["pub_gen_topics"][0].as<const char *>(), inmsg);
+	_write_log(inmsg, 1, TOPICS_JSON["pub_gen_topics"][0].as<const char *>());
 }
 void myIOT2::pub_noTopic(char *inmsg, char *Topic, bool retain)
 {
@@ -676,33 +745,33 @@ void myIOT2::pub_noTopic(char *inmsg, char *Topic, bool retain)
 }
 void myIOT2::pub_state(char *inmsg, uint8_t i)
 {
-	char _stateTopic[strlen(sub_topics[3]) + 4];
+	char _stateTopic[strlen (TOPICS_JSON["pub_gen_topics"][1].as<const char *>()) + 4];
 
 	if (i == 0)
 	{
-		sprintf(_stateTopic, "%s", sub_topics[3]);
+		sprintf(_stateTopic, "%s", TOPICS_JSON["pub_gen_topics"][1].as<const char *>());
 	}
 	else
 	{
-		sprintf(_stateTopic, "%s_%d", sub_topics[3], i);
+		sprintf(_stateTopic, "%s_%d", TOPICS_JSON["pub_gen_topics"][1].as<const char *>(), i);
 	}
 	mqttClient.publish(_stateTopic, inmsg, true);
 	_write_log(inmsg, 2, _stateTopic);
 }
 void myIOT2::pub_log(char *inmsg)
 {
-	_pub_generic(pub_topics[1], inmsg);
-	_write_log(inmsg, 1, pub_topics[1]);
+	_pub_generic(TOPICS_JSON["pub_gen_topics"][1].as<const char *>(), inmsg);
+	_write_log(inmsg, 1, TOPICS_JSON["pub_gen_topics"][1].as<const char *>());
 }
 void myIOT2::pub_debug(char *inmsg)
 {
-	_pub_generic(pub_topics[2], inmsg, false, nullptr, true);
+	_pub_generic(TOPICS_JSON["pub_gen_topics"][2].as<const char *>(), inmsg, false, nullptr, true);
 }
 
 void myIOT2::notifyOnline()
 {
-	mqttClient.publish(sub_topics[2], "online", true);
-	_write_log("online", 2, sub_topics[2]);
+	mqttClient.publish(TOPICS_JSON["pub_topics"][0].as<const char *>(), "online", true);
+	_write_log("online", 2, TOPICS_JSON["pub_topics"][0].as<const char *>());
 }
 void myIOT2::_getBootReason_resetKeeper(char *msg)
 {
@@ -811,16 +880,24 @@ bool myIOT2::extract_JSON_from_flash(char *filename, JsonDocument &DOC)
 	{
 		if (useSerial)
 		{
-			Serial.print(F("Failed to read JSON file: "));
-			Serial.println(filename);
+			Serial.print(">>> ");
+			Serial.print(filename);
+			Serial.println(":\tRead Failed");
+			Serial.print("error cide:\t");
 			Serial.println(error.c_str());
 			Serial.flush();
-			delay(100);
 		}
 		return 0;
 	}
 	else
 	{
+		if (useSerial)
+		{
+			Serial.print(">>>");
+			Serial.print(filename);
+			Serial.println(":\tRead OK");
+			Serial.flush();
+		}
 		return 1;
 	}
 }
@@ -840,48 +917,62 @@ void myIOT2::update_vars_flash_parameters(JsonDocument &DOC)
 }
 void myIOT2::get_flashParameters()
 {
-// 	StaticJsonDocument<MY_IOT_JSON_SIZE> myIOT_P; /* !!! Check if this not has to change !!! */
+	StaticJsonDocument<MY_IOT_JSON_SIZE> myIOT_P; /* !!! Check if this not has to change !!! */
+	delay(200);
 
-// 	if (!extract_JSON_from_flash(myIOT_paramfile, myIOT_P)) /* Case pulling from flash fails */
-// 	{
-// 		const char myIOT_defs[] = "{\
-// 						\"pub_topics\":[\
-// 										\"myHome/Messages\",\
-// 										\"myHome/log\",\
-// 										\"myHome/debug\"\
-// 										],\
-// 						\"sub_topics\": [\
-//         								\"myHome/group/client\",\
-//         								\"myHome/All\",\
-//         								\"myHome/group\"\
-//     									],\
-// 						\"sub_data_topics\": [\
-// 						        		\"Avail\",\
-//         								\"State\",\
-// 										\"data_1\"\
-// 										],\
-// 						\"useFlashP\":false,\
-// 						\"useSerial\":true,\
-// 						\"useWDT\":false,\
-// 						\"useOTA\":true,\
-// 						\"useResetKeeper\":false,\
-// 						\"ignore_boot_msg\":false,\
-// 						\"useDebugLog\":true,\
-// 						\"useNetworkReset\":true,\
-// 						\"useBootClockLog\":true,\
-// 						\"debug_level\":0,\
-// 						\"noNetwork_reset\":10,\
-// 						\"ver\":0.66\
-// 						}";
+	if (useSerial)
+	{
+		Serial.println("\n>>> Getting Parameters from Flash");
+	}
 
-// 		deserializeJson(myIOT_P, myIOT_defs);
-// 		if (useSerial)
-// 		{
-// 			Serial.println(F("Error read Parameters from file. Defaults values loaded."));
-// 		}
-// 	}
-// 	update_vars_flash_parameters(myIOT_P);
-// 	myIOT_P.clear();
+	if (!extract_JSON_from_flash(myIOT_topics, TOPICS_JSON))
+	{
+		Serial.println(":)");
+	}
+
+	if (!extract_JSON_from_flash(myIOT_paramfile, myIOT_P)) /* Case pulling from flash fails */
+	{
+		// const char myIOT_defs[] = "{\
+		// 				\"pub_topics\":[\
+		// 								\"myHome/Messages\",\
+		// 								\"myHome/log\",\
+		// 								\"myHome/debug\"\
+		// 								],\
+		// 				\"sub_topics\": [\
+        // 								\"myHome/group/client\",\
+        // 								\"myHome/All\",\
+        // 								\"myHome/group\"\
+    	// 								],\
+		// 				\"sub_data_topics\": [\
+		// 				        		\"Avail\",\
+        // 								\"State\",\
+		// 								\"data_1\"\
+		// 								],\
+		// 				\"useFlashP\":false,\
+		// 				\"useSerial\":true,\
+		// 				\"useWDT\":false,\
+		// 				\"useOTA\":true,\
+		// 				\"useResetKeeper\":false,\
+		// 				\"ignore_boot_msg\":false,\
+		// 				\"useDebugLog\":true,\
+		// 				\"useNetworkReset\":true,\
+		// 				\"useBootClockLog\":true,\
+		// 				\"debug_level\":0,\
+		// 				\"noNetwork_reset\":10,\
+		// 				\"ver\":0.66\
+		// 				}";
+
+		// deserializeJson(myIOT_P, myIOT_defs);
+		if (useSerial)
+		{
+			Serial.println(F("Error read Parameters from file. Defaults values loaded."));
+		}
+	}
+	else
+	{
+		update_vars_flash_parameters(myIOT_P);
+	}
+	myIOT_P.clear();
 }
 bool myIOT2::_change_flashP_value(const char *key, const char *new_value, JsonDocument &DOC)
 {
@@ -1003,7 +1094,7 @@ void myIOT2::_extract_log(flashLOG &_flog, const char *_title, bool _isTimelog)
 	int x = _flog.get_num_saved_records();
 
 	sprintf(msg, " \n<<~~~~~~[%s] %s %s : entries [#%d], file-size[%.2f kb] ~~~~~~~~~~>>\n ",
-			clk, sub_topics[0], _title, x, (float)(_flog.sizelog() / 1000.0));
+			clk, TOPICS_JSON["sub_topics"][0].as<const char *>(), _title, x, (float)(_flog.sizelog() / 1000.0));
 
 	pub_debug(msg);
 	for (int a = 0; a < x; a++)
@@ -1023,7 +1114,7 @@ void myIOT2::_extract_log(flashLOG &_flog, const char *_title, bool _isTimelog)
 		delay(20);
 	}
 	pub_msg("[log]: extracted");
-	sprintf(msg, " \n<<~~~~~~ %s %s End ~~~~~~~~~~>> ", _title, sub_topics[0]);
+	sprintf(msg, " \n<<~~~~~~ %s %s End ~~~~~~~~~~>> ", _title, TOPICS_JSON["sub_topics"][0].as<const char*>());
 	pub_debug(msg);
 }
 // // ~~~~~~ Reset and maintability ~~~~~~
@@ -1032,7 +1123,7 @@ void myIOT2::sendReset(char *header)
 	char temp[17 + strlen(header)];
 
 	sprintf(temp, "[%s] - Reset sent", header);
-	_write_log(temp, 2, sub_topics[0]);
+	_write_log(temp, 2, TOPICS_JSON["pub_gen_topics"][0].as<const char*>());
 	if (useSerial)
 	{
 		Serial.println(temp);
@@ -1071,7 +1162,7 @@ void myIOT2::startOTA()
 {
 	allowOTA_clock = millis();
 	ArduinoOTA.setPort(8266);
-	ArduinoOTA.setHostname(sub_topics[0]);
+	ArduinoOTA.setHostname(TOPICS_JSON["pub_gen_topics"][0]);
 	ArduinoOTA.onStart([]()
 					   {
 						   String type;

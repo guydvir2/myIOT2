@@ -1,13 +1,4 @@
 {
-    "sub_topics": [
-        "myHome/Windows/testWindows",
-        "myHome/Windows"
-    ],
-    "sub_data_topics": [
-        "data_1",
-        "data_2",
-        "data_3"
-    ],
     "useSerial": true,
     "useWDT": true,
     "useOTA": true,
