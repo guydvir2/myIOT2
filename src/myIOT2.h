@@ -28,6 +28,7 @@
 // #include <SPI.h>
 // #include <WiFiNINA.h>
 // #define TZ_Asia_Jerusalem PSTR("IST-2IDT,M3.4.4/26,M10.5.0")
+
 #endif
 
 class myIOT2
@@ -145,16 +146,17 @@ private:
     bool _start_network_services();
     bool _startNTP(const char *ntpServer = "pool.ntp.org", const char *ntpServer2 = "il.pool.ntp.org");
     bool _NTP_updated();
+    bool _try_rgain_wifi();
 
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     bool _startMQTT();
-    void _constructTopics_fromFlash(JsonDocument &DOC);
     void _constructTopics_fromCode();
     bool _subMQTT();
     void _MQTTcb(char *topic, uint8_t *payload, unsigned int length);
     void _getBootReason_resetKeeper(char *msg);
     void _write_log(char *inmsg, uint8_t x, const char *topic = "_deviceName");
     void _pub_generic(const char *topic, char *inmsg, bool retain = false, char *devname = nullptr, bool bare = false);
+    bool _try_regain_MQTT();
 
     // ~~~~~~~ Services  ~~~~~~~~~~~~~~~~~~~~~~~~
     void _startFS();

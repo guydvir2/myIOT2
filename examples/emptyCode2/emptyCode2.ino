@@ -1,8 +1,10 @@
 #include <myIOT2.h>
 
 #define USE_SIMPLE_IOT 0 // Not Using FlashParameters
+
 #if USE_SIMPLE_IOT == 0
 #include "empty_param.h"
+#elif USE_SIMPLE_IOT == 1
 #endif
 #include "myIOT_settings.h"
 
@@ -10,7 +12,8 @@ void setup()
 {
         Serial.begin(115200);
 #if USE_SIMPLE_IOT == 1
-        // startIOTservices();
+        serializeJsonPretty(iot.TOPICS_JSON, Serial); 
+        startIOTservices();
 #elif USE_SIMPLE_IOT == 0
         read_flashParameter();
         startIOTservices();
