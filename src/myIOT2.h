@@ -38,6 +38,13 @@ class myIOT2
 #define MY_IOT_TOPIC_JSON 600
 #define MS2MINUTES 60000
 
+#define PRNT(a)    \
+    if (useSerial) \
+    Serial.print(a)
+#define PRNTL(a)   \
+    if (useSerial) \
+    Serial.println(a)
+
 public:
     WiFiClient espClient;
     PubSubClient mqttClient;
