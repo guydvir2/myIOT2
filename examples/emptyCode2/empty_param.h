@@ -17,14 +17,10 @@ void read_flashParameter()
 {
   StaticJsonDocument<JSON_SIZE_SKETCH> sketchJSON;
 
-  char sketch_defs[] = "{\
-                          \"paramA\":\"BBB\",\
-                          \"paramB\":5555\
-                        }";
-
   if (!iot.extract_JSON_from_flash(sketch_paramfile, sketchJSON))
   {
-    deserializeJson(sketchJSON, sketch_defs);
+    sketchJSON["paramA"] = "sdfgsdfg";
+    sketchJSON["paramB"] = 123456;
     iot.pub_log("Error read Parameters from file. Defaults values loaded.");
   }
   // serializeJsonPretty(sketchJSON, Serial);

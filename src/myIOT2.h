@@ -33,7 +33,7 @@
 
 class myIOT2
 {
-#define MY_IOT_JSON_SIZE 600
+#define MY_IOT_JSON_SIZE 500
 #define SKETCH_JSON_SIZE 1250
 #define MY_IOT_TOPIC_JSON 600
 #define MS2MINUTES 60000

@@ -824,8 +824,11 @@ void myIOT2::get_flashParameters()
 		TOPICS_JSON["sub_topics"][1] = "myHome/All";
 
 		useFlashP = false; /* Update service to false */
+		
 		PRNTL(F(">>> Failed read Topics. default values used"));
 	}
+	TOPICS_JSON;
+	//.shrinkToFit();
 
 	if (extract_JSON_from_flash(myIOT_paramfile, myIOT_P)) /* Case pulling from flash fails */
 	{
@@ -969,8 +972,8 @@ void myIOT2::_extract_log(flashLOG &_flog, const char *_title, bool _isTimelog)
 			get_timeStamp(msg, atol(clk));
 		}
 		pub_debug(msg);
-
 		PRNTL(msg);
+		strcpy(msg, "");
 		delay(20);
 	}
 	pub_msg("[log]: extracted");
