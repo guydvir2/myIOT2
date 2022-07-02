@@ -1,11 +1,18 @@
 #ifndef myIOT2_h
 #define myIOT2_h
 
+// #include <ESP8266WiFi.h>
+// #include <ESP8266mDNS.h>
+// #include <WiFiUdp.h>
+// #include <ArduinoOTA.h>
+
+
+
 #include <Arduino.h>
-#include <Ticker.h>       //WDT
-#include <PubSubClient.h> // MQTT
 #include <WiFiUdp.h>      // OTA
 #include <ArduinoOTA.h>   // OTA
+#include <Ticker.h>       //WDT
+#include <PubSubClient.h> // MQTT
 #include <ArduinoJson.h>
 #include "secretsIOT8266.h"
 #include <myLOG.h>
@@ -18,6 +25,8 @@
 #define LITFS LittleFS
 
 #elif defined(ESP32)
+#include <WiFiUdp.h>      // OTA
+#include <ArduinoOTA.h>   // OTA
 #include <WiFi.h>
 #include <ESPmDNS.h> // OTA libraries
 #include <ESP32Ping.h>
@@ -28,7 +37,6 @@
 // #include <SPI.h>
 // #include <WiFiNINA.h>
 // #define TZ_Asia_Jerusalem PSTR("IST-2IDT,M3.4.4/26,M10.5.0")
-
 #endif
 
 class myIOT2
