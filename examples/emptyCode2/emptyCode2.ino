@@ -12,7 +12,7 @@ void setup()
 {
         Serial.begin(115200);
 #if USE_SIMPLE_IOT == 1
-        serializeJsonPretty(iot.TOPICS_JSON, Serial); 
+        // serializeJsonPretty(iot.TOPICS_JSON, Serial); 
         startIOTservices();
 #elif USE_SIMPLE_IOT == 0
         read_flashParameter();
@@ -22,5 +22,5 @@ void setup()
 void loop()
 {
         iot.looper();
-        delay(100);
+        // delay(100);
 }

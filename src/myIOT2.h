@@ -1,32 +1,26 @@
 #ifndef myIOT2_h
 #define myIOT2_h
 
-// #include <ESP8266WiFi.h>
-// #include <ESP8266mDNS.h>
-// #include <WiFiUdp.h>
-// #include <ArduinoOTA.h>
-
-
-
 #include <Arduino.h>
+#include <FS.h>
 #include <WiFiUdp.h>      // OTA
 #include <ArduinoOTA.h>   // OTA
 #include <Ticker.h>       //WDT
 #include <PubSubClient.h> // MQTT
 #include <ArduinoJson.h>
-#include "secretsIOT8266.h"
 #include <myLOG.h>
 #include <Chrono.h>
+#include "secretsIOT8266.h"
+
 
 #if defined(ESP8266)
+#include <LittleFS.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h> // OTA libraries
 #include <TZ.h>
 #define LITFS LittleFS
 
 #elif defined(ESP32)
-#include <WiFiUdp.h>      // OTA
-#include <ArduinoOTA.h>   // OTA
 #include <WiFi.h>
 #include <ESPmDNS.h> // OTA libraries
 #include <ESP32Ping.h>
@@ -67,7 +61,7 @@ public:
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 public:
-    char ver[12] = "iot_v1.60c";
+    char ver[12] = "iot_v1.60d";
     char myIOT_topics[22] = "/myIOT2_topics.json";
     char myIOT_paramfile[20] = "/myIOT_param.json";
     char sketch_paramfile[20] = "/sketch_param.json";
@@ -84,7 +78,7 @@ public:
     bool useBootClockLog = false;
     bool ignore_boot_msg = false;
     uint8_t debug_level = 0;      // 0- All, 1- system states; 2- log only
-    uint8_t noNetwork_reset = 10; // minutes
+    uint8_t noNetwork_reset = 5; // minutes
     // ~~~~~~~ end Services ~~~~~~~
 
     uint8_t num_p = 0; // number parameters got in MQTT message
@@ -114,7 +108,7 @@ private:
     const uint8_t WIFItimeOut = 20;         // sec try to connect WiFi
     const uint8_t retryConnectWiFi = 60;    // seconds between fail Wifi reconnect reties
     const uint8_t OTA_upload_interval = 10; // minute to try OTA
-    const uint8_t wdtMaxRetries = 20;       // seconds to bITE
+    const uint8_t wdtMaxRetries = 45;       // seconds to bITE
     unsigned long allowOTA_clock = 0;       // clock
     volatile uint8_t wdtResetCounter = 0;
 
@@ -178,7 +172,6 @@ private:
     void _startWDT();
     void _acceptOTA();
     void _store_bootclockLOG();
-    void _post_boot_check();
     void _feedTheDog();
     void _extract_log(flashLOG &LOG, const char *title, bool _isTimelog = false);
 

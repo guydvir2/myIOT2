@@ -26,13 +26,13 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	if (useSerial)
 	{
 		Serial.begin(115200);
-		PRNTL(F("\n\n>>> ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Start myIOT2 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ "));
+		PRNTL(F("\n\n>>> ~~~~~~ Start myIOT2 ~~~~~~ "));
 		Serial.flush();
 		delay(10);
 	}
 	if (useFlashP)
 	{
-		PRNTL(F(">>> Start loading Flash Parameters"));
+		PRNTL(F(">>> load Flash Parameters"));
 		get_flashParameters();
 	}
 	if (useDebug)
@@ -40,7 +40,7 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 		PRNTL(F(">>> Start debuglog services"));
 		flog.start(log_ents);
 	}
-
+	PRNTL(F(">>> Start Network servies"));
 	_start_network_services();
 
 	if (useWDT)
@@ -60,31 +60,6 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 		_store_bootclockLOG();
 	}
 }
-void myIOT2::_post_boot_check()
-{
-	// static bool checkAgain = true;
-	// if (checkAgain)
-	// {
-	// 	if (mqtt_detect_reset != 2)
-	// 	{
-	// 		char a[30];
-	// 		checkAgain = false;
-	// 		if (mqtt_detect_reset == 0)
-	// 		{
-	// 			sprintf(a, "Boot Type: [%s]", "Normal Boot");
-	// 		}
-	// 		else if (mqtt_detect_reset == 1)
-	// 		{
-	// 			sprintf(a, "Boot Type: [%s]", "Quick Reboot");
-	// 		}
-
-	// 		if (ignore_boot_msg == false)
-	// 		{
-	// 			pub_log(a);
-	// 		}
-	// 	}
-	// }
-}
 void myIOT2::looper()
 {
 	wdtResetCounter = 0; // reset WDT watchDog
@@ -103,15 +78,13 @@ void myIOT2::looper()
 	{
 		flog.looper(30); /* 30 seconds from last write or 70% of buffer */
 	}
-	// _post_boot_check();
 }
 
 // // ~~~~~~~ Wifi functions ~~~~~~~
 bool myIOT2::_network_looper()
 {
-	const uint8_t time_retry_NTP = 60; // sec
 	const int time_reset_NTP = 360;	   // sec
-
+	const uint8_t time_retry_NTP = 60; // sec
 	bool cur_wifi_status = WiFi.isConnected();
 	bool cur_mqtt_status = mqttClient.connected();
 
@@ -161,7 +134,8 @@ bool myIOT2::_start_network_services()
 		}
 		_Wifi_and_mqtt_OK = _startMQTT();
 	}
-	return _Wifi_and_mqtt_OK;
+	return 1;
+	//_Wifi_and_mqtt_OK;
 }
 bool myIOT2::_startWifi(const char *ssid, const char *password)
 {
@@ -187,10 +161,10 @@ bool myIOT2::_startWifi(const char *ssid, const char *password)
 		PRNT(F("\nConnection status: "));
 		PRNTL(WiFi.status());
 
-		if (!_WifiConnCheck.isRunning())
-		{
-			_WifiConnCheck.restart();
-		}
+		// if (!_WifiConnCheck.isRunning())
+		// {
+		// 	_WifiConnCheck.restart();
+		// }
 		return 0;
 	}
 
@@ -202,12 +176,15 @@ bool myIOT2::_startWifi(const char *ssid, const char *password)
 		PRNT(F("IP address: "));
 		PRNTL(WiFi.localIP());
 
-		_WifiConnCheck.stop();
+		// _WifiConnCheck.stop();
+		Serial.flush();
+		delay(1000);
 		return 1;
 	}
 }
 void myIOT2::_shutdown_wifi()
 {
+	PRNTL(F("~ Shutting down Wifi"));
 	WiFi.mode(WIFI_OFF); // <---- NEW
 	delay(200);
 	WiFi.mode(WIFI_STA);
@@ -218,6 +195,7 @@ bool myIOT2::_try_rgain_wifi()
 {
 	if (!_WifiConnCheck.isRunning())
 	{
+		PRNTL(F("~ Fail Wifi"));
 		_WifiConnCheck.restart();
 		return 0;
 	}
@@ -225,14 +203,17 @@ bool myIOT2::_try_rgain_wifi()
 	{
 		if (_WifiConnCheck.hasPassed(retryConnectWiFi))
 		{
+			PRNTL(F("~ Try regain Wifi"));
 			_WifiConnCheck.restart();
 			if (_start_network_services())
 			{
 				_WifiConnCheck.stop();
+				PRNTL(F("~ Wifi restarted"));
 				return 1;
 			}
 			else
 			{
+				PRNTL(F("~ Wifi restarted fail"));
 				return 0;
 			}
 		}
@@ -258,13 +239,13 @@ bool myIOT2::_startNTP(const char *ntpServer, const char *ntpServer2)
 	}
 	if (!_NTP_updated())
 	{
-		PRNTL(F(">>> NTP Update fail"));
+		PRNTL(F("~ NTP Update fail"));
 		_NTPCheck.restart();
 		return 0;
 	}
 	else
 	{
-		PRNTL(F(">>> NTP Update OK"));
+		PRNTL(F("~ NTP Update OK"));
 		_NTPCheck.stop();
 		return 1;
 	}
@@ -320,7 +301,7 @@ bool myIOT2::_startMQTT()
 {
 	mqttClient.setServer(_mqtt_server, 1883);
 	mqttClient.setKeepAlive(45);
-	PRNT(F("MQTT Server: "));
+	PRNT(F("~~ MQTT Server: "));
 	PRNTL(_mqtt_server);
 	mqttClient.setCallback(std::bind(&myIOT2::_MQTTcb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 	return _subMQTT();
@@ -330,6 +311,7 @@ bool myIOT2::_try_regain_MQTT()
 	const uint8_t time_retry_mqtt = 15; // sec
 	if (!_MQTTConnCheck.isRunning())
 	{
+		PRNTL(F("~ MQTT fail"));
 		_MQTTConnCheck.restart();
 		return 0;
 	}
@@ -337,6 +319,7 @@ bool myIOT2::_try_regain_MQTT()
 	{
 		if (_MQTTConnCheck.hasPassed(time_retry_mqtt))
 		{
+			PRNTL(F("~ Try regain MQTT"));
 			_MQTTConnCheck.restart();
 			if (!_Wifi_and_mqtt_OK) /* Case of fail at boot */
 			{
@@ -346,6 +329,7 @@ bool myIOT2::_try_regain_MQTT()
 			{
 				if (_subMQTT()) /* succeed to reconnect */
 				{
+									PRNTL(F("~ MQTT restored"));
 					mqttClient.loop();
 
 					int not_con_period = (int)((millis() - _MQTTConnCheck.elapsed()) / 1000UL);
@@ -363,6 +347,7 @@ bool myIOT2::_try_regain_MQTT()
 				{
 					if (_MQTTConnCheck.hasPassed(60))
 					{
+										PRNTL(F("~ MQTT fails, Restarting all network"));
 						flog.write("network shutdown", true);
 						_shutdown_wifi();
 						return _start_network_services();
@@ -419,7 +404,6 @@ bool myIOT2::_subMQTT()
 				if (!useResetKeeper)
 				{
 					firstRun = false;
-					mqtt_detect_reset = 0;
 				}
 			}
 
@@ -457,10 +441,10 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	incoming_msg[length] = 0;
 	PRNTL("");
 
-	if (strcmp(topic, TOPICS_JSON["pub_topics"][0].as<const char *>()) == 0 && useResetKeeper && firstRun)
-	{
-		_getBootReason_resetKeeper(incoming_msg);
-	}
+	// if (strcmp(topic, TOPICS_JSON["pub_topics"][0].as<const char *>()) == 0 && useResetKeeper && firstRun)
+	// {
+	// 	_getBootReason_resetKeeper(incoming_msg);
+	// }
 
 	if (strcmp(incoming_msg, "ota") == 0)
 	{
@@ -474,7 +458,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	}
 	else if (strcmp(incoming_msg, "ver") == 0)
 	{
-		sprintf(msg, "ver: IOTlib: [%s], flashLOG[%s]", ver, flog.VeR);
+		sprintf(msg, "ver: IOTlib: [%s], flashLOG[%s]", ver, "flog.VeR");
 		pub_msg(msg);
 	}
 	else if (strcmp(incoming_msg, "services") == 0)
@@ -568,7 +552,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	{
 		if (useBootClockLog)
 		{
-			_extract_log(clklog, "boot_log", true);
+			// _extract_log(clklog, "boot_log", true);
 		}
 		else
 		{
@@ -672,18 +656,6 @@ void myIOT2::notifyOnline()
 {
 	mqttClient.publish(TOPICS_JSON["pub_topics"][0].as<const char *>(), "online", true);
 	_write_log("online", 2, TOPICS_JSON["pub_topics"][0].as<const char *>());
-}
-void myIOT2::_getBootReason_resetKeeper(char *msg)
-{
-	if (strcmp(msg, "online") == 0)
-	{
-		mqtt_detect_reset = 1; // bad reboot
-	}
-	else
-	{
-		mqtt_detect_reset = 0; // ordinary boot
-	}
-	firstRun = false;
 }
 uint8_t myIOT2::inline_read(char *inputstr)
 {
@@ -823,11 +795,9 @@ void myIOT2::get_flashParameters()
 		TOPICS_JSON["sub_topics"][1] = "myHome/All";
 
 		useFlashP = false; /* Update service to false */
-		
+
 		PRNTL(F(">>> Failed read Topics. default values used"));
 	}
-	// TOPICS_JSON;
-	//.shrinkToFit();
 
 	if (extract_JSON_from_flash(myIOT_paramfile, myIOT_P)) /* Case pulling from flash fails */
 	{
@@ -1008,8 +978,6 @@ void myIOT2::_feedTheDog()
 	{
 		sendReset("Dog goes woof");
 	}
-#elif defined(ESP32)
-
 #endif
 }
 void myIOT2::_acceptOTA()
@@ -1022,101 +990,51 @@ void myIOT2::_acceptOTA()
 void myIOT2::startOTA()
 {
 	allowOTA_clock = millis();
-	// ArduinoOTA.setPort(8266);
-	// ArduinoOTA.setHostname("TOPICS_JSON");
-	// ArduinoOTA.onStart([]()
-	// 				   {
-	// 					   String type;
-	// 					   if (ArduinoOTA.getCommand() == U_FLASH)
-	// 					   {
-	// 						   type = "sketch";
-	// 					   }
-	// 					   else
-	// 					   {
-	// 						   type = "filesystem";
-	// 					   } });
-	// if (useSerial)
-	// {
-	// 	ArduinoOTA.onEnd([]()
-	// 					 { Serial.println("\nEnd"); });
-	// 	ArduinoOTA.onProgress([](unsigned int progress, unsigned int total)
-	// 						  { Serial.printf("Progress: %u%%\r", (progress / (total / 100))); });
-	// 	ArduinoOTA.onError([](ota_error_t error)
-	// 					   {
-	// 						   Serial.printf("Error[%u]: ", error);
-	// 						   if (error == OTA_AUTH_ERROR)
-	// 						   {
-	// 							   Serial.println("Auth Failed");
-	// 						   }
-	// 						   else if (error == OTA_BEGIN_ERROR)
-	// 						   {
-	// 							   Serial.println("Begin Failed");
-	// 						   }
-	// 						   else if (error == OTA_CONNECT_ERROR)
-	// 						   {
-	// 							   Serial.println("Connect Failed");
-	// 						   }
-	// 						   else if (error == OTA_RECEIVE_ERROR)
-	// 						   {
-	// 							   Serial.println("Receive Failed");
-	// 						   }
-	// 						   else if (error == OTA_END_ERROR)
-	// 						   {
-	// 							   Serial.println("End Failed");
-	// 						   } });
-	// }
+	ArduinoOTA.setPort(8266);
+	ArduinoOTA.setHostname(TOPICS_JSON["sub_topics"][0].as<const char *>());
+	ArduinoOTA.onStart([]()
+					   {
+						   String type;
+						   if (ArduinoOTA.getCommand() == U_FLASH)
+						   {
+							   type = "sketch";
+						   }
+						   else
+						   {
+							   type = "filesystem";
+						   } });
+	if (useSerial)
+	{
+		ArduinoOTA.onEnd([]()
+						 { Serial.println("\nEnd"); });
+		ArduinoOTA.onProgress([](unsigned int progress, unsigned int total)
+							  { Serial.printf("Progress: %u%%\r", (progress / (total / 100))); });
+		ArduinoOTA.onError([](ota_error_t error)
+						   {
+							   Serial.printf("Error[%u]: ", error);
+							   if (error == OTA_AUTH_ERROR)
+							   {
+								   Serial.println("Auth Failed");
+							   }
+							   else if (error == OTA_BEGIN_ERROR)
+							   {
+								   Serial.println("Begin Failed");
+							   }
+							   else if (error == OTA_CONNECT_ERROR)
+							   {
+								   Serial.println("Connect Failed");
+							   }
+							   else if (error == OTA_RECEIVE_ERROR)
+							   {
+								   Serial.println("Receive Failed");
+							   }
+							   else if (error == OTA_END_ERROR)
+							   {
+								   Serial.println("End Failed");
+							   } });
+	}
 
-	// ArduinoOTA.begin();
-
-
-
-
-
-	  // Port defaults to 8266
-//   ArduinoOTA.setPort(8266);
-
-  // Hostname defaults to esp8266-[ChipID]
-//   ArduinoOTA.setHostname("myesp8266");
-
-  // No authentication by default
-  // ArduinoOTA.setPassword("admin");
-
-  // Password can be set with it's md5 value as well
-  // MD5(admin) = 21232f297a57a5a743894a0e4a801fc3
-  // ArduinoOTA.setPasswordHash("21232f297a57a5a743894a0e4a801fc3");
-
-  ArduinoOTA.onStart([]() {
-    String type;
-    if (ArduinoOTA.getCommand() == U_FLASH) {
-      type = "sketch";
-    } else { // U_FS
-      type = "filesystem";
-    }
-
-    // NOTE: if updating FS this would be the place to unmount FS using FS.end()
-    Serial.println("Start updating " + type);
-  });
-  ArduinoOTA.onEnd([]() {
-    Serial.println("\nEnd");
-  });
-  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-  });
-  ArduinoOTA.onError([](ota_error_t error) {
-    Serial.printf("Error[%u]: ", error);
-    if (error == OTA_AUTH_ERROR) {
-      Serial.println("Auth Failed");
-    } else if (error == OTA_BEGIN_ERROR) {
-      Serial.println("Begin Failed");
-    } else if (error == OTA_CONNECT_ERROR) {
-      Serial.println("Connect Failed");
-    } else if (error == OTA_RECEIVE_ERROR) {
-      Serial.println("Receive Failed");
-    } else if (error == OTA_END_ERROR) {
-      Serial.println("End Failed");
-    }
-  });
-  ArduinoOTA.begin();
+	ArduinoOTA.begin();
 }
 void myIOT2::_startWDT()
 {
