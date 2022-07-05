@@ -32,7 +32,7 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	}
 	if (useFlashP)
 	{
-		PRNTL(F(">>> load Flash Parameters"));
+		PRNTL(F(">>> Start Flash Parameters read"));
 		get_flashParameters();
 	}
 	if (useDebug)
@@ -40,7 +40,8 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 		PRNTL(F(">>> Start debuglog services"));
 		flog.start(log_ents);
 	}
-	PRNTL(F(">>> Start Network servies"));
+	
+	PRNTL(F(">>> Start Network services"));
 	_start_network_services();
 
 	if (useWDT)
@@ -55,7 +56,7 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	}
 	if (useBootClockLog && WiFi.isConnected())
 	{
-		PRNTL(F(">>> Start bootlog"));
+		PRNTL(F(">>> Start bootClocklog"));
 		clklog.start(20); // Dont need looper. saved only once a boot
 		_store_bootclockLOG();
 	}
@@ -124,7 +125,7 @@ bool myIOT2::_network_looper()
 bool myIOT2::_start_network_services()
 {
 	_Wifi_and_mqtt_OK = false;
-	PRNTL(F(">>> Start networking services"));
+	PRNTL(F("~~ networking services"));
 
 	if (_startWifi(_ssid, _wifi_pwd))
 	{
@@ -134,8 +135,7 @@ bool myIOT2::_start_network_services()
 		}
 		_Wifi_and_mqtt_OK = _startMQTT();
 	}
-	return 1;
-	//_Wifi_and_mqtt_OK;
+	return _Wifi_and_mqtt_OK;
 }
 bool myIOT2::_startWifi(const char *ssid, const char *password)
 {
@@ -157,34 +157,28 @@ bool myIOT2::_startWifi(const char *ssid, const char *password)
 	// case of no success - restart due to no wifi
 	if (WiFi.status() != WL_CONNECTED)
 	{
-		PRNTL(F(">>> no wifi connected"));
-		PRNT(F("\nConnection status: "));
+		PRNT(F("~~ Wifi NOT connected, status:"));
 		PRNTL(WiFi.status());
 
-		// if (!_WifiConnCheck.isRunning())
-		// {
-		// 	_WifiConnCheck.restart();
-		// }
+		if (!_WifiConnCheck.isRunning())
+		{
+			_WifiConnCheck.restart();
+		}
 		return 0;
 	}
 
 	// if wifi is OK
 	else
 	{
-		PRNTL("");
-		PRNTL(F(">>> wifi connected"));
-		PRNT(F("IP address: "));
+		PRNT(F("\n>>> wifi connected. IP address: "));
 		PRNTL(WiFi.localIP());
-
-		// _WifiConnCheck.stop();
-		Serial.flush();
-		delay(1000);
+		_WifiConnCheck.stop();
 		return 1;
 	}
 }
 void myIOT2::_shutdown_wifi()
 {
-	PRNTL(F("~ Shutting down Wifi"));
+	// PRNTL(F("~ Shutting down Wifi"));
 	WiFi.mode(WIFI_OFF); // <---- NEW
 	delay(200);
 	WiFi.mode(WIFI_STA);
@@ -235,7 +229,7 @@ bool myIOT2::_startNTP(const char *ntpServer, const char *ntpServer2)
 #elif defined(ESP32)
 		configTzTime(TZ_Asia_Jerusalem, ntpServer2, ntpServer);
 #endif
-		delay(250);
+		delay(1000);
 	}
 	if (!_NTP_updated())
 	{
@@ -246,6 +240,7 @@ bool myIOT2::_startNTP(const char *ntpServer, const char *ntpServer2)
 	else
 	{
 		PRNTL(F("~ NTP Update OK"));
+		Serial.flush();
 		_NTPCheck.stop();
 		return 1;
 	}
@@ -512,14 +507,8 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 
 			for (uint8_t i = 0; i < sizeof(filenames) / sizeof(filenames[0]); i++)
 			{
-				// 		StaticJsonDocument<max(MY_IOT_JSON_SIZE, MY_IOT_JSON_SIZE)> DOC;
 				pub_debug(filenames[i]);
-				// 		extract_JSON_from_flash(filenames[i], DOC);
 				String tempstr1 = readFile(filenames[i]);
-				// 		// char outmsg[500];
-				// 		serializeJsonPretty(DOC, Serial);
-				// 		// serializeJson(DOC, outmsg);
-				// 		// Serial.println(outmsg);
 				char buff[tempstr1.length() + 1];
 				tempstr1.toCharArray(buff, tempstr1.length() + 1);
 				pub_debug(buff);
@@ -552,7 +541,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	{
 		if (useBootClockLog)
 		{
-			// _extract_log(clklog, "boot_log", true);
+			_extract_log(clklog, "boot_log", true);
 		}
 		else
 		{
@@ -765,30 +754,28 @@ bool myIOT2::extract_JSON_from_flash(char *filename, JsonDocument &DOC)
 }
 void myIOT2::update_vars_flash_parameters(JsonDocument &DOC)
 {
-	useWDT = DOC["useWDT"].as<bool>();
-	useOTA = DOC["useOTA"].as<bool>();
-	useSerial = DOC["useSerial"].as<bool>();
-	useFlashP = DOC["useFlashP"].as<bool>();
-	useDebug = DOC["useDebugLog"].as<bool>();
-	debug_level = DOC["debug_level"].as<uint8_t>();
-	useResetKeeper = DOC["useResetKeeper"].as<bool>();
-	useNetworkReset = DOC["useNetworkReset"].as<bool>();
-	noNetwork_reset = DOC["noNetwork_reset"].as<uint8_t>();
-	useBootClockLog = DOC["useBootClockLog"].as<bool>();
-	ignore_boot_msg = DOC["ignore_boot_msg"].as<bool>();
-
-	PRNTL(F(">>> Variables updated using Flash Parameters"));
+	useWDT = DOC["useWDT"].as<bool>() | useWDT;
+	useOTA = DOC["useOTA"].as<bool>() | useOTA;
+	useSerial = DOC["useSerial"].as<bool>() | useSerial;
+	useFlashP = DOC["useFlashP"].as<bool>() | useFlashP;
+	useDebug = DOC["useDebugLog"].as<bool>() | useDebug;
+	debug_level = DOC["debug_level"].as<uint8_t>() | debug_level;
+	useResetKeeper = DOC["useResetKeeper"].as<bool>() | useResetKeeper;
+	useNetworkReset = DOC["useNetworkReset"].as<bool>() | useNetworkReset;
+	noNetwork_reset = DOC["noNetwork_reset"].as<uint8_t>() | noNetwork_reset;
+	useBootClockLog = DOC["useBootClockLog"].as<bool>() | useBootClockLog;
+	ignore_boot_msg = DOC["ignore_boot_msg"].as<bool>() | ignore_boot_msg;
 }
 void myIOT2::get_flashParameters()
 {
 	StaticJsonDocument<MY_IOT_JSON_SIZE> myIOT_P; /* !!! Check if this not has to change !!! */
 	delay(50);
-	PRNTL(F(">>> Start reading Flash Parameters."));
 
 	if (!extract_JSON_from_flash(myIOT_topics, TOPICS_JSON))
 	{
 		TOPICS_JSON["pub_gen_topics"][0] = "myHome/Messages";
 		TOPICS_JSON["pub_gen_topics"][1] = "myHome/log";
+		TOPICS_JSON["pub_gen_topics"][2] = "myHome/debug";
 		TOPICS_JSON["pub_topics"][0] = "myHome/group/client/Avail";
 		TOPICS_JSON["pub_topics"][1] = "myHome/group/client/State";
 		TOPICS_JSON["sub_topics"][0] = "myHome/group/client";
@@ -796,16 +783,20 @@ void myIOT2::get_flashParameters()
 
 		useFlashP = false; /* Update service to false */
 
-		PRNTL(F(">>> Failed read Topics. default values used"));
+		PRNTL(F("~~ Failed read Topics. default values used"));
+	}
+	else{
+		PRNTL(F("~~ Topics read from Flash OK"));
 	}
 
 	if (extract_JSON_from_flash(myIOT_paramfile, myIOT_P)) /* Case pulling from flash fails */
 	{
 		update_vars_flash_parameters(myIOT_P);
+		PRNTL(F("~~ Parameters read from Flash OK"));
 	}
 	else
 	{
-		PRNTL(F(">>> Failed read Parameters.default values used"));
+		PRNTL(F("~~ Failed read Parameters.default values used"));
 	}
 	myIOT_P.clear();
 }
