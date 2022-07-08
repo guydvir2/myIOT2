@@ -27,7 +27,6 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	{
 		Serial.begin(115200);
 		PRNTL(F("\n\n>>> ~~~~~~ Start myIOT2 ~~~~~~ "));
-		Serial.flush();
 		delay(10);
 	}
 	if (useFlashP)
@@ -40,7 +39,7 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 		PRNTL(F(">>> Start debuglog services"));
 		flog.start(log_ents);
 	}
-	
+
 	PRNTL(F(">>> Start Network services"));
 	_start_network_services();
 
@@ -87,7 +86,7 @@ bool myIOT2::_network_looper()
 	const int time_reset_NTP = 360;	   // sec
 	const uint8_t time_retry_NTP = 60; // sec
 	bool cur_wifi_status = WiFi.isConnected();
-	bool cur_mqtt_status = mqttClient.connected();
+	bool cur_mqtt_status =  mqttClient.connected();
 
 	if (_NTPCheck.isRunning())
 	{
@@ -258,7 +257,7 @@ bool myIOT2::pingSite(char *externalSite, uint8_t pings)
 {
 	return Ping.ping(externalSite, pings);
 }
-void myIOT2::convert_epoch2clock(long t1, long t2, char *time_str, char *days_str)
+void myIOT2::convert_epoch2clock(long t1, long t2, char time_str[], char days_str[])
 {
 	uint8_t days = 0;
 	uint8_t hours = 0;
@@ -324,7 +323,7 @@ bool myIOT2::_try_regain_MQTT()
 			{
 				if (_subMQTT()) /* succeed to reconnect */
 				{
-									PRNTL(F("~ MQTT restored"));
+					PRNTL(F("~ MQTT restored"));
 					mqttClient.loop();
 
 					int not_con_period = (int)((millis() - _MQTTConnCheck.elapsed()) / 1000UL);
@@ -342,7 +341,7 @@ bool myIOT2::_try_regain_MQTT()
 				{
 					if (_MQTTConnCheck.hasPassed(60))
 					{
-										PRNTL(F("~ MQTT fails, Restarting all network"));
+						PRNTL(F("~ MQTT fails, Restarting all network"));
 						flog.write("network shutdown", true);
 						_shutdown_wifi();
 						return _start_network_services();
@@ -371,21 +370,20 @@ bool myIOT2::_subMQTT()
 		uint64_t chipid = ESP.getEfuseMac();
 		sprintf(tempname, "ESP32_%04X", (uint16_t)(chipid >> 32));
 #endif
-		if (mqttClient.connect(tempname, _mqtt_user, _mqtt_pwd, TOPICS_JSON["pub_topics"][0].as<const char *>(), 1, true, "offline"))
+		if (mqttClient.connect(tempname, _mqtt_user, _mqtt_pwd, topics_pub[0], 1, true, "offline"))
 		{
+			uint8_t m = sizeof(topics_sub) / sizeof(topics_sub[0]);
+
 			PRNTL(F(">>> MQTT server Connected"));
 			PRNTL(F("\n>>> Subscribe Topics:"));
 
-			for (uint8_t i = 0; i < TOPICS_JSON["sub_topics"].size(); i++)
+			for (uint8_t i = 0; i < m; i++)
 			{
-				mqttClient.subscribe(TOPICS_JSON["sub_topics"][i].as<const char *>());
-				PRNTL(TOPICS_JSON["sub_topics"][i].as<const char *>());
-			}
-
-			for (uint8_t i = 0; i < TOPICS_JSON["sub_data_topics"].size(); i++)
-			{
-				mqttClient.subscribe(TOPICS_JSON["sub_data_topics"][i].as<const char *>());
-				PRNTL(TOPICS_JSON["sub_data_topics"][i].as<const char *>());
+				if (topics_sub[i] != nullptr)
+				{
+					mqttClient.subscribe(topics_sub[i]);
+					PRNTL(topics_sub[i]);
+				}
 			}
 
 			if (firstRun)
@@ -436,7 +434,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	incoming_msg[length] = 0;
 	PRNTL("");
 
-	// if (strcmp(topic, TOPICS_JSON["pub_topics"][0].as<const char *>()) == 0 && useResetKeeper && firstRun)
+	// if (strcmp(topic, topics_sub[0]) == 0 && useResetKeeper && firstRun)
 	// {
 	// 	_getBootReason_resetKeeper(incoming_msg);
 	// }
@@ -502,7 +500,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 			char clk[25];
 			get_timeStamp(clk);
 			char *filenames[] = {sketch_paramfile, myIOT_paramfile, myIOT_topics};
-			sprintf(msg, "\n<<~~~~~~ [%s] [%s] On-Flash Parameters ~~~~~>>", clk, TOPICS_JSON["sub_topics"][0].as<const char *>());
+			sprintf(msg, "\n<<~~~~~~ [%s] [%s] On-Flash Parameters ~~~~~>>", clk, topics_sub[0]);
 			pub_debug(msg);
 
 			for (uint8_t i = 0; i < sizeof(filenames) / sizeof(filenames[0]); i++)
@@ -581,13 +579,12 @@ void myIOT2::_pub_generic(const char *topic, char *inmsg, bool retain, char *dev
 	get_timeStamp(clk, 0);
 	const uint8_t mqtt_overhead_size = 23;
 	const int mqtt_defsize = mqttClient.getBufferSize();
-
-	int x = devname == nullptr ? strlen(TOPICS_JSON["sub_topics"][0].as<const char *>()) + 1 : 0;
+	int x = devname == nullptr ? strlen(topics_sub[0]) + 1 : 0;
 	char tmpmsg[strlen(inmsg) + x + 8 + 25];
 
 	if (!bare)
 	{
-		sprintf(tmpmsg, "[%s] [%s] %s", clk, TOPICS_JSON["sub_topics"][0].as<const char *>(), inmsg);
+		sprintf(tmpmsg, "[%s] [%s] %s", clk, topics_sub[0], inmsg);
 	}
 	else
 	{
@@ -608,8 +605,8 @@ void myIOT2::_pub_generic(const char *topic, char *inmsg, bool retain, char *dev
 }
 void myIOT2::pub_msg(char *inmsg)
 {
-	_pub_generic(TOPICS_JSON["pub_gen_topics"][0].as<const char *>(), inmsg);
-	_write_log(inmsg, 1, TOPICS_JSON["pub_gen_topics"][0].as<const char *>());
+	_pub_generic(topics_gen_pub[0], inmsg);
+	_write_log(inmsg, 1, topics_gen_pub[0]);
 }
 void myIOT2::pub_noTopic(char *inmsg, char *Topic, bool retain)
 {
@@ -633,18 +630,18 @@ void myIOT2::pub_state(char *inmsg, uint8_t i)
 }
 void myIOT2::pub_log(char *inmsg)
 {
-	_pub_generic(TOPICS_JSON["pub_gen_topics"][1].as<const char *>(), inmsg);
-	_write_log(inmsg, 1, TOPICS_JSON["pub_gen_topics"][1].as<const char *>());
+	_pub_generic(topics_gen_pub[1], inmsg);
+	_write_log(inmsg, 1, topics_gen_pub[1]);
 }
 void myIOT2::pub_debug(char *inmsg)
 {
-	_pub_generic(TOPICS_JSON["pub_gen_topics"][2].as<const char *>(), inmsg, false, nullptr, true);
+	_pub_generic(topics_gen_pub[1], inmsg, false, nullptr, true);
 }
 
 void myIOT2::notifyOnline()
 {
-	mqttClient.publish(TOPICS_JSON["pub_topics"][0].as<const char *>(), "online", true);
-	_write_log("online", 2, TOPICS_JSON["pub_topics"][0].as<const char *>());
+	mqttClient.publish(topics_sub[0], "online", true);
+	_write_log("online", 2, topics_sub[0]);
 }
 uint8_t myIOT2::inline_read(char *inputstr)
 {
@@ -785,7 +782,8 @@ void myIOT2::get_flashParameters()
 
 		PRNTL(F("~~ Failed read Topics. default values used"));
 	}
-	else{
+	else
+	{
 		PRNTL(F("~~ Topics read from Flash OK"));
 	}
 
@@ -920,7 +918,7 @@ void myIOT2::_extract_log(flashLOG &_flog, const char *_title, bool _isTimelog)
 	int x = _flog.get_num_saved_records();
 
 	sprintf(msg, " \n<<~~~~~~[%s] %s %s : entries [#%d], file-size[%.2f kb] ~~~~~~~~~~>>\n ",
-			clk, TOPICS_JSON["sub_topics"][0].as<const char *>(), _title, x, (float)(_flog.sizelog() / 1000.0));
+			clk, topics_sub[0], _title, x, (float)(_flog.sizelog() / 1000.0));
 
 	pub_debug(msg);
 	for (int a = 0; a < x; a++)
@@ -937,7 +935,7 @@ void myIOT2::_extract_log(flashLOG &_flog, const char *_title, bool _isTimelog)
 		delay(20);
 	}
 	pub_msg("[log]: extracted");
-	sprintf(msg, " \n<<~~~~~~ %s %s End ~~~~~~~~~~>> ", _title, TOPICS_JSON["sub_topics"][0].as<const char *>());
+	sprintf(msg, " \n<<~~~~~~ %s %s End ~~~~~~~~~~>> ", _title, topics_sub[0]);
 	pub_debug(msg);
 }
 
@@ -982,7 +980,7 @@ void myIOT2::startOTA()
 {
 	allowOTA_clock = millis();
 	ArduinoOTA.setPort(8266);
-	ArduinoOTA.setHostname(TOPICS_JSON["sub_topics"][0].as<const char *>());
+	ArduinoOTA.setHostname(topics_sub[0]);
 	ArduinoOTA.onStart([]()
 					   {
 						   String type;

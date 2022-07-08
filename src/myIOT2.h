@@ -12,7 +12,6 @@
 #include <Chrono.h>
 #include "secretsIOT8266.h"
 
-
 #if defined(ESP8266)
 #include <LittleFS.h>
 #include <ESP8266WiFi.h>
@@ -61,10 +60,14 @@ public:
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 public:
-    char ver[12] = "iot_v1.60d";
+    char ver[12] = "iot_v1.7";
     char myIOT_topics[22] = "/myIOT2_topics.json";
     char myIOT_paramfile[20] = "/myIOT_param.json";
     char sketch_paramfile[20] = "/sketch_param.json";
+
+    const char *topics_gen_pub[5] = {nullptr, nullptr, nullptr, nullptr, nullptr};
+    const char *topics_sub[5] = {nullptr, nullptr, nullptr, nullptr, nullptr};
+    const char *topics_pub[5] = {nullptr, nullptr, nullptr, nullptr, nullptr};
 
     /*Variables */
     // ~~~~~~ Services ~~~~~~~~~
@@ -77,7 +80,7 @@ public:
     bool useNetworkReset = true; // allow reset due to no-network timeout
     bool useBootClockLog = false;
     bool ignore_boot_msg = false;
-    uint8_t debug_level = 0;      // 0- All, 1- system states; 2- log only
+    uint8_t debug_level = 0;     // 0- All, 1- system states; 2- log only
     uint8_t noNetwork_reset = 5; // minutes
     // ~~~~~~~ end Services ~~~~~~~
 
@@ -138,7 +141,7 @@ public: /* Functions */
     // ~~~~~~~~~~~~~~ Clk ~~~~~~~~~~~~~~~~~~~~~
     time_t now();
     void get_timeStamp(char ret[], time_t t = 0);
-    void convert_epoch2clock(long t1, long t2, char *time_str, char *days_str = nullptr);
+    void convert_epoch2clock(long t1, long t2, char time_str[], char days_str[] = nullptr);
 
     // ~~~~~~~~~~~~~~ Param ~~~~~~~~~~~~~~~~~~~~~
     uint8_t inline_read(char *inputstr);
@@ -158,21 +161,20 @@ private:
     bool _try_rgain_wifi();
 
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    bool _startMQTT();
-    void _constructTopics_fromCode();
     bool _subMQTT();
-    void _MQTTcb(char *topic, uint8_t *payload, unsigned int length);
+    bool _startMQTT();
+    bool _try_regain_MQTT();
     void _getBootReason_resetKeeper(char *msg);
+    void _MQTTcb(char *topic, uint8_t *payload, unsigned int length);
     void _write_log(char *inmsg, uint8_t x, const char *topic = "_deviceName");
     void _pub_generic(const char *topic, char *inmsg, bool retain = false, char *devname = nullptr, bool bare = false);
-    bool _try_regain_MQTT();
 
     // ~~~~~~~ Services  ~~~~~~~~~~~~~~~~~~~~~~~~
     void _startFS();
     void _startWDT();
     void _acceptOTA();
-    void _store_bootclockLOG();
     void _feedTheDog();
+    void _store_bootclockLOG();
     void _extract_log(flashLOG &LOG, const char *title, bool _isTimelog = false);
 
     // ~~~~~~~~~~~~~~ Param ~~~~~~~~~~~~~~~~~~~~~
