@@ -59,15 +59,16 @@ public:
     // ~~~~define generic cb function~~~~
     typedef void (*cb_func)(char *msg1, char *_topic);
 
-public:
+protected:
     char ver[12] = "iot_v1.7";
     char myIOT_topics[22] = "/myIOT2_topics.json";
     char myIOT_paramfile[20] = "/myIOT_param.json";
     char sketch_paramfile[20] = "/sketch_param.json";
 
-    const char *topics_gen_pub[5] = {nullptr, nullptr, nullptr, nullptr, nullptr};
-    const char *topics_sub[5] = {nullptr, nullptr, nullptr, nullptr, nullptr};
-    const char *topics_pub[5] = {nullptr, nullptr, nullptr, nullptr, nullptr};
+public:
+    const char *topics_gen_pub[4] = {nullptr, nullptr, nullptr, nullptr};
+    const char *topics_sub[4] = {nullptr, nullptr, nullptr, nullptr};
+    const char *topics_pub[4] = {nullptr, nullptr, nullptr, nullptr};
 
     /*Variables */
     // ~~~~~~ Services ~~~~~~~~~
@@ -89,10 +90,6 @@ public:
 
     static const uint8_t num_param = 4; // MQTT parameter count
     char inline_param[num_param][20];   // values from user
-
-    // MQTT Topic variables
-    // ~~~~~~~~~~~~~~~~~~~~~~
-    StaticJsonDocument<MY_IOT_TOPIC_JSON> TOPICS_JSON;
 
 private:
     // WiFi MQTT broker parameters
@@ -128,7 +125,7 @@ public: /* Functions */
     bool pingSite(char *externalSite = "www.google.com", uint8_t pings = 3);
 
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    void sendReset(char *header);
+    void sendReset(char *header=nullptr);
     void notifyOnline();
     void pub_state(char *inmsg, uint8_t i = 0);
     void pub_msg(char *inmsg);
@@ -146,7 +143,6 @@ public: /* Functions */
     // ~~~~~~~~~~~~~~ Param ~~~~~~~~~~~~~~~~~~~~~
     uint8_t inline_read(char *inputstr);
     bool extract_JSON_from_flash(char *filename, JsonDocument &DOC);
-    void get_flashParameters();
     void update_vars_flash_parameters(JsonDocument &DOC);
     String readFile(char *fileName);
 

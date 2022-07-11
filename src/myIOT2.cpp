@@ -86,7 +86,7 @@ bool myIOT2::_network_looper()
 	const int time_reset_NTP = 360;	   // sec
 	const uint8_t time_retry_NTP = 60; // sec
 	bool cur_wifi_status = WiFi.isConnected();
-	bool cur_mqtt_status =  mqttClient.connected();
+	bool cur_mqtt_status = mqttClient.connected();
 
 	if (_NTPCheck.isRunning())
 	{
@@ -373,7 +373,6 @@ bool myIOT2::_subMQTT()
 		if (mqttClient.connect(tempname, _mqtt_user, _mqtt_pwd, topics_pub[0], 1, true, "offline"))
 		{
 			uint8_t m = sizeof(topics_sub) / sizeof(topics_sub[0]);
-
 			PRNTL(F(">>> MQTT server Connected"));
 			PRNTL(F("\n>>> Subscribe Topics:"));
 
@@ -615,18 +614,18 @@ void myIOT2::pub_noTopic(char *inmsg, char *Topic, bool retain)
 }
 void myIOT2::pub_state(char *inmsg, uint8_t i)
 {
-	char _stateTopic[strlen(TOPICS_JSON["pub_gen_topics"][1].as<const char *>()) + 4];
+	// char _stateTopic[strlen(TOPICS_JSON["pub_gen_topics"][1].as<const char *>()) + 4];
 
-	if (i == 0)
-	{
-		sprintf(_stateTopic, "%s", TOPICS_JSON["pub_gen_topics"][1].as<const char *>());
-	}
-	else
-	{
-		sprintf(_stateTopic, "%s_%d", TOPICS_JSON["pub_gen_topics"][1].as<const char *>(), i);
-	}
-	mqttClient.publish(_stateTopic, inmsg, true);
-	_write_log(inmsg, 2, _stateTopic);
+	// if (i == 0)
+	// {
+	// 	sprintf(_stateTopic, "%s", TOPICS_JSON["pub_gen_topics"][1].as<const char *>());
+	// }
+	// else
+	// {
+	// 	sprintf(_stateTopic, "%s_%d", TOPICS_JSON["pub_gen_topics"][1].as<const char *>(), i);
+	// }
+	mqttClient.publish(topics_pub[1], inmsg, true);
+	_write_log(inmsg, 2, topics_pub[1]);
 }
 void myIOT2::pub_log(char *inmsg)
 {
@@ -751,53 +750,31 @@ bool myIOT2::extract_JSON_from_flash(char *filename, JsonDocument &DOC)
 }
 void myIOT2::update_vars_flash_parameters(JsonDocument &DOC)
 {
-	useWDT = DOC["useWDT"].as<bool>() | useWDT;
-	useOTA = DOC["useOTA"].as<bool>() | useOTA;
-	useSerial = DOC["useSerial"].as<bool>() | useSerial;
-	useFlashP = DOC["useFlashP"].as<bool>() | useFlashP;
-	useDebug = DOC["useDebugLog"].as<bool>() | useDebug;
-	debug_level = DOC["debug_level"].as<uint8_t>() | debug_level;
-	useResetKeeper = DOC["useResetKeeper"].as<bool>() | useResetKeeper;
-	useNetworkReset = DOC["useNetworkReset"].as<bool>() | useNetworkReset;
-	noNetwork_reset = DOC["noNetwork_reset"].as<uint8_t>() | noNetwork_reset;
-	useBootClockLog = DOC["useBootClockLog"].as<bool>() | useBootClockLog;
-	ignore_boot_msg = DOC["ignore_boot_msg"].as<bool>() | ignore_boot_msg;
+	// useWDT = DOC["useWDT"].as<bool>() | useWDT;
+	// useOTA = DOC["useOTA"].as<bool>() | useOTA;
+	// useSerial = DOC["useSerial"].as<bool>() | useSerial;
+	// useFlashP = DOC["useFlashP"].as<bool>() | useFlashP;
+	// useDebug = DOC["useDebugLog"].as<bool>() | useDebug;
+	// debug_level = DOC["debug_level"].as<uint8_t>() | debug_level;
+	// useResetKeeper = DOC["useResetKeeper"].as<bool>() | useResetKeeper;
+	// useNetworkReset = DOC["useNetworkReset"].as<bool>() | useNetworkReset;
+	// noNetwork_reset = DOC["noNetwork_reset"].as<uint8_t>() | noNetwork_reset;
+	// useBootClockLog = DOC["useBootClockLog"].as<bool>() | useBootClockLog;
+	// ignore_boot_msg = DOC["ignore_boot_msg"].as<bool>() | ignore_boot_msg;
+
+	useWDT = DOC["useWDT"];
+	useOTA = DOC["useOTA"];
+	useSerial = DOC["useSerial"];
+	useFlashP = DOC["useFlashP"];
+	useDebug = DOC["useDebugLog"];
+	debug_level = DOC["debug_level"];
+	useResetKeeper = DOC["useResetKeeper"];
+	useNetworkReset = DOC["useNetworkReset"];
+	noNetwork_reset = DOC["noNetwork_reset"];
+	useBootClockLog = DOC["useBootClockLog"];
+	ignore_boot_msg = DOC["ignore_boot_msg"];
 }
-void myIOT2::get_flashParameters()
-{
-	StaticJsonDocument<MY_IOT_JSON_SIZE> myIOT_P; /* !!! Check if this not has to change !!! */
-	delay(50);
 
-	if (!extract_JSON_from_flash(myIOT_topics, TOPICS_JSON))
-	{
-		TOPICS_JSON["pub_gen_topics"][0] = "myHome/Messages";
-		TOPICS_JSON["pub_gen_topics"][1] = "myHome/log";
-		TOPICS_JSON["pub_gen_topics"][2] = "myHome/debug";
-		TOPICS_JSON["pub_topics"][0] = "myHome/group/client/Avail";
-		TOPICS_JSON["pub_topics"][1] = "myHome/group/client/State";
-		TOPICS_JSON["sub_topics"][0] = "myHome/group/client";
-		TOPICS_JSON["sub_topics"][1] = "myHome/All";
-
-		useFlashP = false; /* Update service to false */
-
-		PRNTL(F("~~ Failed read Topics. default values used"));
-	}
-	else
-	{
-		PRNTL(F("~~ Topics read from Flash OK"));
-	}
-
-	if (extract_JSON_from_flash(myIOT_paramfile, myIOT_P)) /* Case pulling from flash fails */
-	{
-		update_vars_flash_parameters(myIOT_P);
-		PRNTL(F("~~ Parameters read from Flash OK"));
-	}
-	else
-	{
-		PRNTL(F("~~ Failed read Parameters.default values used"));
-	}
-	myIOT_P.clear();
-}
 bool myIOT2::_change_flashP_value(const char *key, const char *new_value, JsonDocument &DOC)
 {
 	uint8_t s = _getdataType(new_value);
@@ -942,13 +919,13 @@ void myIOT2::_extract_log(flashLOG &_flog, const char *_title, bool _isTimelog)
 // ~~~~~~ Reset and maintability ~~~~~~
 void myIOT2::sendReset(char *header)
 {
-	char temp[17 + strlen(header)];
+	char temp[20 + strlen(header)];
 
 	sprintf(temp, "[%s] - Reset sent", header);
-	_write_log(temp, 2, TOPICS_JSON["pub_gen_topics"][0].as<const char *>());
+	_write_log(temp, 2, topics_gen_pub[0]);
 	PRNTL(temp);
 
-	if (strcmp(header, "null") != 0)
+	if (header != nullableValue)
 	{
 		pub_msg(temp);
 	}
