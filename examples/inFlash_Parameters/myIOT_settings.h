@@ -1,6 +1,5 @@
 myIOT2 iot;
 
-
 char topics_sub[3][40];
 char topics_pub[3][45];
 char topics_gen_pub[3][18];

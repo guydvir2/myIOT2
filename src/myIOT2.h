@@ -69,6 +69,8 @@ public:
     const char *topics_gen_pub[4] = {nullptr, nullptr, nullptr, nullptr};
     const char *topics_sub[4] = {nullptr, nullptr, nullptr, nullptr};
     const char *topics_pub[4] = {nullptr, nullptr, nullptr, nullptr};
+    
+    const char *parameter_filenames[4] = {nullptr, nullptr, nullptr, nullptr};
 
     /*Variables */
     // ~~~~~~ Services ~~~~~~~~~
@@ -125,7 +127,7 @@ public: /* Functions */
     bool pingSite(char *externalSite = "www.google.com", uint8_t pings = 3);
 
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    void sendReset(char *header=nullptr);
+    void sendReset(char *header = nullptr);
     void notifyOnline();
     void pub_state(char *inmsg, uint8_t i = 0);
     void pub_msg(char *inmsg);

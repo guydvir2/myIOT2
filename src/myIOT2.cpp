@@ -29,11 +29,11 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 		PRNTL(F("\n\n>>> ~~~~~~ Start myIOT2 ~~~~~~ "));
 		delay(10);
 	}
-	if (useFlashP)
-	{
-		PRNTL(F(">>> Start Flash Parameters read"));
-		get_flashParameters();
-	}
+	// if (useFlashP)
+	// {
+	// 	PRNTL(F(">>> Start Flash Parameters read"));
+	// 	get_flashParameters();
+	// }
 	if (useDebug)
 	{
 		PRNTL(F(">>> Start debuglog services"));
@@ -750,29 +750,29 @@ bool myIOT2::extract_JSON_from_flash(char *filename, JsonDocument &DOC)
 }
 void myIOT2::update_vars_flash_parameters(JsonDocument &DOC)
 {
-	// useWDT = DOC["useWDT"].as<bool>() | useWDT;
-	// useOTA = DOC["useOTA"].as<bool>() | useOTA;
-	// useSerial = DOC["useSerial"].as<bool>() | useSerial;
-	// useFlashP = DOC["useFlashP"].as<bool>() | useFlashP;
-	// useDebug = DOC["useDebugLog"].as<bool>() | useDebug;
-	// debug_level = DOC["debug_level"].as<uint8_t>() | debug_level;
-	// useResetKeeper = DOC["useResetKeeper"].as<bool>() | useResetKeeper;
-	// useNetworkReset = DOC["useNetworkReset"].as<bool>() | useNetworkReset;
-	// noNetwork_reset = DOC["noNetwork_reset"].as<uint8_t>() | noNetwork_reset;
-	// useBootClockLog = DOC["useBootClockLog"].as<bool>() | useBootClockLog;
-	// ignore_boot_msg = DOC["ignore_boot_msg"].as<bool>() | ignore_boot_msg;
+	useWDT = DOC["useWDT"].as<bool>() | useWDT;
+	useOTA = DOC["useOTA"].as<bool>() | useOTA;
+	useSerial = DOC["useSerial"].as<bool>() | useSerial;
+	useFlashP = DOC["useFlashP"].as<bool>() | useFlashP;
+	useDebug = DOC["useDebugLog"].as<bool>() | useDebug;
+	debug_level = DOC["debug_level"].as<uint8_t>() | debug_level;
+	useResetKeeper = DOC["useResetKeeper"].as<bool>() | useResetKeeper;
+	useNetworkReset = DOC["useNetworkReset"].as<bool>() | useNetworkReset;
+	noNetwork_reset = DOC["noNetwork_reset"].as<uint8_t>() | noNetwork_reset;
+	useBootClockLog = DOC["useBootClockLog"].as<bool>() | useBootClockLog;
+	ignore_boot_msg = DOC["ignore_boot_msg"].as<bool>() | ignore_boot_msg;
 
-	useWDT = DOC["useWDT"];
-	useOTA = DOC["useOTA"];
-	useSerial = DOC["useSerial"];
-	useFlashP = DOC["useFlashP"];
-	useDebug = DOC["useDebugLog"];
-	debug_level = DOC["debug_level"];
-	useResetKeeper = DOC["useResetKeeper"];
-	useNetworkReset = DOC["useNetworkReset"];
-	noNetwork_reset = DOC["noNetwork_reset"];
-	useBootClockLog = DOC["useBootClockLog"];
-	ignore_boot_msg = DOC["ignore_boot_msg"];
+	// useWDT = DOC["useWDT"];
+	// useOTA = DOC["useOTA"];
+	// useSerial = DOC["useSerial"];
+	// useFlashP = DOC["useFlashP"];
+	// useDebug = DOC["useDebugLog"];
+	// debug_level = DOC["debug_level"];
+	// useResetKeeper = DOC["useResetKeeper"];
+	// useNetworkReset = DOC["useNetworkReset"];
+	// noNetwork_reset = DOC["noNetwork_reset"];
+	// useBootClockLog = DOC["useBootClockLog"];
+	// ignore_boot_msg = DOC["ignore_boot_msg"];
 }
 
 bool myIOT2::_change_flashP_value(const char *key, const char *new_value, JsonDocument &DOC)
@@ -925,7 +925,7 @@ void myIOT2::sendReset(char *header)
 	_write_log(temp, 2, topics_gen_pub[0]);
 	PRNTL(temp);
 
-	if (header != nullableValue)
+	if (header != nullptr)
 	{
 		pub_msg(temp);
 	}
