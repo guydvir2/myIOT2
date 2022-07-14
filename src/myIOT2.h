@@ -69,7 +69,7 @@ public:
     const char *topics_gen_pub[4] = {nullptr, nullptr, nullptr, nullptr};
     const char *topics_sub[4] = {nullptr, nullptr, nullptr, nullptr};
     const char *topics_pub[4] = {nullptr, nullptr, nullptr, nullptr};
-    
+
     const char *parameter_filenames[4] = {nullptr, nullptr, nullptr, nullptr};
 
     /*Variables */
@@ -127,15 +127,13 @@ public: /* Functions */
     bool pingSite(char *externalSite = "www.google.com", uint8_t pings = 3);
 
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    void sendReset(char *header = nullptr);
     void notifyOnline();
-    void pub_state(char *inmsg, uint8_t i = 0);
     void pub_msg(char *inmsg);
-    void pub_noTopic(char *inmsg, char *Topic, bool retain = false);
     void pub_log(char *inmsg);
     void pub_debug(char *inmsg);
-    // void pub_sms(char *inmsg, char *name = nullptr);
-    // void pub_email(String &inmsg, char *name = nullptr);
+    void sendReset(char *header = nullptr);
+    void pub_state(char *inmsg, uint8_t i = 0);
+    void pub_noTopic(char *inmsg, char *Topic, bool retain = false);
 
     // ~~~~~~~~~~~~~~ Clk ~~~~~~~~~~~~~~~~~~~~~
     time_t now();
@@ -144,14 +142,16 @@ public: /* Functions */
 
     // ~~~~~~~~~~~~~~ Param ~~~~~~~~~~~~~~~~~~~~~
     uint8_t inline_read(char *inputstr);
-    bool extract_JSON_from_flash(char *filename, JsonDocument &DOC);
+    void set_pFilenames(const char *fileArray[], uint8_t asize);
+
+    bool extract_JSON_from_flash(const char *filename, JsonDocument &DOC);
     void update_vars_flash_parameters(JsonDocument &DOC);
     String readFile(char *fileName);
 
 private:
     // ~~~~~~~~~~~~~~WIFI ~~~~~~~~~~~~~~~~~~~~~
-    bool _startWifi(const char *ssid, const char *password);
     void _shutdown_wifi();
+    bool _startWifi(const char *ssid, const char *password);
     bool _network_looper();
     bool _start_network_services();
     bool _startNTP(const char *ntpServer = "pool.ntp.org", const char *ntpServer2 = "il.pool.ntp.org");

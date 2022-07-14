@@ -722,8 +722,14 @@ void myIOT2::_store_bootclockLOG()
 #endif
 	clklog.write(clk_char, true);
 }
-
-bool myIOT2::extract_JSON_from_flash(char *filename, JsonDocument &DOC)
+void myIOT2::set_pFilenames(const char *fileArray[], uint8_t asize)
+{
+    for (uint8_t i = 0; i < asize; i++)
+    {
+        parameter_filenames[i] = fileArray[i];
+    }
+}
+bool myIOT2::extract_JSON_from_flash(const char *filename, JsonDocument &DOC)
 {
 	_startFS();
 	File readFile = LITFS.open(filename, "r");

@@ -3,7 +3,7 @@ myIOT2 iot;
 char topics_sub[3][40];
 char topics_pub[3][45];
 char topics_gen_pub[3][18];
-char *parameterFiles[3] = {"/myIOT_param.json", "/myIOT2_topics.json", "/sketch_param.json"};
+const char *parameterFiles[3] = {"/myIOT_param.json", "/myIOT2_topics.json", "/sketch_param.json"};
 
 // // ±±±±±±± Genereal pub topic ±±±±±±±±±
 // const char *topicLog = "myHome/log";
@@ -19,38 +19,39 @@ char *parameterFiles[3] = {"/myIOT_param.json", "/myIOT2_topics.json", "/sketch_
 // const char *topicClient_avail = "myHome/test/Client/Avail";
 // const char *topicClient_state = "myHome/test/Client/State";
 
-
 void updateTopicsFlash(JsonDocument &DOC)
 {
     for (uint8_t i = 0; i < 3; i++)
     {
-        sprintf(topics_gen_pub[i], DOC["pub_gen_topics"][i]);
+        sprintf(topics_gen_pub[i], DOC["pub_gen_topics"][i] | "myHome/Messages");
         iot.topics_gen_pub[i] = topics_gen_pub[i];
     }
     for (uint8_t i = 0; i < 3; i++)
     {
-        sprintf(topics_pub[i], DOC["pub_topics"][i]);
+        sprintf(topics_pub[i], DOC["pub_topics"][i] | "myHome/Messages");
         iot.topics_pub[i] = topics_pub[i];
     }
     for (uint8_t i = 0; i < 3; i++)
     {
-        sprintf(topics_sub[i], DOC["sub_topics"][i]);
+        sprintf(topics_sub[i], DOC["sub_topics"][i] | "myHome/group/device");
         iot.topics_sub[i] = topics_sub[i];
     }
 }
-void readParameters_inFlash()
+void update_Parameters_fromflash()
 {
     StaticJsonDocument<1250> DOC;
 
-    iot.extract_JSON_from_flash(parameterFiles[0], DOC);
+    iot.set_pFilenames(parameterFiles, 3);
+
+    iot.extract_JSON_from_flash(iot.parameter_filenames[0], DOC);
     iot.update_vars_flash_parameters(DOC);
     DOC.clear();
 
-    iot.extract_JSON_from_flash(parameterFiles[1], DOC);
+    iot.extract_JSON_from_flash(iot.parameter_filenames[1], DOC);
     updateTopicsFlash(DOC);
     DOC.clear();
 
-    iot.extract_JSON_from_flash(parameterFiles[2], DOC);
+    iot.extract_JSON_from_flash(iot.parameter_filenames[2], DOC);
     DOC.clear();
 }
 void addiotnalMQTT(char *incoming_msg, char *_topic)
@@ -74,6 +75,6 @@ void addiotnalMQTT(char *incoming_msg, char *_topic)
 }
 void startIOTservices()
 {
-    readParameters_inFlash();
+    update_Parameters_fromflash();
     iot.start_services(addiotnalMQTT);
 }
