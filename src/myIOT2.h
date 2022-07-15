@@ -61,16 +61,13 @@ public:
 
 protected:
     char ver[12] = "iot_v1.7";
-    char myIOT_topics[22] = "/myIOT2_topics.json";
-    char myIOT_paramfile[20] = "/myIOT_param.json";
-    char sketch_paramfile[20] = "/sketch_param.json";
 
 public:
     const char *topics_gen_pub[4] = {nullptr, nullptr, nullptr, nullptr};
     const char *topics_sub[4] = {nullptr, nullptr, nullptr, nullptr};
     const char *topics_pub[4] = {nullptr, nullptr, nullptr, nullptr};
 
-    const char *parameter_filenames[4] = {nullptr, nullptr, nullptr, nullptr};
+    char *parameter_filenames[4] = {nullptr, nullptr, nullptr, nullptr};
 
     /*Variables */
     // ~~~~~~ Services ~~~~~~~~~
@@ -142,7 +139,7 @@ public: /* Functions */
 
     // ~~~~~~~~~~~~~~ Param ~~~~~~~~~~~~~~~~~~~~~
     uint8_t inline_read(char *inputstr);
-    void set_pFilenames(const char *fileArray[], uint8_t asize);
+    void set_pFilenames(char *fileArray[], uint8_t asize);
 
     bool extract_JSON_from_flash(const char *filename, JsonDocument &DOC);
     void update_vars_flash_parameters(JsonDocument &DOC);

@@ -498,17 +498,20 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 		{
 			char clk[25];
 			get_timeStamp(clk);
-			char *filenames[] = {sketch_paramfile, myIOT_paramfile, myIOT_topics};
+			// char *filenames[] = {sketch_paramfile, myIOT_paramfile, myIOT_topics};
 			sprintf(msg, "\n<<~~~~~~ [%s] [%s] On-Flash Parameters ~~~~~>>", clk, topics_sub[0]);
 			pub_debug(msg);
 
-			for (uint8_t i = 0; i < sizeof(filenames) / sizeof(filenames[0]); i++)
+			for (uint8_t i = 0; i < sizeof(parameter_filenames) / sizeof(parameter_filenames[0]); i++)
 			{
-				pub_debug(filenames[i]);
-				String tempstr1 = readFile(filenames[i]);
-				char buff[tempstr1.length() + 1];
-				tempstr1.toCharArray(buff, tempstr1.length() + 1);
-				pub_debug(buff);
+				if (parameter_filenames[i] != nullptr)
+				{
+					pub_debug(parameter_filenames[i]);
+					String tempstr1 = readFile(parameter_filenames[i]);
+					char buff[tempstr1.length() + 1];
+					tempstr1.toCharArray(buff, tempstr1.length() + 1);
+					pub_debug(buff);
+				}
 			}
 			pub_msg("[On-Flash Parameters]: extracted");
 			pub_debug("<<~~~~~~~~~~ End ~~~~~~~~~~>>");
@@ -722,12 +725,12 @@ void myIOT2::_store_bootclockLOG()
 #endif
 	clklog.write(clk_char, true);
 }
-void myIOT2::set_pFilenames(const char *fileArray[], uint8_t asize)
+void myIOT2::set_pFilenames(char *fileArray[], uint8_t asize)
 {
-    for (uint8_t i = 0; i < asize; i++)
-    {
-        parameter_filenames[i] = fileArray[i];
-    }
+	for (uint8_t i = 0; i < asize; i++)
+	{
+		parameter_filenames[i] = fileArray[i];
+	}
 }
 bool myIOT2::extract_JSON_from_flash(const char *filename, JsonDocument &DOC)
 {
@@ -828,18 +831,17 @@ bool myIOT2::_cmdline_flashUpdate(const char *key, const char *new_value)
 {
 	char msg[100];
 	bool succ_chg = false;
-	char *allfiles[2] = {myIOT_paramfile, sketch_paramfile};
 	DynamicJsonDocument myIOT_P(max(SKETCH_JSON_SIZE, MY_IOT_JSON_SIZE));
 
-	for (uint8_t n = 0; n < 2; n++)
+	for (uint8_t n = 0; n < sizeof(parameter_filenames)/sizeof(parameter_filenames[0]); n++)
 	{
-		if (extract_JSON_from_flash(allfiles[n], myIOT_P))
+		if (extract_JSON_from_flash(parameter_filenames[n], myIOT_P))
 		{
 			if (myIOT_P.containsKey(key))
 			{
 				if (_change_flashP_value(key, new_value, myIOT_P))
 				{
-					if (_saveFile(allfiles[n], myIOT_P))
+					if (_saveFile(parameter_filenames[n], myIOT_P))
 					{
 						succ_chg = true;
 						sprintf(msg, "[Flash]: parameter[%s] updated to[%s] [OK]", key, new_value);

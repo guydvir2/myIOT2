@@ -1,9 +1,11 @@
 myIOT2 iot;
 
-char topics_sub[3][40];
-char topics_pub[3][45];
-char topics_gen_pub[3][18];
-const char *parameterFiles[3] = {"/myIOT_param.json", "/myIOT2_topics.json", "/sketch_param.json"};
+#define MAX_TOPIC_SIZE 45
+
+char topics_sub[3][MAX_TOPIC_SIZE];
+char topics_pub[3][MAX_TOPIC_SIZE];
+char topics_gen_pub[3][MAX_TOPIC_SIZE];
+char *parameterFiles[3] = {"/myIOT_param.json", "/myIOT2_topics.json", "/sketch_param.json"};
 
 // // ±±±±±±± Genereal pub topic ±±±±±±±±±
 // const char *topicLog = "myHome/log";
@@ -19,22 +21,13 @@ const char *parameterFiles[3] = {"/myIOT_param.json", "/myIOT2_topics.json", "/s
 // const char *topicClient_avail = "myHome/test/Client/Avail";
 // const char *topicClient_state = "myHome/test/Client/State";
 
-void updateTopicsFlash(JsonDocument &DOC)
+
+void updateTopicsFlash(JsonDocument &DOC, char ch_array[][MAX_TOPIC_SIZE], const char *dest_array[], const char *topic, const char *defaulttopic, uint8_t ar_size)
 {
-    for (uint8_t i = 0; i < 3; i++)
+    for (uint8_t i = 0; i < ar_size; i++)
     {
-        sprintf(topics_gen_pub[i], DOC["pub_gen_topics"][i] | "myHome/Messages");
-        iot.topics_gen_pub[i] = topics_gen_pub[i];
-    }
-    for (uint8_t i = 0; i < 3; i++)
-    {
-        sprintf(topics_pub[i], DOC["pub_topics"][i] | "myHome/Messages");
-        iot.topics_pub[i] = topics_pub[i];
-    }
-    for (uint8_t i = 0; i < 3; i++)
-    {
-        sprintf(topics_sub[i], DOC["sub_topics"][i] | "myHome/group/device");
-        iot.topics_sub[i] = topics_sub[i];
+        sprintf(ch_array[i], DOC[topic][i] | defaulttopic);
+        dest_array[i] = ch_array[i];
     }
 }
 void update_Parameters_fromflash()
@@ -48,7 +41,9 @@ void update_Parameters_fromflash()
     DOC.clear();
 
     iot.extract_JSON_from_flash(iot.parameter_filenames[1], DOC);
-    updateTopicsFlash(DOC);
+    updateTopicsFlash(DOC, topics_gen_pub, iot.topics_gen_pub, "pub_gen_topics", "myHome/Messages", sizeof(topics_gen_pub) / (sizeof(topics_gen_pub[0])));
+    updateTopicsFlash(DOC, topics_pub, iot.topics_pub, "pub_topics", "myHome/Messages", sizeof(topics_pub) / (sizeof(topics_pub[0])));
+    updateTopicsFlash(DOC, topics_sub, iot.topics_sub, "sub_topics", "myHome/Messages", sizeof(topics_sub) / (sizeof(topics_sub[0])));
     DOC.clear();
 
     iot.extract_JSON_from_flash(iot.parameter_filenames[2], DOC);
@@ -73,6 +68,7 @@ void addiotnalMQTT(char *incoming_msg, char *_topic)
         iot.pub_msg(msg);
     }
 }
+
 void startIOTservices()
 {
     update_Parameters_fromflash();
