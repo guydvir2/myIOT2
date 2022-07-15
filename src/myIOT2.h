@@ -34,9 +34,9 @@
 
 class myIOT2
 {
-#define MY_IOT_JSON_SIZE 400
-#define SKETCH_JSON_SIZE 1250
-#define MY_IOT_TOPIC_JSON 600
+// #define MY_IOT_JSON_SIZE 400
+// #define SKETCH_JSON_SIZE 1250
+// #define MY_IOT_TOPIC_JSON 600
 #define MS2MINUTES 60000
 
 #define PRNT(a)    \
@@ -66,7 +66,6 @@ public:
     const char *topics_gen_pub[4] = {nullptr, nullptr, nullptr, nullptr};
     const char *topics_sub[4] = {nullptr, nullptr, nullptr, nullptr};
     const char *topics_pub[4] = {nullptr, nullptr, nullptr, nullptr};
-
     char *parameter_filenames[4] = {nullptr, nullptr, nullptr, nullptr};
 
     /*Variables */

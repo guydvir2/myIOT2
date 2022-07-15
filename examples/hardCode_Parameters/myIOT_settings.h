@@ -14,7 +14,7 @@ const char *topicAll = "myHome/All";
 const char *topicClient_avail = "myHome/test/Client/Avail";
 const char *topicClient_state = "myHome/test/Client/State";
 
-void updateTopics()
+void updateTopics_local()
 {
     iot.topics_gen_pub[0] = topicmsg;
     iot.topics_gen_pub[1] = topicLog;
@@ -26,6 +26,19 @@ void updateTopics()
     iot.topics_sub[0] = topicClient;
     iot.topics_sub[1] = topicAll;
     iot.topics_sub[2] = topicSub1;
+}
+void update_Parameters_local(){
+    iot.useWDT = true;
+    iot.useOTA = true;
+    iot.useSerial = true;
+    iot.useResetKeeper = false;
+    iot.useDebug = true;
+    iot.debug_level = 0;
+    iot.useFlashP = false;
+    iot.useNetworkReset = true;
+    iot.noNetwork_reset = 2;
+    iot.useBootClockLog = true;
+    iot.ignore_boot_msg = false;
 }
 void addiotnalMQTT(char *incoming_msg, char *_topic)
 {
@@ -48,18 +61,7 @@ void addiotnalMQTT(char *incoming_msg, char *_topic)
 }
 void startIOTservices()
 {
-    iot.useWDT = true;
-    iot.useOTA = true;
-    iot.useSerial = true;
-    iot.useResetKeeper = false;
-    iot.useDebug = true;
-    iot.debug_level = 0;
-    iot.useFlashP = false;
-    iot.useNetworkReset = true;
-    iot.noNetwork_reset = 2;
-    iot.useBootClockLog = true;
-    iot.ignore_boot_msg = false;
-
-    updateTopics();
+    updateTopics_local();
+    update_Parameters_local();
     iot.start_services(addiotnalMQTT);
 }
