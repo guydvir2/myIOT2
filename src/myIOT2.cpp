@@ -831,7 +831,7 @@ bool myIOT2::_cmdline_flashUpdate(const char *key, const char *new_value)
 {
 	char msg[100];
 	bool succ_chg = false;
-	DynamicJsonDocument myIOT_P(max(SKETCH_JSON_SIZE, MY_IOT_JSON_SIZE));
+	DynamicJsonDocument myIOT_P(1250); //<------------------------------------- FIX THIS -----------
 
 	for (uint8_t n = 0; n < sizeof(parameter_filenames)/sizeof(parameter_filenames[0]); n++)
 	{
