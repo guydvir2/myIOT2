@@ -1,10 +1,12 @@
+#include <Arduino.h>
 #include <myIOT2.h>
 #include "myIOT_settings.h"
-#include "empty_param.h"
+
+#define hardCoded_parameters
+#define inFlash_paramters
 
 void setup()
 {
-        read_flashParameter();
         startIOTservices();
 }
 void loop()
