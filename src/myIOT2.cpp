@@ -822,7 +822,11 @@ bool myIOT2::_cmdline_flashUpdate(const char *key, const char *new_value)
 {
 	char msg[100];
 	bool succ_chg = false;
+<<<<<<< HEAD
 	DynamicJsonDocument myIOT_P(1250);
+=======
+	DynamicJsonDocument myIOT_P(1250); //<------------------------------------- FIX THIS -----------
+>>>>>>> 2feee0579018bea8613a967c02549d22892f28cf
 
 	for (uint8_t n = 0; n < sizeof(parameter_filenames)/sizeof(parameter_filenames[0]); n++)
 	{
