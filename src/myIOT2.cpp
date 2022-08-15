@@ -83,7 +83,7 @@ void myIOT2::looper()
 // // ~~~~~~~ Wifi functions ~~~~~~~
 bool myIOT2::_network_looper()
 {
-	const int time_reset_NTP = 360;	   // sec
+	const int time_reset_NTP = 120;	   // sec
 	const uint8_t time_retry_NTP = 60; // sec
 	bool cur_wifi_status = WiFi.isConnected();
 	bool cur_mqtt_status = mqttClient.connected();
@@ -221,15 +221,17 @@ bool myIOT2::_try_rgain_wifi()
 bool myIOT2::_startNTP(const char *ntpServer, const char *ntpServer2)
 {
 	unsigned long startLoop = millis();
+#if defined(ESP8266)
+	configTime(TZ_Asia_Jerusalem, ntpServer2, ntpServer); // configuring time offset and an NTP server
+#elif defined(ESP32)
+	configTzTime(TZ_Asia_Jerusalem, ntpServer2, ntpServer);
+#endif
+
 	while (!_NTP_updated() && (millis() - startLoop < 20000))
 	{
-#if defined(ESP8266)
-		configTime(TZ_Asia_Jerusalem, ntpServer2, ntpServer); // configuring time offset and an NTP server
-#elif defined(ESP32)
-		configTzTime(TZ_Asia_Jerusalem, ntpServer2, ntpServer);
-#endif
-		delay(1000);
+		delay(100);
 	}
+	
 	if (!_NTP_updated())
 	{
 		PRNTL(F("~ NTP Update fail"));
@@ -290,7 +292,6 @@ bool myIOT2::_NTP_updated()
 }
 
 // // ~~~~~~~ MQTT functions ~~~~~~~
-
 bool myIOT2::_startMQTT()
 {
 	mqttClient.setServer(_mqtt_server, 1883);
@@ -620,16 +621,6 @@ void myIOT2::pub_noTopic(char *inmsg, char *Topic, bool retain)
 }
 void myIOT2::pub_state(char *inmsg, uint8_t i)
 {
-	// char _stateTopic[strlen(TOPICS_JSON["pub_gen_topics"][1].as<const char *>()) + 4];
-
-	// if (i == 0)
-	// {
-	// 	sprintf(_stateTopic, "%s", TOPICS_JSON["pub_gen_topics"][1].as<const char *>());
-	// }
-	// else
-	// {
-	// 	sprintf(_stateTopic, "%s_%d", TOPICS_JSON["pub_gen_topics"][1].as<const char *>(), i);
-	// }
 	mqttClient.publish(topics_pub[1], inmsg, true);
 	_write_log(inmsg, 2, topics_pub[1]);
 }
@@ -822,13 +813,9 @@ bool myIOT2::_cmdline_flashUpdate(const char *key, const char *new_value)
 {
 	char msg[100];
 	bool succ_chg = false;
-<<<<<<< HEAD
-	DynamicJsonDocument myIOT_P(1250);
-=======
 	DynamicJsonDocument myIOT_P(1250); //<------------------------------------- FIX THIS -----------
->>>>>>> 2feee0579018bea8613a967c02549d22892f28cf
 
-	for (uint8_t n = 0; n < sizeof(parameter_filenames)/sizeof(parameter_filenames[0]); n++)
+	for (uint8_t n = 0; n < sizeof(parameter_filenames) / sizeof(parameter_filenames[0]); n++)
 	{
 		if (extract_JSON_from_flash(parameter_filenames[n], myIOT_P))
 		{
