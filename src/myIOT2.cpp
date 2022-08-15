@@ -83,7 +83,7 @@ void myIOT2::looper()
 // // ~~~~~~~ Wifi functions ~~~~~~~
 bool myIOT2::_network_looper()
 {
-	const int time_reset_NTP = 120;	   // sec
+	const int time_reset_NTP = 600;	   // sec
 	const uint8_t time_retry_NTP = 60; // sec
 	bool cur_wifi_status = WiFi.isConnected();
 	bool cur_mqtt_status = mqttClient.connected();
@@ -128,10 +128,7 @@ bool myIOT2::_start_network_services()
 
 	if (_startWifi(_ssid, _wifi_pwd))
 	{
-		if (!_NTP_updated())
-		{
-			_startNTP();
-		}
+		_startNTP();
 		_Wifi_and_mqtt_OK = _startMQTT();
 	}
 	return _Wifi_and_mqtt_OK;
@@ -227,11 +224,11 @@ bool myIOT2::_startNTP(const char *ntpServer, const char *ntpServer2)
 	configTzTime(TZ_Asia_Jerusalem, ntpServer2, ntpServer);
 #endif
 
-	while (!_NTP_updated() && (millis() - startLoop < 20000))
+	while (!_NTP_updated() && (millis() - startLoop < 10000)) /* ESP32 after software reset - doesnt enter here at all*/
 	{
 		delay(100);
 	}
-	
+
 	if (!_NTP_updated())
 	{
 		PRNTL(F("~ NTP Update fail"));
@@ -241,7 +238,6 @@ bool myIOT2::_startNTP(const char *ntpServer, const char *ntpServer2)
 	else
 	{
 		PRNTL(F("~ NTP Update OK"));
-		Serial.flush();
 		_NTPCheck.stop();
 		return 1;
 	}
