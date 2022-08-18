@@ -26,13 +26,14 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	if (useSerial)
 	{
 		Serial.begin(115200);
-		PRNT(F("\n\n>>> ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Start myIOT2 "));
-		PRNT(ver);
-		PRNTL(F(" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"));
-
-		PRNTL(F(">>> Start Serial"));
+		PRNTL(F("\n\n>>> ~~~~~~ Start myIOT2 ~~~~~~ "));
 		delay(10);
 	}
+	// if (useFlashP)
+	// {
+	// 	PRNTL(F(">>> Start Flash Parameters read"));
+	// 	get_flashParameters();
+	// }
 	if (useDebug)
 	{
 		PRNTL(F(">>> Start debuglog services"));
@@ -54,11 +55,10 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	}
 	if (useBootClockLog && WiFi.isConnected())
 	{
-		PRNTL(F(">>> bootClocklog"));
+		PRNTL(F(">>> Start bootClocklog"));
 		clklog.start(20); // Dont need looper. saved only once a boot
 		_store_bootclockLOG();
 	}
-	PRNTL(F("\n>>> ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ END myIOT2 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ \n"));
 }
 void myIOT2::looper()
 {
@@ -124,7 +124,7 @@ bool myIOT2::_network_looper()
 bool myIOT2::_start_network_services()
 {
 	_Wifi_and_mqtt_OK = false;
-	PRNTL(F("~ networking services"));
+	PRNTL(F("~~ networking services"));
 
 	if (_startWifi(_ssid, _wifi_pwd))
 	{
@@ -169,7 +169,7 @@ bool myIOT2::_startWifi(const char *ssid, const char *password)
 	// if wifi is OK
 	else
 	{
-		PRNT(F("\n~ wifi connected. IP address: "));
+		PRNT(F("\n>>> wifi connected. IP address: "));
 		PRNTL(WiFi.localIP());
 		_WifiConnCheck.stop();
 		return 1;
@@ -295,7 +295,7 @@ bool myIOT2::_startMQTT()
 {
 	mqttClient.setServer(_mqtt_server, 1883);
 	mqttClient.setKeepAlive(45);
-	PRNT(F("~ MQTT Server: "));
+	PRNT(F("~~ MQTT Server: "));
 	PRNTL(_mqtt_server);
 	mqttClient.setCallback(std::bind(&myIOT2::_MQTTcb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 	return _subMQTT();
@@ -373,20 +373,17 @@ bool myIOT2::_subMQTT()
 		if (mqttClient.connect(tempname, _mqtt_user, _mqtt_pwd, topics_pub[0], 1, true, "offline"))
 		{
 			uint8_t m = sizeof(topics_sub) / sizeof(topics_sub[0]);
-			PRNTL(F("~ MQTT server Connected"));
-			PRNTL(F("\n~~ Subscribe Topics:"));
-			PRNTL(F("±±±±±±±±±±±±±±±±±±±±±±±±±"));
+			PRNTL(F(">>> MQTT server Connected"));
+			PRNTL(F("\n>>> Subscribe Topics:"));
 
 			for (uint8_t i = 0; i < m; i++)
 			{
 				if (topics_sub[i] != nullptr)
 				{
 					mqttClient.subscribe(topics_sub[i]);
-					PRNT(F("~ "));
 					PRNTL(topics_sub[i]);
 				}
 			}
-			PRNTL(F("±±±±±±±±±±±±±±±±±±±±±±±±±\n"));
 
 			if (firstRun)
 			{
@@ -640,7 +637,7 @@ void myIOT2::pub_log(char *inmsg)
 }
 void myIOT2::pub_debug(char *inmsg)
 {
-	_pub_generic(topics_gen_pub[2], inmsg, false, nullptr, true);
+	_pub_generic(topics_gen_pub[1], inmsg, false, nullptr, true);
 }
 
 void myIOT2::notifyOnline()
@@ -773,6 +770,18 @@ void myIOT2::update_vars_flash_parameters(JsonDocument &DOC)
 	noNetwork_reset = DOC["noNetwork_reset"].as<uint8_t>() | noNetwork_reset;
 	useBootClockLog = DOC["useBootClockLog"].as<bool>() | useBootClockLog;
 	ignore_boot_msg = DOC["ignore_boot_msg"].as<bool>() | ignore_boot_msg;
+
+	// useWDT = DOC["useWDT"];
+	// useOTA = DOC["useOTA"];
+	// useSerial = DOC["useSerial"];
+	// useFlashP = DOC["useFlashP"];
+	// useDebug = DOC["useDebugLog"];
+	// debug_level = DOC["debug_level"];
+	// useResetKeeper = DOC["useResetKeeper"];
+	// useNetworkReset = DOC["useNetworkReset"];
+	// noNetwork_reset = DOC["noNetwork_reset"];
+	// useBootClockLog = DOC["useBootClockLog"];
+	// ignore_boot_msg = DOC["ignore_boot_msg"];
 }
 
 bool myIOT2::_change_flashP_value(const char *key, const char *new_value, JsonDocument &DOC)
@@ -822,11 +831,7 @@ bool myIOT2::_cmdline_flashUpdate(const char *key, const char *new_value)
 {
 	char msg[100];
 	bool succ_chg = false;
-<<<<<<< HEAD
-	DynamicJsonDocument myIOT_P(1250);
-=======
-	DynamicJsonDocument myIOT_P(1250); //<------------------------------------- FIX THIS -----------
->>>>>>> 2feee0579018bea8613a967c02549d22892f28cf
+	DynamicJsonDocument myIOT_P(max(SKETCH_JSON_SIZE, MY_IOT_JSON_SIZE));
 
 	for (uint8_t n = 0; n < sizeof(parameter_filenames)/sizeof(parameter_filenames[0]); n++)
 	{
