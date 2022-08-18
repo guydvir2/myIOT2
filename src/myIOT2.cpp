@@ -117,6 +117,7 @@ bool myIOT2::_network_looper()
 		}
 		else if (cur_mqtt_status == false) /* No MQTT */
 		{
+			Serial.println("BLOOP");
 			return _try_regain_MQTT();
 		}
 	}

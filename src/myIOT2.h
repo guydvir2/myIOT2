@@ -2,7 +2,6 @@
 #define myIOT2_h
 
 #include <Arduino.h>
-#include <FS.h>
 #include <WiFiUdp.h>      // OTA
 #include <ArduinoOTA.h>   // OTA
 #include <Ticker.h>       //WDT
@@ -58,7 +57,7 @@ public:
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 protected:
-    char ver[12] = "iot_v1.7";
+    char ver[12] = "iot_v1.71";
 
 public:
     const char *topics_gen_pub[4] = {nullptr, nullptr, nullptr, nullptr};
