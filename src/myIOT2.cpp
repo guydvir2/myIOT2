@@ -55,7 +55,7 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	if (useBootClockLog && WiFi.isConnected())
 	{
 		PRNTL(F(">>> bootClocklog"));
-		clklog.start(20); // Dont need looper. saved only once a boot
+		//clklog.start(20); // Dont need looper. saved only once a boot
 		_store_bootclockLOG();
 	}
 	PRNTL(F("\n>>> ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ END myIOT2 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ \n"));
@@ -101,6 +101,7 @@ bool myIOT2::_network_looper()
 				_startNTP();
 			}
 		}
+		Serial.println("NTP");
 	}
 	if (cur_mqtt_status && cur_wifi_status) /* All good */
 	{
@@ -111,13 +112,13 @@ bool myIOT2::_network_looper()
 	}
 	else
 	{
+		Serial.println("WIF_MQTT");
 		if (cur_wifi_status == false) /* No WiFi Connected */
 		{
 			return _try_rgain_wifi();
 		}
 		else if (cur_mqtt_status == false) /* No MQTT */
 		{
-			Serial.println("BLOOP");
 			return _try_regain_MQTT();
 		}
 	}
@@ -175,12 +176,12 @@ bool myIOT2::_startWifi(const char *ssid, const char *password)
 }
 void myIOT2::_shutdown_wifi()
 {
-	// PRNTL(F("~ Shutting down Wifi"));
+	PRNTL(F("~ Shutting down Wifi"));
 	WiFi.mode(WIFI_OFF); // <---- NEW
 	delay(200);
 	WiFi.mode(WIFI_STA);
-	// WiFi.disconnect(true);
-	// delay(200);
+	WiFi.disconnect(true);
+	delay(200);
 }
 bool myIOT2::_try_rgain_wifi()
 {
@@ -633,7 +634,8 @@ void myIOT2::pub_debug(char *inmsg)
 
 void myIOT2::notifyOnline()
 {
-	mqttClient.publish(topics_sub[0], "online", true);
+	Serial.println(topics_pub[0]);
+	mqttClient.publish(topics_pub[0], "online", true);
 	_write_log("online", 2, topics_sub[0]);
 }
 uint8_t myIOT2::inline_read(char *inputstr)
@@ -797,13 +799,13 @@ bool myIOT2::_change_flashP_value(const char *key, const char *new_value, JsonDo
 }
 bool myIOT2::_saveFile(char *filename, JsonDocument &DOC)
 {
-	File writefile = LITFS.open(filename, "w");
-	if (!writefile || (serializeJson(DOC, writefile) == 0))
-	{
-		writefile.close();
-		return 0;
-	}
-	writefile.close();
+	// File writefile = LITFS.open(filename, "w");
+	// if (!writefile || (serializeJson(DOC, writefile) == 0))
+	// {
+	// 	writefile.close();
+	// 	return 0;
+	// }
+	// writefile.close();
 	return 1;
 }
 bool myIOT2::_cmdline_flashUpdate(const char *key, const char *new_value)

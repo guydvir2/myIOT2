@@ -30,7 +30,7 @@ void updateTopics_local()
 void update_Parameters_local(){
     iot.useWDT = true;
     iot.useOTA = true;
-    iot.useSerial = false;
+    iot.useSerial = true;
     iot.useResetKeeper = false;
     iot.useDebug = true;
     iot.debug_level = 0;

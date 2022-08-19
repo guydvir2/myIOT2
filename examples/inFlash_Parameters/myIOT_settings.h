@@ -7,20 +7,6 @@ char topics_pub[3][MAX_TOPIC_SIZE];
 char topics_gen_pub[3][MAX_TOPIC_SIZE];
 char *parameterFiles[3] = {"/myIOT_param.json", "/myIOT2_topics.json", "/sketch_param.json"}; // <----- Verfy file names
 
-// // ±±±±±±± Genereal pub topic ±±±±±±±±±
-// const char *topicLog = "myHome/log";
-// const char *topicDebug = "myHome/debug";
-// const char *topicmsg = "myHome/Messages";
-
-// // ±±±±±±±±±±±± sub Topics ±±±±±±±±±±±±±±±±±±
-// const char *topicAll = "myHome/All";
-// const char *topicSub1 = "myHome/alarmMonitor";
-// const char *topicClient = "myHome/test/Client";
-
-// // ±±±±±±±±±±±±±±±± Client state pub topics ±±±±±±±±±±±±±±±±
-// const char *topicClient_avail = "myHome/test/Client/Avail";
-// const char *topicClient_state = "myHome/test/Client/State";
-
 void updateTopics_flash(JsonDocument &DOC, char ch_array[][MAX_TOPIC_SIZE], const char *dest_array[], const char *topic, const char *defaulttopic, uint8_t ar_size)
 {
     for (uint8_t i = 0; i < ar_size; i++)
