@@ -4,7 +4,6 @@
 #include <Arduino.h>
 #include <WiFiUdp.h>      // OTA
 #include <ArduinoOTA.h>   // OTA
-#include <Ticker.h>       //WDT
 #include <PubSubClient.h> // MQTT
 #include <ArduinoJson.h>
 #include <myLOG.h>
@@ -67,12 +66,10 @@ public:
 
     /*Variables */
     // ~~~~~~ Services ~~~~~~~~~
-    bool useWDT = true;
     bool useOTA = true;
     bool useDebug = false;
     bool useSerial = true;
     bool useFlashP = false;
-    bool useResetKeeper = false;
     bool useNetworkReset = true; // allow reset due to no-network timeout
     bool useBootClockLog = false;
     bool ignore_boot_msg = false;

@@ -42,11 +42,6 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	PRNTL(F(">>> Start Network services"));
 	_start_network_services();
 
-	if (useWDT)
-	{
-		PRNTL(F(">>> Start Watchdog"));
-		// _startWDT();
-	}
 	if (useOTA)
 	{
 		PRNTL(F(">>> Start OTA"));
@@ -62,7 +57,6 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 }
 void myIOT2::looper()
 {
-	// wdtResetCounter = 0; // reset WDT watchDog
 	if (useOTA)
 	{
 		_acceptOTA();
@@ -80,7 +74,7 @@ void myIOT2::looper()
 	}
 }
 
-// // ~~~~~~~ Wifi functions ~~~~~~~
+// ~~~~~~~ Wifi functions ~~~~~~~
 bool myIOT2::_network_looper()
 {
 	const int time_reset_NTP = 600;	   // sec
@@ -214,7 +208,7 @@ bool myIOT2::_try_rgain_wifi()
 	}
 }
 
-// // ~~~~~~~ NTP & Clock  ~~~~~~~~
+// ~~~~~~~ NTP & Clock  ~~~~~~~~
 bool myIOT2::_startNTP(const char *ntpServer, const char *ntpServer2)
 {
 	unsigned long startLoop = millis();
@@ -224,7 +218,7 @@ bool myIOT2::_startNTP(const char *ntpServer, const char *ntpServer2)
 	configTzTime(TZ_Asia_Jerusalem, ntpServer2, ntpServer);
 #endif
 
-	while (!_NTP_updated() && (millis() - startLoop < 10000)) /* ESP32 after software reset - doesnt enter here at all*/
+	while (!_NTP_updated() && (millis() - startLoop < 15000)) /* ESP32 after software reset - doesnt enter here at all*/
 	{
 		delay(100);
 	}
@@ -287,7 +281,7 @@ bool myIOT2::_NTP_updated()
 	return now() > 1640803233;
 }
 
-// // ~~~~~~~ MQTT functions ~~~~~~~
+// ~~~~~~~ MQTT functions ~~~~~~~
 bool myIOT2::_startMQTT()
 {
 	mqttClient.setServer(_mqtt_server, 1883);
@@ -394,10 +388,6 @@ bool myIOT2::_subMQTT()
 				{
 					pub_log(msg);
 				}
-				if (!useResetKeeper)
-				{
-					firstRun = false;
-				}
 			}
 
 			notifyOnline();
@@ -434,11 +424,6 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	incoming_msg[length] = 0;
 	PRNTL("");
 
-	// if (strcmp(topic, topics_sub[0]) == 0 && useResetKeeper && firstRun)
-	// {
-	// 	_getBootReason_resetKeeper(incoming_msg);
-	// }
-
 	if (strcmp(incoming_msg, "ota") == 0)
 	{
 		sprintf(msg, "OTA allowed for %ld seconds", OTA_upload_interval * MS2MINUTES / 1000);
@@ -456,8 +441,8 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	}
 	else if (strcmp(incoming_msg, "services") == 0)
 	{
-		sprintf(msg, "Services[#1]: WDT: [%d], OTA: [%d], SERIAL: [%d], ResetKeeper[%d], useDebugLog[%d] , no-networkReset[%d] [%d min]",
-				useWDT, useOTA, useSerial, useResetKeeper, useDebug, useNetworkReset, noNetwork_reset);
+		sprintf(msg, "Services[#1]:  OTA: [%d], SERIAL: [%d], useDebugLog[%d] , no-networkReset[%d] [%d min]",
+				useOTA, useSerial, useDebug, useNetworkReset, noNetwork_reset);
 		pub_msg(msg);
 
 		sprintf(msg, "Services[#2]: useBootLog[%d] , ignore_boot_msg[%d], debug_level[%d], useFlashP[%d]",
@@ -499,7 +484,6 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 		{
 			char clk[25];
 			get_timeStamp(clk);
-			// char *filenames[] = {sketch_paramfile, myIOT_paramfile, myIOT_topics};
 			sprintf(msg, "\n<<~~~~~~ [%s] [%s] On-Flash Parameters ~~~~~>>", clk, topics_sub[0]);
 			pub_debug(msg);
 
@@ -689,7 +673,7 @@ uint8_t myIOT2::_getdataType(const char *y)
 	}
 }
 
-// // ~~~~~~~~~~ Data Storage ~~~~~~~~~
+// ~~~~~~~~~~ Data Storage ~~~~~~~~~
 void myIOT2::_write_log(char *inmsg, uint8_t x, const char *topic)
 {
 	char a[strlen(inmsg) + 100];
@@ -750,13 +734,13 @@ bool myIOT2::extract_JSON_from_flash(const char *filename, JsonDocument &DOC)
 }
 void myIOT2::update_vars_flash_parameters(JsonDocument &DOC)
 {
-	useWDT = DOC["useWDT"].as<bool>() | useWDT;
+	// useWDT = DOC["useWDT"].as<bool>() | useWDT;
 	useOTA = DOC["useOTA"].as<bool>() | useOTA;
 	useSerial = DOC["useSerial"].as<bool>() | useSerial;
 	useFlashP = DOC["useFlashP"].as<bool>() | useFlashP;
 	useDebug = DOC["useDebugLog"].as<bool>() | useDebug;
 	debug_level = DOC["debug_level"].as<uint8_t>() | debug_level;
-	useResetKeeper = DOC["useResetKeeper"].as<bool>() | useResetKeeper;
+	// useResetKeeper = DOC["useResetKeeper"].as<bool>() | useResetKeeper;
 	useNetworkReset = DOC["useNetworkReset"].as<bool>() | useNetworkReset;
 	noNetwork_reset = DOC["noNetwork_reset"].as<uint8_t>() | noNetwork_reset;
 	useBootClockLog = DOC["useBootClockLog"].as<bool>() | useBootClockLog;
@@ -810,7 +794,7 @@ bool myIOT2::_cmdline_flashUpdate(const char *key, const char *new_value)
 {
 	char msg[100];
 	bool succ_chg = false;
-	DynamicJsonDocument myIOT_P(mazsize); //<------------------ FIX THIS -----------
+	DynamicJsonDocument myIOT_P(1250); //<------------------ FIX THIS -----------
 
 	for (uint8_t n = 0; n < sizeof(parameter_filenames) / sizeof(parameter_filenames[0]); n++)
 	{
@@ -923,16 +907,6 @@ void myIOT2::sendReset(char *header)
 	ESP.restart();
 #endif
 }
-void myIOT2::_feedTheDog()
-{
-// 	wdtResetCounter++;
-// #if defined(ESP8266)
-// 	if (wdtResetCounter >= wdtMaxRetries)
-// 	{
-// 		sendReset("Dog goes woof");
-// 	}
-// #endif
-}
 void myIOT2::_acceptOTA()
 {
 	if (millis() - allowOTA_clock <= OTA_upload_interval * MS2MINUTES)
@@ -988,12 +962,4 @@ void myIOT2::startOTA()
 	}
 
 	ArduinoOTA.begin();
-}
-void myIOT2::_startWDT()
-{
-// #if defined(ESP8266)
-// 	wdt.attach(1, std::bind(&myIOT2::_feedTheDog, this)); // Start WatchDog
-// #elif defined(ESP32)
-// 	// wdt.attach(1,_feedTheDog); // Start WatchDog
-// #endif
 }
