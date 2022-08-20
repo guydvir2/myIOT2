@@ -2,7 +2,6 @@
 #define myIOT2_h
 
 #include <Arduino.h>
-#include <FS.h>
 #include <WiFiUdp.h>      // OTA
 #include <ArduinoOTA.h>   // OTA
 #include <Ticker.h>       //WDT
@@ -23,6 +22,7 @@
 #include <WiFi.h>
 #include <ESPmDNS.h> // OTA libraries
 #include <ESP32Ping.h>
+#include "LITTLEFS.h"
 #define LITFS LITTLEFS
 #define TZ_Asia_Jerusalem PSTR("IST-2IDT,M3.4.4/26,M10.5.0")
 
@@ -34,9 +34,6 @@
 
 class myIOT2
 {
-// #define MY_IOT_JSON_SIZE 400
-// #define SKETCH_JSON_SIZE 1250
-// #define MY_IOT_TOPIC_JSON 600
 #define MS2MINUTES 60000
 
 #define PRNT(a)    \
@@ -60,7 +57,7 @@ public:
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 protected:
-    char ver[12] = "iot_v1.7";
+    char ver[12] = "iot_v1.71";
 
 public:
     const char *topics_gen_pub[4] = {nullptr, nullptr, nullptr, nullptr};

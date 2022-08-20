@@ -45,7 +45,7 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	if (useWDT)
 	{
 		PRNTL(F(">>> Start Watchdog"));
-		_startWDT();
+		// _startWDT();
 	}
 	if (useOTA)
 	{
@@ -62,7 +62,7 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 }
 void myIOT2::looper()
 {
-	wdtResetCounter = 0; // reset WDT watchDog
+	// wdtResetCounter = 0; // reset WDT watchDog
 	if (useOTA)
 	{
 		_acceptOTA();
@@ -83,7 +83,7 @@ void myIOT2::looper()
 // // ~~~~~~~ Wifi functions ~~~~~~~
 bool myIOT2::_network_looper()
 {
-	const int time_reset_NTP = 360;	   // sec
+	const int time_reset_NTP = 600;	   // sec
 	const uint8_t time_retry_NTP = 60; // sec
 	bool cur_wifi_status = WiFi.isConnected();
 	bool cur_mqtt_status = mqttClient.connected();
@@ -128,10 +128,7 @@ bool myIOT2::_start_network_services()
 
 	if (_startWifi(_ssid, _wifi_pwd))
 	{
-		if (!_NTP_updated())
-		{
-			_startNTP();
-		}
+		_startNTP();
 		_Wifi_and_mqtt_OK = _startMQTT();
 	}
 	return _Wifi_and_mqtt_OK;
@@ -177,12 +174,12 @@ bool myIOT2::_startWifi(const char *ssid, const char *password)
 }
 void myIOT2::_shutdown_wifi()
 {
-	// PRNTL(F("~ Shutting down Wifi"));
+	PRNTL(F("~ Shutting down Wifi"));
 	WiFi.mode(WIFI_OFF); // <---- NEW
 	delay(200);
 	WiFi.mode(WIFI_STA);
-	// WiFi.disconnect(true);
-	// delay(200);
+	WiFi.disconnect(true);
+	delay(200);
 }
 bool myIOT2::_try_rgain_wifi()
 {
@@ -221,15 +218,17 @@ bool myIOT2::_try_rgain_wifi()
 bool myIOT2::_startNTP(const char *ntpServer, const char *ntpServer2)
 {
 	unsigned long startLoop = millis();
-	while (!_NTP_updated() && (millis() - startLoop < 20000))
-	{
 #if defined(ESP8266)
-		configTime(TZ_Asia_Jerusalem, ntpServer2, ntpServer); // configuring time offset and an NTP server
+	configTime(TZ_Asia_Jerusalem, ntpServer2, ntpServer); // configuring time offset and an NTP server
 #elif defined(ESP32)
-		configTzTime(TZ_Asia_Jerusalem, ntpServer2, ntpServer);
+	configTzTime(TZ_Asia_Jerusalem, ntpServer2, ntpServer);
 #endif
-		delay(1000);
+
+	while (!_NTP_updated() && (millis() - startLoop < 10000)) /* ESP32 after software reset - doesnt enter here at all*/
+	{
+		delay(100);
 	}
+
 	if (!_NTP_updated())
 	{
 		PRNTL(F("~ NTP Update fail"));
@@ -239,7 +238,6 @@ bool myIOT2::_startNTP(const char *ntpServer, const char *ntpServer2)
 	else
 	{
 		PRNTL(F("~ NTP Update OK"));
-		Serial.flush();
 		_NTPCheck.stop();
 		return 1;
 	}
@@ -290,7 +288,6 @@ bool myIOT2::_NTP_updated()
 }
 
 // // ~~~~~~~ MQTT functions ~~~~~~~
-
 bool myIOT2::_startMQTT()
 {
 	mqttClient.setServer(_mqtt_server, 1883);
@@ -327,7 +324,7 @@ bool myIOT2::_try_regain_MQTT()
 					mqttClient.loop();
 
 					int not_con_period = (int)((millis() - _MQTTConnCheck.elapsed()) / 1000UL);
-					if (not_con_period > 30)
+					if (not_con_period > 20)
 					{
 						char b[50];
 						sprintf(b, "MQTT reconnect after [%d] sec", not_con_period);
@@ -339,11 +336,12 @@ bool myIOT2::_try_regain_MQTT()
 				}
 				else
 				{
-					if (_MQTTConnCheck.hasPassed(60))
+					if (_MQTTConnCheck.hasPassed(60)) /* Resets all network */
 					{
 						PRNTL(F("~ MQTT fails, Restarting all network"));
 						flog.write("network shutdown", true);
 						_shutdown_wifi();
+						delay(1000);
 						return _start_network_services();
 					}
 					else
@@ -391,7 +389,7 @@ bool myIOT2::_subMQTT()
 			if (firstRun)
 			{
 				char msg[60];
-				sprintf(msg, "<< PowerON Boot >> IP:[%d.%d.%d.%d]", WiFi.localIP()[0], WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3]);
+				sprintf(msg, "<< PowerON Boot >> IP:[%d.%d.%d.%d] RSSI [%ddB]", WiFi.localIP()[0], WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3], WiFi.RSSI());
 				if (!ignore_boot_msg)
 				{
 					pub_log(msg);
@@ -620,16 +618,6 @@ void myIOT2::pub_noTopic(char *inmsg, char *Topic, bool retain)
 }
 void myIOT2::pub_state(char *inmsg, uint8_t i)
 {
-	// char _stateTopic[strlen(TOPICS_JSON["pub_gen_topics"][1].as<const char *>()) + 4];
-
-	// if (i == 0)
-	// {
-	// 	sprintf(_stateTopic, "%s", TOPICS_JSON["pub_gen_topics"][1].as<const char *>());
-	// }
-	// else
-	// {
-	// 	sprintf(_stateTopic, "%s_%d", TOPICS_JSON["pub_gen_topics"][1].as<const char *>(), i);
-	// }
 	mqttClient.publish(topics_pub[1], inmsg, true);
 	_write_log(inmsg, 2, topics_pub[1]);
 }
@@ -645,8 +633,8 @@ void myIOT2::pub_debug(char *inmsg)
 
 void myIOT2::notifyOnline()
 {
-	mqttClient.publish(topics_sub[0], "online", true);
-	_write_log("online", 2, topics_sub[0]);
+	mqttClient.publish(topics_pub[0], "online", true);
+	_write_log("online", 2, topics_pub[0]);
 }
 uint8_t myIOT2::inline_read(char *inputstr)
 {
@@ -822,13 +810,9 @@ bool myIOT2::_cmdline_flashUpdate(const char *key, const char *new_value)
 {
 	char msg[100];
 	bool succ_chg = false;
-<<<<<<< HEAD
-	DynamicJsonDocument myIOT_P(1250);
-=======
-	DynamicJsonDocument myIOT_P(1250); //<------------------------------------- FIX THIS -----------
->>>>>>> 2feee0579018bea8613a967c02549d22892f28cf
+	DynamicJsonDocument myIOT_P(mazsize); //<------------------ FIX THIS -----------
 
-	for (uint8_t n = 0; n < sizeof(parameter_filenames)/sizeof(parameter_filenames[0]); n++)
+	for (uint8_t n = 0; n < sizeof(parameter_filenames) / sizeof(parameter_filenames[0]); n++)
 	{
 		if (extract_JSON_from_flash(parameter_filenames[n], myIOT_P))
 		{
@@ -941,13 +925,13 @@ void myIOT2::sendReset(char *header)
 }
 void myIOT2::_feedTheDog()
 {
-	wdtResetCounter++;
-#if defined(ESP8266)
-	if (wdtResetCounter >= wdtMaxRetries)
-	{
-		sendReset("Dog goes woof");
-	}
-#endif
+// 	wdtResetCounter++;
+// #if defined(ESP8266)
+// 	if (wdtResetCounter >= wdtMaxRetries)
+// 	{
+// 		sendReset("Dog goes woof");
+// 	}
+// #endif
 }
 void myIOT2::_acceptOTA()
 {
@@ -1007,9 +991,9 @@ void myIOT2::startOTA()
 }
 void myIOT2::_startWDT()
 {
-#if defined(ESP8266)
-	wdt.attach(1, std::bind(&myIOT2::_feedTheDog, this)); // Start WatchDog
-#elif defined(ESP32)
-	// wdt.attach(1,_feedTheDog); // Start WatchDog
-#endif
+// #if defined(ESP8266)
+// 	wdt.attach(1, std::bind(&myIOT2::_feedTheDog, this)); // Start WatchDog
+// #elif defined(ESP32)
+// 	// wdt.attach(1,_feedTheDog); // Start WatchDog
+// #endif
 }
