@@ -2,7 +2,6 @@
 #define myIOT2_h
 
 #include <Arduino.h>
-#include <FS.h>
 #include <WiFiUdp.h>      // OTA
 #include <ArduinoOTA.h>   // OTA
 #include <Ticker.h>       //WDT
@@ -23,6 +22,7 @@
 #include <WiFi.h>
 #include <ESPmDNS.h> // OTA libraries
 #include <ESP32Ping.h>
+#include "LITTLEFS.h"
 #define LITFS LITTLEFS
 #define TZ_Asia_Jerusalem PSTR("IST-2IDT,M3.4.4/26,M10.5.0")
 
@@ -57,7 +57,7 @@ public:
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 protected:
-    char ver[12] = "iot_v1.7";
+    char ver[12] = "iot_v1.71";
 
 public:
     const char *topics_gen_pub[4] = {nullptr, nullptr, nullptr, nullptr};
