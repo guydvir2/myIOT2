@@ -45,7 +45,7 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	if (useWDT)
 	{
 		PRNTL(F(">>> Start Watchdog"));
-		_startWDT();
+		// _startWDT();
 	}
 	if (useOTA)
 	{
@@ -55,14 +55,14 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	if (useBootClockLog && WiFi.isConnected())
 	{
 		PRNTL(F(">>> bootClocklog"));
-		//clklog.start(20); // Dont need looper. saved only once a boot
+		clklog.start(20); // Dont need looper. saved only once a boot
 		_store_bootclockLOG();
 	}
 	PRNTL(F("\n>>> ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ END myIOT2 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ \n"));
 }
 void myIOT2::looper()
 {
-	wdtResetCounter = 0; // reset WDT watchDog
+	// wdtResetCounter = 0; // reset WDT watchDog
 	if (useOTA)
 	{
 		_acceptOTA();
@@ -101,7 +101,6 @@ bool myIOT2::_network_looper()
 				_startNTP();
 			}
 		}
-		Serial.println("NTP");
 	}
 	if (cur_mqtt_status && cur_wifi_status) /* All good */
 	{
@@ -112,7 +111,6 @@ bool myIOT2::_network_looper()
 	}
 	else
 	{
-		Serial.println("WIF_MQTT");
 		if (cur_wifi_status == false) /* No WiFi Connected */
 		{
 			return _try_rgain_wifi();
@@ -326,7 +324,7 @@ bool myIOT2::_try_regain_MQTT()
 					mqttClient.loop();
 
 					int not_con_period = (int)((millis() - _MQTTConnCheck.elapsed()) / 1000UL);
-					if (not_con_period > 30)
+					if (not_con_period > 20)
 					{
 						char b[50];
 						sprintf(b, "MQTT reconnect after [%d] sec", not_con_period);
@@ -338,11 +336,12 @@ bool myIOT2::_try_regain_MQTT()
 				}
 				else
 				{
-					if (_MQTTConnCheck.hasPassed(60))
+					if (_MQTTConnCheck.hasPassed(60)) /* Resets all network */
 					{
 						PRNTL(F("~ MQTT fails, Restarting all network"));
 						flog.write("network shutdown", true);
 						_shutdown_wifi();
+						delay(1000);
 						return _start_network_services();
 					}
 					else
@@ -390,7 +389,7 @@ bool myIOT2::_subMQTT()
 			if (firstRun)
 			{
 				char msg[60];
-				sprintf(msg, "<< PowerON Boot >> IP:[%d.%d.%d.%d]", WiFi.localIP()[0], WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3]);
+				sprintf(msg, "<< PowerON Boot >> IP:[%d.%d.%d.%d] RSSI [%ddB]", WiFi.localIP()[0], WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3], WiFi.RSSI());
 				if (!ignore_boot_msg)
 				{
 					pub_log(msg);
@@ -634,9 +633,8 @@ void myIOT2::pub_debug(char *inmsg)
 
 void myIOT2::notifyOnline()
 {
-	Serial.println(topics_pub[0]);
 	mqttClient.publish(topics_pub[0], "online", true);
-	_write_log("online", 2, topics_sub[0]);
+	_write_log("online", 2, topics_pub[0]);
 }
 uint8_t myIOT2::inline_read(char *inputstr)
 {
@@ -799,13 +797,13 @@ bool myIOT2::_change_flashP_value(const char *key, const char *new_value, JsonDo
 }
 bool myIOT2::_saveFile(char *filename, JsonDocument &DOC)
 {
-	// File writefile = LITFS.open(filename, "w");
-	// if (!writefile || (serializeJson(DOC, writefile) == 0))
-	// {
-	// 	writefile.close();
-	// 	return 0;
-	// }
-	// writefile.close();
+	File writefile = LITFS.open(filename, "w");
+	if (!writefile || (serializeJson(DOC, writefile) == 0))
+	{
+		writefile.close();
+		return 0;
+	}
+	writefile.close();
 	return 1;
 }
 bool myIOT2::_cmdline_flashUpdate(const char *key, const char *new_value)
@@ -927,13 +925,13 @@ void myIOT2::sendReset(char *header)
 }
 void myIOT2::_feedTheDog()
 {
-	wdtResetCounter++;
-#if defined(ESP8266)
-	if (wdtResetCounter >= wdtMaxRetries)
-	{
-		sendReset("Dog goes woof");
-	}
-#endif
+// 	wdtResetCounter++;
+// #if defined(ESP8266)
+// 	if (wdtResetCounter >= wdtMaxRetries)
+// 	{
+// 		sendReset("Dog goes woof");
+// 	}
+// #endif
 }
 void myIOT2::_acceptOTA()
 {
@@ -993,9 +991,9 @@ void myIOT2::startOTA()
 }
 void myIOT2::_startWDT()
 {
-#if defined(ESP8266)
-	wdt.attach(1, std::bind(&myIOT2::_feedTheDog, this)); // Start WatchDog
-#elif defined(ESP32)
-	// wdt.attach(1,_feedTheDog); // Start WatchDog
-#endif
+// #if defined(ESP8266)
+// 	wdt.attach(1, std::bind(&myIOT2::_feedTheDog, this)); // Start WatchDog
+// #elif defined(ESP32)
+// 	// wdt.attach(1,_feedTheDog); // Start WatchDog
+// #endif
 }

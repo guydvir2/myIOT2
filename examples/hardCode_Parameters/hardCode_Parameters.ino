@@ -1,42 +1,39 @@
 #include <myIOT2.h>
 #include "myIOT_settings.h"
 
+char *path = "myHome/test/Client";
+const char *words[2] = {"on", "off"};
+const int _delay_ = 750;
+const uint8_t numsw = 4;
+int msgCounter = 0;
+
+void publish_cmd(uint8_t i, uint8_t dir)
+{
+        char a[30];
+        sprintf(a, "%d,%s", i, words[dir]);
+        iot.pub_noTopic(a, path);
+}
 void setup()
 {
-        Serial.begin(115200);
         startIOTservices();
-        pinMode(2, OUTPUT);
-        // first = millis();
 }
 void loop()
 {
-        static unsigned long lastentry = 0;
-        if (millis() - lastentry > 200)
+        static uint8_t x = 0;
+        for (uint8_t n = 0; n < numsw; n++)
         {
-                pinMode(2, OUTPUT);
-                digitalWrite(2, !digitalRead(2));
-                lastentry = millis();
+                publish_cmd(n, x);
+                delay(_delay_);
+                Serial.print("msgCounter: #");
+                Serial.println(++msgCounter);
         }
-        // static unsigned long lastentry2 = 0;
-        // static int counter = 0;
-        // if (millis() - lastentry > 200)
-        // {
-        //         Serial.print("@@@@@@@@@@@@@@@ --->");
-        //         Serial.println(millis() - lastentry);
-        // }
-        // lastentry = millis();
-
-        // if (millis() - lastentry2 > 2000)
-        // {
-        //         Serial.print("Total MSGS:#");
-        //         Serial.print(++counter);
-        //         Serial.print("\t AVG:");
-        //         Serial.print((millis() - first) / counter);
-        //         Serial.print("\t LST_TIME:");
-        //         Serial.println((millis() - lastentry2));
-        //         lastentry2 = millis();
-        //         iot.pub_noTopic("1", "myHome/test/Client");
-        // }
-
+        if (x == 0)
+        {
+                x++;
+        }
+        else
+        {
+                x--;
+        }
         iot.looper();
 }
