@@ -48,10 +48,6 @@ public:
     flashLOG flog;   /* Stores Activity LOG */
     flashLOG clklog; /* Stores Boot clock records */
 
-#if defined(ESP8266)
-    Ticker wdt;
-#endif
-
     // ~~~~define generic cb function~~~~
     typedef void (*cb_func)(char *msg1, char *_topic);
 
