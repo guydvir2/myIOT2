@@ -10,6 +10,7 @@
             "includePath": [
                 "/home/guy/Documents/Dropbox/Arduino/libraries/myIOT2/include",
                 "/home/guy/Documents/Dropbox/Arduino/libraries/myIOT2/src",
+                "/home/guy/.platformio/packages/framework-arduinoespressif8266/libraries/Ticker/src",
                 "/home/guy/.platformio/packages/framework-arduinoespressif8266/libraries/ESP8266mDNS/src",
                 "/home/guy/Documents/Dropbox/Arduino/libraries/myIOT2/.pio/libdeps/d1_mini/myLOG/include",
                 "/home/guy/Documents/Dropbox/Arduino/libraries/myIOT2/.pio/libdeps/d1_mini/myLOG/src",
@@ -48,7 +49,6 @@
                 "/home/guy/.platformio/packages/framework-arduinoespressif8266/libraries/Servo/src",
                 "/home/guy/.platformio/packages/framework-arduinoespressif8266/libraries/SoftwareSerial/src",
                 "/home/guy/.platformio/packages/framework-arduinoespressif8266/libraries/TFT_Touch_Shield_V2",
-                "/home/guy/.platformio/packages/framework-arduinoespressif8266/libraries/Ticker/src",
                 "/home/guy/.platformio/packages/framework-arduinoespressif8266/libraries/Wire",
                 "/home/guy/.platformio/packages/framework-arduinoespressif8266/libraries/esp8266/src",
                 "/home/guy/.platformio/packages/framework-arduinoespressif8266/libraries/lwIP_PPP/src",
@@ -62,6 +62,7 @@
                 "path": [
                     "/home/guy/Documents/Dropbox/Arduino/libraries/myIOT2/include",
                     "/home/guy/Documents/Dropbox/Arduino/libraries/myIOT2/src",
+                    "/home/guy/.platformio/packages/framework-arduinoespressif8266/libraries/Ticker/src",
                     "/home/guy/.platformio/packages/framework-arduinoespressif8266/libraries/ESP8266mDNS/src",
                     "/home/guy/Documents/Dropbox/Arduino/libraries/myIOT2/.pio/libdeps/d1_mini/myLOG/include",
                     "/home/guy/Documents/Dropbox/Arduino/libraries/myIOT2/.pio/libdeps/d1_mini/myLOG/src",
@@ -100,7 +101,6 @@
                     "/home/guy/.platformio/packages/framework-arduinoespressif8266/libraries/Servo/src",
                     "/home/guy/.platformio/packages/framework-arduinoespressif8266/libraries/SoftwareSerial/src",
                     "/home/guy/.platformio/packages/framework-arduinoespressif8266/libraries/TFT_Touch_Shield_V2",
-                    "/home/guy/.platformio/packages/framework-arduinoespressif8266/libraries/Ticker/src",
                     "/home/guy/.platformio/packages/framework-arduinoespressif8266/libraries/Wire",
                     "/home/guy/.platformio/packages/framework-arduinoespressif8266/libraries/esp8266/src",
                     "/home/guy/.platformio/packages/framework-arduinoespressif8266/libraries/lwIP_PPP/src",
@@ -133,7 +133,7 @@
             ],
             "cStandard": "c17",
             "cppStandard": "c++17",
-            "compilerPath": "/home/guy/.platformio/packages/toolchain-xtensa/bin/xtensa-lx106-elf-gcc",
+            "compilerPath": "/Users/guydvir/.platformio/packages/toolchain-xtensa/bin/xtensa-lx106-elf-gcc",
             "compilerArgs": [
                 "-mlongcalls",
                 "-mtext-section-literals",
