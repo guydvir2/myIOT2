@@ -36,7 +36,7 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	if (useDebug)
 	{
 		PRNTL(F(">>> Start debuglog services"));
-		flog.start(log_ents);
+		flog.start(log_ents, true, useSerial);
 	}
 
 	PRNTL(F(">>> Start Network services"));
@@ -61,7 +61,7 @@ void myIOT2::looper()
 	{
 		_acceptOTA();
 	}
-	if (_network_looper() == false)
+	if (_network_looper() == false) /* Wifi or MQTT fails causes reset */
 	{
 		if ((_WifiConnCheck.isRunning() && _WifiConnCheck.hasPassed(noNetwork_reset * 60)) || (_MQTTConnCheck.isRunning() && _MQTTConnCheck.hasPassed(noNetwork_reset * 60)))
 		{ // no Wifi or no MQTT will cause a reset
@@ -171,6 +171,9 @@ void myIOT2::_shutdown_wifi()
 	PRNTL(F("~ Shutting down Wifi"));
 	WiFi.mode(WIFI_OFF); // <---- NEW
 	delay(200);
+// #if defined(ESP32)
+// 	WiFi.useStaticBuffers(true);
+// #endif
 	WiFi.mode(WIFI_STA);
 	WiFi.disconnect(true);
 	delay(200);
