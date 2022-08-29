@@ -36,7 +36,7 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	if (useDebug)
 	{
 		PRNTL(F(">>> Start debuglog services"));
-		flog.start(log_ents, true, useSerial);
+		flog.start(log_ents, true, useDebug);
 	}
 
 	PRNTL(F(">>> Start Network services"));
@@ -50,7 +50,7 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	if (useBootClockLog && WiFi.isConnected())
 	{
 		PRNTL(F(">>> bootClocklog"));
-		clklog.start(20); // Dont need looper. saved only once a boot
+		clklog.start(20, true, useDebug); // Dont need looper. saved only once a boot
 		_store_bootclockLOG();
 	}
 	PRNTL(F("\n>>> ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ END myIOT2 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ \n"));
