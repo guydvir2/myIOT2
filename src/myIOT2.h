@@ -10,19 +10,22 @@
 #include <Chrono.h>
 #include "secretsIOT8266.h"
 
-#if defined(ESP8266)
 #include <LittleFS.h>
+#define LITFS LittleFS
+
+#if defined(ESP8266)
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h> // OTA libraries
 #include <TZ.h>
-#define LITFS LittleFS
+// #define LITFS LittleFS
 
 #elif defined(ESP32)
 #include <WiFi.h>
 #include <ESPmDNS.h> // OTA libraries
 #include <ESP32Ping.h>
-#include "LITTLEFS.h"
-#define LITFS LITTLEFS
+// #include <LittleFS.h>
+// #include "LITTLEFS.h"
+// #define LITFS LittleFS
 #define TZ_Asia_Jerusalem PSTR("IST-2IDT,M3.4.4/26,M10.5.0")
 
 // #elif defined(ARDUINO_ARCH_SAMD)

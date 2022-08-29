@@ -171,9 +171,9 @@ void myIOT2::_shutdown_wifi()
 	PRNTL(F("~ Shutting down Wifi"));
 	WiFi.mode(WIFI_OFF); // <---- NEW
 	delay(200);
-// #if defined(ESP32)
-// 	WiFi.useStaticBuffers(true);
-// #endif
+#if defined(ESP32)
+	WiFi.useStaticBuffers(true);
+#endif
 	WiFi.mode(WIFI_STA);
 	WiFi.disconnect(true);
 	delay(200);
