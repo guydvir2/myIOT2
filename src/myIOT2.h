@@ -17,15 +17,11 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h> // OTA libraries
 #include <TZ.h>
-// #define LITFS LittleFS
 
 #elif defined(ESP32)
 #include <WiFi.h>
 #include <ESPmDNS.h> // OTA libraries
 #include <ESP32Ping.h>
-// #include <LittleFS.h>
-// #include "LITTLEFS.h"
-// #define LITFS LittleFS
 #define TZ_Asia_Jerusalem PSTR("IST-2IDT,M3.4.4/26,M10.5.0")
 
 // #elif defined(ARDUINO_ARCH_SAMD)
@@ -59,7 +55,7 @@ protected:
 
 public:
     const char *topics_gen_pub[4] = {nullptr, nullptr, nullptr, nullptr};
-    const char *topics_sub[4] = {nullptr, nullptr, nullptr, nullptr};
+    const char *topics_sub[20] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,nullptr, nullptr, nullptr, nullptr,nullptr, nullptr, nullptr, nullptr,nullptr, nullptr, nullptr, nullptr};
     const char *topics_pub[4] = {nullptr, nullptr, nullptr, nullptr};
     char *parameter_filenames[4] = {nullptr, nullptr, nullptr, nullptr};
 
