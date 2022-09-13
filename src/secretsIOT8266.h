@@ -7,12 +7,18 @@
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // ~~~~~~~~~New Network~~~~~~~~~~~
-#define SSID_ID "dvirz_iot"
+// #define SSID_ID "dvirz_iot"
+// #define PASS_WIFI "GdSd13100301"
+// #define MQTT_USER "guy"
+// #define MQTT_PASS "kupelu9e"
+// #define MQTT_SERVER1 "192.168.2.100"
+
+#define SSID_ID "dvirz"
 #define PASS_WIFI "GdSd13100301"
 #define MQTT_USER "guy"
 #define MQTT_PASS "kupelu9e"
-#define MQTT_SERVER1 "192.168.2.100"
-// 
+#define MQTT_SERVER1 "192.168.0.107"
+
 
 #define MQTT_SERVER2 "192.168.3.199"
 #define MQTT_SERVER3 "mqtt.eclipse.org"
