@@ -36,7 +36,7 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	if (useDebug)
 	{
 		PRNTL(F(">>> Start debuglog services"));
-		flog.start(log_ents, true, useDebug);
+		flog.start(log_ents, true);
 	}
 
 	PRNTL(F(">>> Start Network services"));
@@ -329,6 +329,8 @@ bool myIOT2::_try_regain_MQTT()
 					}
 					_MQTTConnCheck.restart(); /* Zeroing counter */
 					_MQTTConnCheck.stop();
+					Serial.print("Verify zero: ");
+					Serial.println(_MQTTConnCheck.elapsed());
 					return 1;
 				}
 				else
@@ -737,13 +739,11 @@ bool myIOT2::extract_JSON_from_flash(const char *filename, JsonDocument &DOC)
 }
 void myIOT2::update_vars_flash_parameters(JsonDocument &DOC)
 {
-	// useWDT = DOC["useWDT"].as<bool>() | useWDT;
 	useOTA = DOC["useOTA"].as<bool>() | useOTA;
 	useSerial = DOC["useSerial"].as<bool>() | useSerial;
 	useFlashP = DOC["useFlashP"].as<bool>() | useFlashP;
 	useDebug = DOC["useDebugLog"].as<bool>() | useDebug;
 	debug_level = DOC["debug_level"].as<uint8_t>() | debug_level;
-	// useResetKeeper = DOC["useResetKeeper"].as<bool>() | useResetKeeper;
 	useNetworkReset = DOC["useNetworkReset"].as<bool>() | useNetworkReset;
 	noNetwork_reset = DOC["noNetwork_reset"].as<uint8_t>() | noNetwork_reset;
 	useBootClockLog = DOC["useBootClockLog"].as<bool>() | useBootClockLog;
