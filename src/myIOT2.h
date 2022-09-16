@@ -90,6 +90,8 @@ private:
     Chrono _WifiConnCheck;
     Chrono _MQTTConnCheck;
     Chrono _NTPCheck;
+    Chrono _Nonetworktimeout;
+    Chrono _retryTimeout;
 
     // time interval parameters
     const uint8_t WIFItimeOut = 20;         // sec try to connect WiFi

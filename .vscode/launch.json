@@ -8,20 +8,13 @@
 {
     "version": "0.2.0",
     "configurations": [
-        
         {
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug",
-<<<<<<< HEAD
             "executable": "/home/guy/Documents/gits/Arduino/libraries/myIOT2/.pio/build/d1_mini/firmware.elf",
             "projectEnvName": "d1_mini",
             "toolchainBinDir": "/home/guy/.platformio/packages/toolchain-xtensa/bin",
-=======
-            "executable": "/Users/guydvir/Dropbox/Arduino/libraries/myIOT2/.pio/build/d1_mini/firmware.elf",
-            "projectEnvName": "d1_mini",
-            "toolchainBinDir": "/Users/guydvir/.platformio/packages/toolchain-xtensa/bin",
->>>>>>> e5c3bcda640eee8625365f1d7b47d68d6fc496ea
             "internalConsoleOptions": "openOnSessionStart",
             "preLaunchTask": {
                 "type": "PlatformIO",
@@ -32,30 +25,18 @@
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug (skip Pre-Debug)",
-<<<<<<< HEAD
             "executable": "/home/guy/Documents/gits/Arduino/libraries/myIOT2/.pio/build/d1_mini/firmware.elf",
             "projectEnvName": "d1_mini",
             "toolchainBinDir": "/home/guy/.platformio/packages/toolchain-xtensa/bin",
-=======
-            "executable": "/Users/guydvir/Dropbox/Arduino/libraries/myIOT2/.pio/build/d1_mini/firmware.elf",
-            "projectEnvName": "d1_mini",
-            "toolchainBinDir": "/Users/guydvir/.platformio/packages/toolchain-xtensa/bin",
->>>>>>> e5c3bcda640eee8625365f1d7b47d68d6fc496ea
             "internalConsoleOptions": "openOnSessionStart"
         },
         {
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug (without uploading)",
-<<<<<<< HEAD
             "executable": "/home/guy/Documents/gits/Arduino/libraries/myIOT2/.pio/build/d1_mini/firmware.elf",
             "projectEnvName": "d1_mini",
             "toolchainBinDir": "/home/guy/.platformio/packages/toolchain-xtensa/bin",
-=======
-            "executable": "/Users/guydvir/Dropbox/Arduino/libraries/myIOT2/.pio/build/d1_mini/firmware.elf",
-            "projectEnvName": "d1_mini",
-            "toolchainBinDir": "/Users/guydvir/.platformio/packages/toolchain-xtensa/bin",
->>>>>>> e5c3bcda640eee8625365f1d7b47d68d6fc496ea
             "internalConsoleOptions": "openOnSessionStart",
             "loadMode": "manual"
         }
