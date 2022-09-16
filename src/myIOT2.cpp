@@ -9,11 +9,8 @@
 myIOT2::myIOT2() : mqttClient(espClient),
 				   flog("/myIOTlog.txt"),
 				   clklog("/clkLOG.txt"),
-				   _MQTTConnCheck(Chrono::SECONDS),
-				   _WifiConnCheck(Chrono::SECONDS),
-				   _NTPCheck(Chrono::SECONDS),
-				   _Nonetworktimeout(Chrono::SECONDS),
-				   _retryTimeout(Chrono::SECONDS)
+				   _retryTimeout(Chrono::SECONDS),
+				   _Nonetworktimeout(Chrono::SECONDS)
 {
 }
 void myIOT2::start_services(cb_func funct, const char *ssid, const char *password, const char *mqtt_user, const char *mqtt_passw, const char *mqtt_broker, int log_ents)
@@ -80,23 +77,29 @@ void myIOT2::looper()
 // ~~~~~~~ Wifi functions ~~~~~~~
 bool myIOT2::_network_looper()
 {
-	const int time_reset_NTP = 600;	   // sec
-	const uint8_t time_retry_NTP = 60; // sec
+	static bool NTPretry = false;
 	bool isNetworkOK = WiFi.isConnected() && mqttClient.connected();
 
-	if (_NTPCheck.isRunning())
+	if (!_NTP_updated())
 	{
-		if (_NTPCheck.hasPassed(time_reset_NTP)) /* Reset after 1 hour */
+		if (millis() / 1000 > 60 && NTPretry == false)
+		{
+			NTPretry = true;
+			_startNTP();
+		}
+		else if (millis() / 1000 > 600)
 		{
 			sendReset("NTP_RESET");
 		}
-		else if (_NTPCheck.hasPassed(time_retry_NTP)) /* Retry update every 1 minute*/
+		else
 		{
-			if (!_NTP_updated())
-			{
-				_startNTP();
-			}
+			yield();
 		}
+	}
+
+	if (_Nonetworktimeout.isRunning())
+	{
+		Serial.println(_Nonetworktimeout.elapsed());
 	}
 	if (isNetworkOK) /* All good */
 	{
@@ -105,23 +108,15 @@ bool myIOT2::_network_looper()
 		{
 			_Nonetworktimeout.restart();
 			_Nonetworktimeout.stop();
+			Serial.println("ZEROED");
 		}
-		// if (_WifiConnCheck.isRunning())
-		// {
-		// 	_WifiConnCheck.restart();
-		// 	_WifiConnCheck.stop();
-		// }
-		// if (_MQTTConnCheck.isRunning())
-		// {
-		// 	_MQTTConnCheck.restart();
-		// 	_MQTTConnCheck.stop();
-		// }
 		return 1;
 	}
 	else
 	{
 		if (!_Nonetworktimeout.isRunning())
 		{
+			Serial.println("No-network counter began");
 			_Nonetworktimeout.restart();
 		}
 		if (!WiFi.isConnected()) /* No WiFi Connected */
@@ -150,7 +145,7 @@ bool myIOT2::_network_looper()
 				_retryTimeout.restart();
 				return 0;
 			}
-			else if (_retryTimeout.hasPassed(15))
+			else if (_retryTimeout.hasPassed(5))
 			{
 				_retryTimeout.restart();
 				return _try_regain_MQTT();
@@ -159,7 +154,10 @@ bool myIOT2::_network_looper()
 			{
 				return 0;
 			}
-			// return _try_regain_MQTT();
+		}
+		else
+		{
+			Serial.println("OTHER");
 		}
 	}
 }
@@ -222,35 +220,17 @@ void myIOT2::_shutdown_wifi()
 }
 bool myIOT2::_try_rgain_wifi()
 {
-	// if (!_WifiConnCheck.isRunning())
-	// {
-	// 	PRNTL(F("~ Fail Wifi"));
-	// 	_WifiConnCheck.restart();
-	// 	return 0;
-	// }
-	// else
-	// {
-	// if (_WifiConnCheck.hasPassed(retryConnectWiFi))
-	// {
-	PRNTL(F("~ Try regain Wifi"));
-	// _WifiConnCheck.restart();
+	PRNTL(F("~ Try restore Wifi"));
 	if (_start_network_services())
 	{
-		// _WifiConnCheck.stop();
-		PRNTL(F("~ Wifi restarted"));
+		PRNTL(F("~ Wifi restored"));
 		return 1;
 	}
 	else
 	{
-		PRNTL(F("~ Wifi restarted fail"));
+		PRNTL(F("~ Wifi failed to restore"));
 		return 0;
 	}
-	// }
-	// else
-	// {
-	// 	return 0;
-	// }
-	// }
 }
 
 // ~~~~~~~ NTP & Clock  ~~~~~~~~
@@ -272,13 +252,11 @@ bool myIOT2::_startNTP(const char *ntpServer, const char *ntpServer2)
 	if (!_NTP_updated())
 	{
 		PRNTL(F("\n~ NTP Update fail"));
-		_NTPCheck.restart();
 		return 0;
 	}
 	else
 	{
 		PRNTL(F("~ NTP Update OK"));
-		_NTPCheck.stop();
 		return 1;
 	}
 }

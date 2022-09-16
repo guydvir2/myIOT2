@@ -51,11 +51,11 @@ public:
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 protected:
-    char ver[12] = "iot_v1.80";
+    char ver[12] = "iot_v1.90";
 
 public:
     const char *topics_gen_pub[4] = {nullptr, nullptr, nullptr, nullptr};
-    const char *topics_sub[20] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,nullptr, nullptr, nullptr, nullptr,nullptr, nullptr, nullptr, nullptr,nullptr, nullptr, nullptr, nullptr};
+    const char *topics_sub[20] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
     const char *topics_pub[4] = {nullptr, nullptr, nullptr, nullptr};
     char *parameter_filenames[4] = {nullptr, nullptr, nullptr, nullptr};
 
@@ -87,11 +87,8 @@ private:
     char _mqtt_server[20];
 
     cb_func ext_mqtt;
-    Chrono _WifiConnCheck;
-    Chrono _MQTTConnCheck;
-    Chrono _NTPCheck;
-    Chrono _Nonetworktimeout;
     Chrono _retryTimeout;
+    Chrono _Nonetworktimeout;
 
     // time interval parameters
     const uint8_t WIFItimeOut = 20;         // sec try to connect WiFi
