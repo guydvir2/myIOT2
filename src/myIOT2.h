@@ -54,10 +54,10 @@ protected:
     char ver[12] = "iot_v1.90";
 
 public:
-    const char *topics_gen_pub[4] = {nullptr, nullptr, nullptr, nullptr};
-    const char *topics_sub[20] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
     const char *topics_pub[4] = {nullptr, nullptr, nullptr, nullptr};
     char *parameter_filenames[4] = {nullptr, nullptr, nullptr, nullptr};
+    const char *topics_gen_pub[4] = {nullptr, nullptr, nullptr, nullptr};
+    const char *topics_sub[20] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
 
     /*Variables */
     // ~~~~~~ Services ~~~~~~~~~
@@ -88,7 +88,7 @@ private:
 
     cb_func ext_mqtt;
     Chrono _retryTimeout;
-    Chrono _Nonetworktimeout;
+    // Chrono _Nonetworktimeout;
 
     // time interval parameters
     const uint8_t WIFItimeOut = 20;         // sec try to connect WiFi
@@ -96,6 +96,9 @@ private:
     const uint8_t OTA_upload_interval = 10; // minute to try OTA
     const uint8_t wdtMaxRetries = 45;       // seconds to bITE
     unsigned long allowOTA_clock = 0;       // clock
+    unsigned long  _nonetwork_clock= 0;     // clock
+    unsigned int _nextRetry = 0;
+
     volatile uint8_t wdtResetCounter = 0;
 
     // holds status
@@ -123,6 +126,7 @@ public: /* Functions */
     time_t now();
     void get_timeStamp(char ret[], time_t t = 0);
     void convert_epoch2clock(long t1, long t2, char time_str[], char days_str[] = nullptr);
+    bool _timePassed(unsigned int T);
 
     // ~~~~~~~~~~~~~~ Param ~~~~~~~~~~~~~~~~~~~~~
     uint8_t inline_read(char *inputstr);
