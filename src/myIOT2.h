@@ -87,7 +87,7 @@ private:
     char _mqtt_server[20];
 
     cb_func ext_mqtt;
-    Chrono _retryTimeout;
+    // Chrono _retryTimeout;
     // Chrono _Nonetworktimeout;
 
     // time interval parameters
