@@ -7,7 +7,7 @@
 #include <PubSubClient.h> // MQTT
 #include <ArduinoJson.h>
 #include <myLOG.h>
-#include <Chrono.h>
+// #include <Chrono.h>
 #include "secretsIOT8266.h"
 
 #include <LittleFS.h>
@@ -87,8 +87,6 @@ private:
     char _mqtt_server[20];
 
     cb_func ext_mqtt;
-    // Chrono _retryTimeout;
-    // Chrono _Nonetworktimeout;
 
     // time interval parameters
     const uint8_t WIFItimeOut = 20;         // sec try to connect WiFi
@@ -96,8 +94,12 @@ private:
     const uint8_t OTA_upload_interval = 10; // minute to try OTA
     const uint8_t wdtMaxRetries = 45;       // seconds to bITE
     unsigned long allowOTA_clock = 0;       // clock
-    unsigned long  _nonetwork_clock= 0;     // clock
+    unsigned long _nonetwork_clock = 0;     // clock
     unsigned int _nextRetry = 0;
+    uint8_t _wifi_counter = 0;
+    uint8_t _mqtt_counter = 0;
+    unsigned int _accum_wifi_not_connected = 0;
+    unsigned int _accum_mqtt_not_connected = 0;
 
     volatile uint8_t wdtResetCounter = 0;
 
