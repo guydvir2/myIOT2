@@ -376,7 +376,7 @@ bool myIOT2::_subMQTT()
 
 			for (uint8_t i = 0; i < m; i++)
 			{
-				if (topics_sub[i] != nullptr)
+				if (topics_sub[i] != nullptr && strcmp("", topics_sub[i]) != 0)
 				{
 					mqttClient.subscribe(topics_sub[i]);
 					PRNT(F("~ "));
