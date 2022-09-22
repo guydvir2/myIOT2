@@ -24,13 +24,10 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 		PRNT(F("\n\n>>> ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Start myIOT2 "));
 		PRNT(ver);
 		PRNTL(F(" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"));
-
-		// PRNTL(F(">>> Start Serial"));
 		delay(10);
 	}
 	if (useDebug)
 	{
-		// PRNTL(F(">>> Start debuglog services"));
 		flog.start(log_ents, true);
 	}
 
@@ -38,7 +35,6 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 
 	if (useOTA)
 	{
-		// PRNTL(F(">>> Start OTA"));
 		startOTA();
 	}
 	if (useBootClockLog && WiFi.isConnected())
@@ -268,7 +264,7 @@ bool myIOT2::_startNTP(const char *ntpServer, const char *ntpServer2)
 #elif defined(ESP32)
 	configTzTime(TZ_Asia_Jerusalem, ntpServer2, ntpServer);
 #endif
-	PRNT("~NTP: ");
+	PRNT("~ NTP: ");
 	while (!_NTP_updated() && (millis() - startLoop < 20000)) /* ESP32 after software reset - doesnt enter here at all*/
 	{
 		delay(50);

@@ -7,7 +7,6 @@
 #include <PubSubClient.h> // MQTT
 #include <ArduinoJson.h>
 #include <myLOG.h>
-// #include <Chrono.h>
 #include "secretsIOT8266.h"
 
 #include <LittleFS.h>
@@ -171,8 +170,4 @@ private:
     bool _change_flashP_value(const char *key, const char *new_value, JsonDocument &DOC);
     bool _saveFile(char *filename, JsonDocument &DOC);
 };
-// void watchdog_timer_triggered_helper(myIOT2 *watchdog)
-// {
-//     watchdog->_feedTheDog();
-// }
 #endif
