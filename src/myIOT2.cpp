@@ -158,6 +158,11 @@ bool myIOT2::_network_looper()
 				}
 				return a;
 			}
+			else
+			{
+				// Serial.println("tmie didnt pass");
+				return 0;
+			}
 		}
 		else if (!mqttClient.connected()) /* No MQTT */
 		{
@@ -333,7 +338,13 @@ bool myIOT2::_NTP_updated()
 }
 bool myIOT2::_timePassed(unsigned int T)
 {
-	return (_nonetwork_clock != 0 && (millis() - _nonetwork_clock) / 1000 > T);
+	bool a = (_nonetwork_clock != 0 && (millis() - _nonetwork_clock) / 1000 > T);
+	// if (!a)
+	// {
+	// 	Serial.print("timedelata: ");
+	// 	Serial.println(T - (millis() - _nonetwork_clock) / 1000);
+	// }
+	return a; //(_nonetwork_clock != 0 && (millis() - _nonetwork_clock) / 1000 > T);
 }
 // ~~~~~~~ MQTT functions ~~~~~~~
 bool myIOT2::_startMQTT()
