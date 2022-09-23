@@ -62,6 +62,14 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	PRNTL(_NTP_updated());
 	PRNT(F("Bootup sec:\t"));
 	PRNTL((float)(millis() / 1000.0));
+	PRNT(F("ESP type:\t"));
+	char a[10];
+#if defined(ESP8366)
+	strcpy(a, "ESP8266");
+#elif defined(ESP32)
+	strcpy(a, "ESP32");
+#endif
+	PRNTL(a);
 	PRNTL(F("\n >>>>>>>>>> END  <<<<<<<<<<<<<"));
 
 	PRNTL(F("\n>>> ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ END myIOT2 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ \n"));
@@ -156,7 +164,6 @@ bool myIOT2::_network_looper()
 			}
 			else
 			{
-				// Serial.println("tmie didnt pass");
 				return 0;
 			}
 		}
@@ -270,7 +277,7 @@ bool myIOT2::_startNTP(const char *ntpServer, const char *ntpServer2)
 	configTzTime(TZ_Asia_Jerusalem, ntpServer2, ntpServer);
 #endif
 	PRNT("~ NTP: ");
-	while (!_NTP_updated() && (millis() - startLoop < 20000)) /* ESP32 after software reset - doesnt enter here at all*/
+	while (!_NTP_updated() && (millis() - startLoop < 20000) && WiFi.isConnected()) /* ESP32 after software reset - doesnt enter here at all*/
 	{
 		delay(50);
 		PRNT("*");
