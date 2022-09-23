@@ -60,7 +60,6 @@ public:
 
     /*Variables */
     // ~~~~~~ Services ~~~~~~~~~
-    bool useOTA = true;
     bool useDebug = false;
     bool useSerial = true;
     bool useFlashP = false;
@@ -158,7 +157,6 @@ private:
 
     // ~~~~~~~ Services  ~~~~~~~~~~~~~~~~~~~~~~~~
     void _startFS();
-    void _startWDT();
     void _acceptOTA();
     void _feedTheDog();
     void _store_bootclockLOG();

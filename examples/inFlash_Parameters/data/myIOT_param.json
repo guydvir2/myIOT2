@@ -1,6 +1,5 @@
 {
     "useSerial": true,
-    "useOTA": true,
     "useFlashP": true,
     "useDebugLog": true,
     "useNetworkReset": true,
@@ -8,5 +7,5 @@
     "ignore_boot_msg": false,
     "debug_level": 0,
     "noNetwork_reset": 30,
-    "ver": 0.7
+    "ver": 0.8
 }

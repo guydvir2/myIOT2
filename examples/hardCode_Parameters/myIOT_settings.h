@@ -28,7 +28,6 @@ void updateTopics_local()
     iot.topics_sub[2] = topicSub1;
 }
 void update_Parameters_local(){
-    iot.useOTA = true;
     iot.useSerial = true;
     iot.useDebug = true;
     iot.debug_level = 0;

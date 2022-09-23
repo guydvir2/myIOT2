@@ -32,11 +32,7 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	}
 
 	_start_network_services();
-
-	if (useOTA)
-	{
-		startOTA();
-	}
+	startOTA();
 	if (useBootClockLog && WiFi.isConnected())
 	{
 		clklog.start(20, true, useDebug); // Dont need looper. saved only once a boot
@@ -48,8 +44,6 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	PRNTL(useSerial);
 	PRNT(F("useDebug:\t"));
 	PRNTL(useDebug);
-	PRNT(F("useOTA:\t\t"));
-	PRNTL(useOTA);
 	PRNT(F("BootClockLog:\t"));
 	PRNTL(useBootClockLog);
 	PRNT(F("useSerial:\t"));
@@ -59,7 +53,7 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	PRNT(F("Connected WiFi:\t"));
 	PRNTL(WiFi.isConnected());
 	PRNT(F("NTP sync:\t"));
-	PRNTL(_NTP_updated());
+	PRNTL(now());
 	PRNT(F("Bootup sec:\t"));
 	PRNTL((float)(millis() / 1000.0));
 	PRNT(F("ESP type:\t"));
@@ -76,13 +70,10 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 }
 void myIOT2::looper()
 {
-	if (useOTA)
-	{
-		_acceptOTA();
-	}
+	_acceptOTA();
 	if (_network_looper() == false) /* Wifi or MQTT fails causes reset */
 	{
-		if (_timePassed(noNetwork_reset * 60)) // _Nonetworktimeout.hasPassed(noNetwork_reset * 60))
+		if (_timePassed(noNetwork_reset * 60))
 		{									   // no Wifi or no MQTT will cause a reset
 			sendReset("Reset due to NO NETWoRK");
 		}
@@ -492,8 +483,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	}
 	else if (strcmp(incoming_msg, "services") == 0)
 	{
-		sprintf(msg, "Services[#1]:  OTA: [%d], SERIAL: [%d], useDebugLog[%d] , no-networkReset[%d] [%d min]",
-				useOTA, useSerial, useDebug, useNetworkReset, noNetwork_reset);
+		sprintf(msg, "Services[#1]: SERIAL: [%d], useDebugLog[%d] , no-networkReset[%d] [%d min]", useSerial, useDebug, useNetworkReset, noNetwork_reset);
 		pub_msg(msg);
 
 		sprintf(msg, "Services[#2]: useBootLog[%d] , ignore_boot_msg[%d], debug_level[%d], useFlashP[%d]",
@@ -785,7 +775,7 @@ bool myIOT2::extract_JSON_from_flash(const char *filename, JsonDocument &DOC)
 }
 void myIOT2::update_vars_flash_parameters(JsonDocument &DOC)
 {
-	useOTA = DOC["useOTA"].as<bool>() | useOTA;
+	// useOTA = DOC["useOTA"].as<bool>() | useOTA;
 	useSerial = DOC["useSerial"].as<bool>() | useSerial;
 	useFlashP = DOC["useFlashP"].as<bool>() | useFlashP;
 	useDebug = DOC["useDebugLog"].as<bool>() | useDebug;
