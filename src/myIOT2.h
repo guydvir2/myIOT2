@@ -99,7 +99,7 @@ private:
     unsigned int _accum_wifi_not_connected = 0;
     unsigned int _accum_mqtt_not_connected = 0;
 
-    volatile uint8_t wdtResetCounter = 0;
+    // volatile uint8_t wdtResetCounter = 0;
 
     // holds status
     bool firstRun = true;
