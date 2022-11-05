@@ -26,6 +26,7 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 		PRNTL(F(" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"));
 		delay(10);
 	}
+
 	if (useDebug)
 	{
 		flog.start(log_ents, true);
@@ -38,27 +39,36 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 		clklog.start(20, true, useDebug); // Dont need looper. saved only once a boot
 		_store_bootclockLOG();
 	}
-
-	PRNTL(F("\n >>>>>>>>>> Summary <<<<<<<<<<<<<"));
-	PRNT(F("useSerial:\t"));
+		PRNTL(F("\n >>>>>>>>>> Summary <<<<<<<<<<<<<"));
+	PRNT(F("useSerial:\t\t"));
 	PRNTL(useSerial);
-	PRNT(F("useDebug:\t"));
+	PRNT(F("useDebug:\t\t"));
 	PRNTL(useDebug);
-	PRNT(F("BootClockLog:\t"));
+	PRNT(F("BootClockLog:\t\t"));
 	PRNTL(useBootClockLog);
-	PRNT(F("useSerial:\t"));
-	PRNTL(useSerial);
-	PRNT(F("Connected MQTT:\t"));
+
+	PRNT(F("useNetworkReset:\t"));
+	PRNTL(useNetworkReset);
+	PRNT(F("ignore_boot_msg:\t"));
+	PRNTL(ignore_boot_msg);
+	PRNT(F("useFlashP:\t\t"));
+	PRNTL(useFlashP);
+	PRNT(F("debug_level:\t\t"));
+	PRNTL(debug_level);
+	PRNT(F("noNetwork_reset:\t"));
+	PRNTL(noNetwork_reset);
+	PRNT(F("Connected MQTT:\t\t"));
 	PRNTL(mqttClient.connected());
-	PRNT(F("Connected WiFi:\t"));
+	PRNT(F("Connected WiFi:\t\t"));
 	PRNTL(WiFi.isConnected());
-	PRNT(F("NTP sync:\t"));
+	PRNT(F("NTP sync:\t\t"));
 	PRNTL(now());
-	PRNT(F("Bootup sec:\t"));
+	PRNT(F("Bootup sec:\t\t"));
 	PRNTL((float)(millis() / 1000.0));
-	PRNT(F("ESP type:\t"));
+	PRNT(F("ESP type:\t\t"));
+
 	char a[10];
-#if defined(ESP8366)
+#if defined(ESP8266)
 	strcpy(a, "ESP8266");
 #elif defined(ESP32)
 	strcpy(a, "ESP32");
@@ -74,7 +84,7 @@ void myIOT2::looper()
 	if (_network_looper() == false) /* Wifi or MQTT fails causes reset */
 	{
 		if (_timePassed(noNetwork_reset * 60))
-		{									   // no Wifi or no MQTT will cause a reset
+		{ // no Wifi or no MQTT will cause a reset
 			sendReset("Reset due to NO NETWoRK");
 		}
 	}
@@ -180,6 +190,7 @@ bool myIOT2::_network_looper()
 		else
 		{
 			Serial.println("OTHER");
+			return 0;
 		}
 	}
 }
@@ -208,7 +219,7 @@ bool myIOT2::_startWifi(const char *ssid, const char *password)
 	// in case of reboot - timeOUT to wifi
 	while (WiFi.status() != WL_CONNECTED && (millis() < WIFItimeOut * MS2MINUTES / 60 + startWifiConnection))
 	{
-		delay(100);
+		delay(500);
 		PRNT(".");
 	}
 
@@ -232,12 +243,12 @@ void myIOT2::_shutdown_wifi()
 {
 	PRNTL(F("\n~ Shutting down Wifi"));
 	WiFi.mode(WIFI_OFF); // <---- NEW
-	delay(200);
+	delay(2000);
 #if defined(ESP32)
 	WiFi.useStaticBuffers(true);
 #endif
 	WiFi.mode(WIFI_STA);
-	WiFi.disconnect(true);
+	// WiFi.disconnect(true);
 	delay(200);
 }
 bool myIOT2::_try_rgain_wifi()
@@ -468,7 +479,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 
 	if (strcmp(incoming_msg, "ota") == 0)
 	{
-		sprintf(msg, "OTA allowed for %ld seconds", OTA_upload_interval * MS2MINUTES / 1000);
+		sprintf(msg, "OTA allowed for %d seconds", OTA_upload_interval * MS2MINUTES / 1000);
 		pub_msg(msg);
 		allowOTA_clock = millis();
 	}
@@ -737,7 +748,7 @@ void myIOT2::_store_bootclockLOG()
 #if defined(ESP8266)
 	sprintf(clk_char, "%lld", now());
 #elif defined(ESP32)
-	sprintf(clk_char, "%d", now());
+	sprintf(clk_char, "%ld", now());
 #endif
 	clklog.write(clk_char, true);
 }
@@ -775,7 +786,6 @@ bool myIOT2::extract_JSON_from_flash(const char *filename, JsonDocument &DOC)
 }
 void myIOT2::update_vars_flash_parameters(JsonDocument &DOC)
 {
-	// useOTA = DOC["useOTA"].as<bool>() | useOTA;
 	useSerial = DOC["useSerial"].as<bool>() | useSerial;
 	useFlashP = DOC["useFlashP"].as<bool>() | useFlashP;
 	useDebug = DOC["useDebugLog"].as<bool>() | useDebug;

@@ -67,7 +67,7 @@ public:
     bool useBootClockLog = false;
     bool ignore_boot_msg = false;
     uint8_t debug_level = 0;     // 0- All, 1- system states; 2- log only
-    uint8_t noNetwork_reset = 5; // minutes
+    uint8_t noNetwork_reset = 4; // minutes
     // ~~~~~~~ end Services ~~~~~~~
 
     uint8_t num_p = 0; // number parameters got in MQTT message
@@ -87,7 +87,7 @@ private:
     cb_func ext_mqtt;
 
     // time interval parameters
-    const uint8_t WIFItimeOut = 20;         // sec try to connect WiFi
+    const uint8_t WIFItimeOut = 30;         // sec try to connect WiFi
     const uint8_t retryConnectWiFi = 60;    // seconds between fail Wifi reconnect reties
     const uint8_t OTA_upload_interval = 10; // minute to try OTA
     const uint8_t wdtMaxRetries = 45;       // seconds to bITE
@@ -98,8 +98,6 @@ private:
     uint8_t _mqtt_counter = 0;
     unsigned int _accum_wifi_not_connected = 0;
     unsigned int _accum_mqtt_not_connected = 0;
-
-    // volatile uint8_t wdtResetCounter = 0;
 
     // holds status
     bool firstRun = true;
