@@ -6,13 +6,13 @@ const char *topicDebug = "myHome/debug";
 const char *topicmsg = "myHome/Messages";
 
 // ±±±±±±±±±±±± sub Topics ±±±±±±±±±±±±±±±±±±
-const char *topicSub1 = "myHome/alarmMonitor";
-const char *topicClient = "myHome/test/Client2";
+// const char *topicSub1 = "myHome/test";
+const char *topicClient = "myHome/test/pinger";
 const char *topicAll = "myHome/All";
 
 // ±±±±±±±±±±±±±±±± Client state pub topics ±±±±±±±±±±±±±±±±
-const char *topicClient_avail = "myHome/test/Client2/Avail";
-const char *topicClient_state = "myHome/test/Client2/State";
+const char *topicClient_avail = "myHome/test/pinger/Avail";
+const char *topicClient_state = "myHome/test/pinger/State";
 
 void updateTopics_local()
 {
@@ -25,11 +25,12 @@ void updateTopics_local()
 
     iot.topics_sub[0] = topicClient;
     iot.topics_sub[1] = topicAll;
-    iot.topics_sub[2] = topicSub1;
+    // iot.topics_sub[2] = topicSub1;
 }
-void update_Parameters_local(){
+void update_Parameters_local()
+{
     iot.useSerial = true;
-    iot.useDebug = true;
+    iot.useDebug = false;
     iot.debug_level = 0;
     iot.useFlashP = false;
     iot.useNetworkReset = true;
@@ -54,6 +55,15 @@ void addiotnalMQTT(char *incoming_msg, char *_topic)
     {
         sprintf(msg, "ver #2:");
         iot.pub_msg(msg);
+    }
+    else if (strcmp(incoming_msg, "q") == 0)
+    {
+        static int l = 0;
+        static unsigned long last_msg = 0;
+
+        sprintf(msg, "time_last_msg:%d; msg #%d", millis() - last_msg, l++);
+        iot.pub_msg(msg);
+        last_msg = millis();
     }
 }
 void startIOTservices()

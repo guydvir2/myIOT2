@@ -39,7 +39,7 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 		clklog.start(20, true, useDebug); // Dont need looper. saved only once a boot
 		_store_bootclockLOG();
 	}
-		PRNTL(F("\n >>>>>>>>>> Summary <<<<<<<<<<<<<"));
+	PRNTL(F("\n >>>>>>>>>> Summary <<<<<<<<<<<<<"));
 	PRNT(F("useSerial:\t\t"));
 	PRNTL(useSerial);
 	PRNT(F("useDebug:\t\t"));
@@ -139,6 +139,7 @@ bool myIOT2::_network_looper()
 	}
 	else
 	{
+		Serial.println("RTT");
 		if (_nonetwork_clock == 0)
 		{
 			_nonetwork_clock = millis();
@@ -306,7 +307,7 @@ void myIOT2::get_timeStamp(char ret[], time_t t)
 	struct tm *tm = localtime(&t);
 	sprintf(ret, "%04d-%02d-%02d %02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
 }
-bool myIOT2::pingSite(char *externalSite, uint8_t pings)
+bool myIOT2::pingSite(const char *externalSite, uint8_t pings)
 {
 	return Ping.ping(externalSite, pings);
 }
@@ -344,12 +345,7 @@ bool myIOT2::_NTP_updated()
 bool myIOT2::_timePassed(unsigned int T)
 {
 	bool a = (_nonetwork_clock != 0 && (millis() - _nonetwork_clock) / 1000 > T);
-	// if (!a)
-	// {
-	// 	Serial.print("timedelata: ");
-	// 	Serial.println(T - (millis() - _nonetwork_clock) / 1000);
-	// }
-	return a; //(_nonetwork_clock != 0 && (millis() - _nonetwork_clock) / 1000 > T);
+	return a;
 }
 // ~~~~~~~ MQTT functions ~~~~~~~
 bool myIOT2::_startMQTT()
@@ -376,7 +372,7 @@ bool myIOT2::_try_regain_MQTT()
 			mqttClient.loop();
 
 			int not_con_period = (millis() - _nonetwork_clock) / 1000;
-			if (not_con_period > 20)
+			if (not_con_period > 2)
 			{
 				char b[50];
 				sprintf(b, "MQTT reconnect after [%d] sec", not_con_period);
@@ -462,7 +458,9 @@ bool myIOT2::_subMQTT()
 }
 void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 {
-	char incoming_msg[length + 5];
+	char incoming_msg[50];
+	// char incoming_msg[length + 5];
+
 	char msg[200];
 
 	PRNT(F("Message arrived ["));
@@ -612,14 +610,21 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 		}
 	}
 }
-void myIOT2::_pub_generic(const char *topic, char *inmsg, bool retain, char *devname, bool bare)
+void myIOT2::_pub_generic(const char *topic, const char *inmsg, bool retain, char *devname, bool bare)
 {
 	char clk[25];
 	get_timeStamp(clk, 0);
 	const uint8_t mqtt_overhead_size = 23;
 	const int mqtt_defsize = mqttClient.getBufferSize();
+
+	Serial.print("DEF_SIZE: ");
+	Serial.println(mqtt_defsize);
+
 	int x = devname == nullptr ? strlen(topics_sub[0]) + 1 : 0;
 	char tmpmsg[strlen(inmsg) + x + 8 + 25];
+
+	// Serial.print("tmep_SIZE: ");
+	// Serial.println(strlen(inmsg) + x + 8 + 25);
 
 	if (!bare)
 	{
@@ -630,39 +635,55 @@ void myIOT2::_pub_generic(const char *topic, char *inmsg, bool retain, char *dev
 		sprintf(tmpmsg, "%s", inmsg);
 	}
 
-	x = strlen(tmpmsg) + mqtt_overhead_size + strlen(topic);
-	if (x > mqtt_defsize)
-	{
-		mqttClient.setBufferSize(x);
+	// x = strlen(tmpmsg) + mqtt_overhead_size + strlen(topic);
+
+	// Serial.print("final_SIZE: ");
+	// Serial.println(x);
+
+	// if (x > mqtt_defsize)
+	// {
+	// 	mqttClient.setBufferSize(x);
+	// 	mqttClient.publish(topic, tmpmsg, retain);
+	// 	mqttClient.setBufferSize(mqtt_defsize);
+
+	// 	Serial.println("NON_DEF_SIZE");
+	// }
+	// else
+	// {
 		mqttClient.publish(topic, tmpmsg, retain);
-		mqttClient.setBufferSize(mqtt_defsize);
-	}
-	else
-	{
-		mqttClient.publish(topic, tmpmsg, retain);
-	}
+	// }
 }
-void myIOT2::pub_msg(char *inmsg)
+void myIOT2::pub_msg(const char *inmsg)
 {
 	_pub_generic(topics_gen_pub[0], inmsg);
 	_write_log(inmsg, 1, topics_gen_pub[0]);
 }
-void myIOT2::pub_noTopic(char *inmsg, char *Topic, bool retain)
+void myIOT2::pub_noTopic(const char *inmsg, char *Topic, bool retain)
 {
 	_pub_generic(Topic, inmsg, retain, nullptr, true);
 	_write_log(inmsg, 0, Topic);
 }
-void myIOT2::pub_state(char *inmsg, uint8_t i)
+void myIOT2::pub_state(const char *inmsg, uint8_t i)
 {
-	mqttClient.publish(topics_pub[1], inmsg, true);
+	if (i != 0)
+	{
+		int x = strlen(topics_pub[1] + 3);
+		char t[x];
+		sprintf(t, "%s%d", topics_pub[1], i);
+		mqttClient.publish(t, inmsg, true);
+	}
+	else
+	{
+		mqttClient.publish(topics_pub[1], inmsg, true);
+	}
 	_write_log(inmsg, 2, topics_pub[1]);
 }
-void myIOT2::pub_log(char *inmsg)
+void myIOT2::pub_log(const char *inmsg)
 {
 	_pub_generic(topics_gen_pub[1], inmsg);
 	_write_log(inmsg, 1, topics_gen_pub[1]);
 }
-void myIOT2::pub_debug(char *inmsg)
+void myIOT2::pub_debug(const char *inmsg)
 {
 	_pub_generic(topics_gen_pub[2], inmsg, false, nullptr, true);
 }
@@ -726,7 +747,7 @@ uint8_t myIOT2::_getdataType(const char *y)
 }
 
 // ~~~~~~~~~~ Data Storage ~~~~~~~~~
-void myIOT2::_write_log(char *inmsg, uint8_t x, const char *topic)
+void myIOT2::_write_log(const char *inmsg, uint8_t x, const char *topic)
 {
 	char a[strlen(inmsg) + 100];
 
@@ -752,7 +773,7 @@ void myIOT2::_store_bootclockLOG()
 #endif
 	clklog.write(clk_char, true);
 }
-void myIOT2::set_pFilenames(char *fileArray[], uint8_t asize)
+void myIOT2::set_pFilenames(const char *fileArray[], uint8_t asize)
 {
 	for (uint8_t i = 0; i < asize; i++)
 	{
@@ -828,7 +849,7 @@ bool myIOT2::_change_flashP_value(const char *key, const char *new_value, JsonDo
 	}
 	return 0;
 }
-bool myIOT2::_saveFile(char *filename, JsonDocument &DOC)
+bool myIOT2::_saveFile(const char *filename, JsonDocument &DOC)
 {
 	File writefile = LITFS.open(filename, "w");
 	if (!writefile || (serializeJson(DOC, writefile) == 0))
@@ -882,7 +903,7 @@ bool myIOT2::_cmdline_flashUpdate(const char *key, const char *new_value)
 	return succ_chg;
 }
 
-String myIOT2::readFile(char *fileName)
+String myIOT2::readFile(const char *fileName)
 {
 	_startFS();
 	File file = LITFS.open(fileName, "r");
@@ -937,7 +958,7 @@ void myIOT2::_extract_log(flashLOG &_flog, const char *_title, bool _isTimelog)
 }
 
 // ~~~~~~ Reset and maintability ~~~~~~
-void myIOT2::sendReset(char *header)
+void myIOT2::sendReset(const char *header)
 {
 	char temp[20 + strlen(header)];
 

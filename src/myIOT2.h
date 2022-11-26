@@ -32,13 +32,16 @@
 class myIOT2
 {
 #define MS2MINUTES 60000
-
+#ifndef PRNT
 #define PRNT(a)    \
     if (useSerial) \
     Serial.print(a)
+#endif
+#ifndef PRNTL
 #define PRNTL(a)   \
     if (useSerial) \
     Serial.println(a)
+#endif
 
 public:
     WiFiClient espClient;
@@ -54,7 +57,7 @@ protected:
 
 public:
     const char *topics_pub[4] = {nullptr, nullptr, nullptr, nullptr};
-    char *parameter_filenames[4] = {nullptr, nullptr, nullptr, nullptr};
+    const char *parameter_filenames[4] = {nullptr, nullptr, nullptr, nullptr};
     const char *topics_gen_pub[4] = {nullptr, nullptr, nullptr, nullptr};
     const char *topics_sub[20] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
 
@@ -109,16 +112,16 @@ public: /* Functions */
     void startOTA();
     void start_services(cb_func funct, const char *ssid = SSID_ID, const char *password = PASS_WIFI, const char *mqtt_user = MQTT_USER, const char *mqtt_passw = MQTT_PASS, const char *mqtt_broker = MQTT_SERVER1, int log_ents = 100);
 
-    bool pingSite(char *externalSite = "www.google.com", uint8_t pings = 3);
+    bool pingSite(const char *externalSite = "www.google.com", uint8_t pings = 3);
 
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     void notifyOnline();
-    void pub_msg(char *inmsg);
-    void pub_log(char *inmsg);
-    void pub_debug(char *inmsg);
-    void sendReset(char *header = nullptr);
-    void pub_state(char *inmsg, uint8_t i = 0);
-    void pub_noTopic(char *inmsg, char *Topic, bool retain = false);
+    void pub_msg(const char *inmsg);
+    void pub_log(const char *inmsg);
+    void pub_debug(const char *inmsg);
+    void sendReset(const char *header = nullptr);
+    void pub_state(const char *inmsg, uint8_t i = 0);
+    void pub_noTopic(const char *inmsg, char *Topic, bool retain = false);
 
     // ~~~~~~~~~~~~~~ Clk ~~~~~~~~~~~~~~~~~~~~~
     time_t now();
@@ -128,11 +131,11 @@ public: /* Functions */
 
     // ~~~~~~~~~~~~~~ Param ~~~~~~~~~~~~~~~~~~~~~
     uint8_t inline_read(char *inputstr);
-    void set_pFilenames(char *fileArray[], uint8_t asize);
+    void set_pFilenames(const char *fileArray[], uint8_t asize);
 
     bool extract_JSON_from_flash(const char *filename, JsonDocument &DOC);
     void update_vars_flash_parameters(JsonDocument &DOC);
-    String readFile(char *fileName);
+    String readFile(const char *fileName);
 
 private:
     // ~~~~~~~~~~~~~~WIFI ~~~~~~~~~~~~~~~~~~~~~
@@ -150,8 +153,8 @@ private:
     bool _try_regain_MQTT();
     void _getBootReason_resetKeeper(char *msg);
     void _MQTTcb(char *topic, uint8_t *payload, unsigned int length);
-    void _write_log(char *inmsg, uint8_t x, const char *topic = "_deviceName");
-    void _pub_generic(const char *topic, char *inmsg, bool retain = false, char *devname = nullptr, bool bare = false);
+    void _write_log(const char *inmsg, uint8_t x, const char *topic = "_deviceName");
+    void _pub_generic(const char *topic, const char *inmsg, bool retain = false, char *devname = nullptr, bool bare = false);
 
     // ~~~~~~~ Services  ~~~~~~~~~~~~~~~~~~~~~~~~
     void _startFS();
@@ -164,6 +167,6 @@ private:
     uint8_t _getdataType(const char *y);
     bool _cmdline_flashUpdate(const char *key, const char *new_value);
     bool _change_flashP_value(const char *key, const char *new_value, JsonDocument &DOC);
-    bool _saveFile(char *filename, JsonDocument &DOC);
+    bool _saveFile(const char *filename, JsonDocument &DOC);
 };
 #endif
