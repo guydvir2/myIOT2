@@ -12,8 +12,8 @@ void send_q(int interval = 1000)
                 Serial.print("PING #");
                 Serial.println(++x);
                 last_ping = millis();
-                iot.mqttClient.publish("myHome/test", "q");
-                // iot.pub_noTopic("q", "myHome/test");
+                // iot.mqttClient.publish("myHome/test", "q");
+                iot.pub_noTopic("q", "myHome/test");
         }
 }
 
@@ -28,5 +28,5 @@ void loop()
                 send_q(1500);
         }
         iot.looper();
-        iot.mqttClient.loop();
+        // iot.mqttClient.loop();
 }

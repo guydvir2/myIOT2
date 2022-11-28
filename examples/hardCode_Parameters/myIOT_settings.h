@@ -6,7 +6,7 @@ const char *topicDebug = "myHome/debug";
 const char *topicmsg = "myHome/Messages";
 
 // ±±±±±±±±±±±± sub Topics ±±±±±±±±±±±±±±±±±±
-// const char *topicSub1 = "myHome/test";
+const char *topicSub1 = "myHome/test";
 const char *topicClient = "myHome/test/pinger";
 const char *topicAll = "myHome/All";
 
