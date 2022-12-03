@@ -6,7 +6,7 @@
 #include <ArduinoOTA.h>   // OTA
 #include <PubSubClient.h> // MQTT
 #include <ArduinoJson.h>
-#include <myLOG.h>
+// #include <myLOG.h>
 #include "secretsIOT8266.h"
 
 #include <LittleFS.h>
@@ -46,20 +46,20 @@ class myIOT2
 public:
     WiFiClient espClient;
     PubSubClient mqttClient;
-    flashLOG flog;   /* Stores Activity LOG */
-    flashLOG clklog; /* Stores Boot clock records */
+    // flashLOG flog;   /* Stores Activity LOG */
+    // flashLOG clklog; /* Stores Boot clock records */
 
     // ~~~~define generic cb function~~~~
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 protected:
-    char ver[12] = "iot_v1.90";
+    char ver[12] = "iot_v1.91";
 
 public:
     const char *topics_pub[4] = {nullptr, nullptr, nullptr, nullptr};
     const char *parameter_filenames[4] = {nullptr, nullptr, nullptr, nullptr};
     const char *topics_gen_pub[4] = {nullptr, nullptr, nullptr, nullptr};
-    const char *topics_sub[20] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+    const char *topics_sub[8] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
 
     /*Variables */
     // ~~~~~~ Services ~~~~~~~~~
@@ -101,6 +101,7 @@ private:
     uint8_t _mqtt_counter = 0;
     unsigned int _accum_wifi_not_connected = 0;
     unsigned int _accum_mqtt_not_connected = 0;
+    unsigned int _msgcounter=0;
 
     // holds status
     bool firstRun = true;
@@ -161,7 +162,7 @@ private:
     void _acceptOTA();
     void _feedTheDog();
     void _store_bootclockLOG();
-    void _extract_log(flashLOG &LOG, const char *title, bool _isTimelog = false);
+    // void _extract_log(flashLOG &LOG, const char *title, bool _isTimelog = false);
 
     // ~~~~~~~~~~~~~~ Param ~~~~~~~~~~~~~~~~~~~~~
     uint8_t _getdataType(const char *y);

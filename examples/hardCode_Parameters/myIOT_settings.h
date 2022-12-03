@@ -7,12 +7,12 @@ const char *topicmsg = "myHome/Messages";
 
 // ±±±±±±±±±±±± sub Topics ±±±±±±±±±±±±±±±±±±
 const char *topicSub1 = "myHome/test";
-const char *topicClient = "myHome/test/pinger";
+const char *topicClient = "myHome/test/ESP8266";
 const char *topicAll = "myHome/All";
 
 // ±±±±±±±±±±±±±±±± Client state pub topics ±±±±±±±±±±±±±±±±
-const char *topicClient_avail = "myHome/test/pinger/Avail";
-const char *topicClient_state = "myHome/test/pinger/State";
+const char *topicClient_avail = "myHome/test/ESP8266/Avail";
+const char *topicClient_state = "myHome/test/ESP8266/State";
 
 void updateTopics_local()
 {
@@ -25,7 +25,7 @@ void updateTopics_local()
 
     iot.topics_sub[0] = topicClient;
     iot.topics_sub[1] = topicAll;
-    // iot.topics_sub[2] = topicSub1;
+    iot.topics_sub[2] = topicSub1;
 }
 void update_Parameters_local()
 {
@@ -35,7 +35,7 @@ void update_Parameters_local()
     iot.useFlashP = false;
     iot.useNetworkReset = true;
     iot.noNetwork_reset = 2;
-    iot.useBootClockLog = true;
+    iot.useBootClockLog = false;
     iot.ignore_boot_msg = false;
 }
 void addiotnalMQTT(char *incoming_msg, char *_topic)
