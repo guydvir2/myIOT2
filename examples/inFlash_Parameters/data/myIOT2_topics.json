@@ -11,8 +11,8 @@
     ],
     "sub_topics": [
         "myHome/Windows/testWindows",
-        "myHome/Windows",
-        "myHome/alarmMonitor"
+        "myHome/All",
+        "myHome/Windows"
     ],
     "ver": 0.1
 }

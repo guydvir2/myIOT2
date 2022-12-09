@@ -30,8 +30,6 @@ void updateTopics_local()
 void update_Parameters_local()
 {
     iot.useSerial = true;
-    iot.useDebug = false;
-    iot.debug_level = 0;
     iot.useFlashP = false;
     iot.useNetworkReset = true;
     iot.noNetwork_reset = 2;
@@ -43,7 +41,7 @@ void addiotnalMQTT(char *incoming_msg, char *_topic)
     char msg[150];
     if (strcmp(incoming_msg, "status") == 0)
     {
-        sprintf(msg, "BOOOOO");
+        sprintf(msg, "BOO");
         iot.pub_msg(msg);
     }
     else if (strcmp(incoming_msg, "help2") == 0)
@@ -56,15 +54,7 @@ void addiotnalMQTT(char *incoming_msg, char *_topic)
         sprintf(msg, "ver #2:");
         iot.pub_msg(msg);
     }
-    else if (strcmp(incoming_msg, "q") == 0)
-    {
-        static int l = 0;
-        static unsigned long last_msg = 0;
 
-        sprintf(msg, "time_last_msg:%d; msg #%d", millis() - last_msg, l++);
-        iot.pub_msg(msg);
-        last_msg = millis();
-    }
 }
 void startIOTservices()
 {

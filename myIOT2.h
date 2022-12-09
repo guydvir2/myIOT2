@@ -1,17 +1,6 @@
 #ifndef myIOT2_h
 #define myIOT2_h
 
-#include <Arduino.h>
-#include <WiFiUdp.h>      // OTA
-#include <ArduinoOTA.h>   // OTA
-#include <PubSubClient.h> // MQTT
-#include <ArduinoJson.h>
-// #include <myLOG.h>
-#include "secretsIOT8266.h"
-
-#include <LittleFS.h>
-#define LITFS LittleFS
-
 #if defined(ESP8266)
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h> // OTA libraries
@@ -20,14 +9,18 @@
 #elif defined(ESP32)
 #include <WiFi.h>
 #include <ESPmDNS.h> // OTA libraries
-#include <ESP32Ping.h>
 #define TZ_Asia_Jerusalem PSTR("IST-2IDT,M3.4.4/26,M10.5.0")
-
-// #elif defined(ARDUINO_ARCH_SAMD)
-// #include <SPI.h>
-// #include <WiFiNINA.h>
-// #define TZ_Asia_Jerusalem PSTR("IST-2IDT,M3.4.4/26,M10.5.0")
 #endif
+
+#include <WiFiUdp.h>      // OTA
+#include <ArduinoOTA.h>   // OTA
+#include <PubSubClient.h> // MQTT
+#include <ArduinoJson.h>
+#include "secretsIOT.h"
+
+#include <FS.h>
+#include <LittleFS.h>
+#define LITFS LittleFS
 
 class myIOT2
 {
@@ -46,14 +39,12 @@ class myIOT2
 public:
     WiFiClient espClient;
     PubSubClient mqttClient;
-    // flashLOG flog;   /* Stores Activity LOG */
-    // flashLOG clklog; /* Stores Boot clock records */
 
     // ~~~~define generic cb function~~~~
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 protected:
-    char ver[12] = "iot_v1.91";
+    char ver[12] = "iot_v1.95";
 
 public:
     const char *topics_pub[4] = {nullptr, nullptr, nullptr, nullptr};
@@ -63,13 +54,11 @@ public:
 
     /*Variables */
     // ~~~~~~ Services ~~~~~~~~~
-    bool useDebug = false;
     bool useSerial = true;
     bool useFlashP = false;
     bool useNetworkReset = true; // allow reset due to no-network timeout
     bool useBootClockLog = false;
     bool ignore_boot_msg = false;
-    uint8_t debug_level = 0;     // 0- All, 1- system states; 2- log only
     uint8_t noNetwork_reset = 4; // minutes
     // ~~~~~~~ end Services ~~~~~~~
 
@@ -92,16 +81,17 @@ private:
     // time interval parameters
     const uint8_t WIFItimeOut = 30;         // sec try to connect WiFi
     const uint8_t retryConnectWiFi = 60;    // seconds between fail Wifi reconnect reties
-    const uint8_t OTA_upload_interval = 10; // minute to try OTA
+    const uint8_t OTA_upload_interval = 10; // minutes to try OTA
     const uint8_t wdtMaxRetries = 45;       // seconds to bITE
-    unsigned long allowOTA_clock = 0;       // clock
-    unsigned long _nonetwork_clock = 0;     // clock
+    static const int _maxMQTTmsglen = 300;
+    unsigned long allowOTA_clock = 0;   // clock
+    unsigned long _nonetwork_clock = 0; // clock
     unsigned int _nextRetry = 0;
     uint8_t _wifi_counter = 0;
     uint8_t _mqtt_counter = 0;
     unsigned int _accum_wifi_not_connected = 0;
     unsigned int _accum_mqtt_not_connected = 0;
-    unsigned int _msgcounter=0;
+    unsigned int _msgcounter = 0;
 
     // holds status
     bool firstRun = true;
@@ -112,8 +102,6 @@ public: /* Functions */
     void looper();
     void startOTA();
     void start_services(cb_func funct, const char *ssid = SSID_ID, const char *password = PASS_WIFI, const char *mqtt_user = MQTT_USER, const char *mqtt_passw = MQTT_PASS, const char *mqtt_broker = MQTT_SERVER1, int log_ents = 100);
-
-    bool pingSite(const char *externalSite = "www.google.com", uint8_t pings = 3);
 
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     void notifyOnline();
@@ -154,7 +142,6 @@ private:
     bool _try_regain_MQTT();
     void _getBootReason_resetKeeper(char *msg);
     void _MQTTcb(char *topic, uint8_t *payload, unsigned int length);
-    void _write_log(const char *inmsg, uint8_t x, const char *topic = "_deviceName");
     void _pub_generic(const char *topic, const char *inmsg, bool retain = false, char *devname = nullptr, bool bare = false);
 
     // ~~~~~~~ Services  ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -162,7 +149,6 @@ private:
     void _acceptOTA();
     void _feedTheDog();
     void _store_bootclockLOG();
-    // void _extract_log(flashLOG &LOG, const char *title, bool _isTimelog = false);
 
     // ~~~~~~~~~~~~~~ Param ~~~~~~~~~~~~~~~~~~~~~
     uint8_t _getdataType(const char *y);

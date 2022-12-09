@@ -1,12 +1,7 @@
-#include <Arduino.h>
 #include "myIOT2.h"
 
-#if defined(ESP8266)
-#include <ESP8266Ping.h>
-#endif
-
 // ~~~~~~ myIOT2 CLASS ~~~~~~~~~~~ //
-myIOT2::myIOT2() : mqttClient(espClient)//, flog("/myIOTlog.txt"), clklog("/clkLOG.txt")
+myIOT2::myIOT2() : mqttClient(espClient) 
 {
 }
 void myIOT2::start_services(cb_func funct, const char *ssid, const char *password, const char *mqtt_user, const char *mqtt_passw, const char *mqtt_broker, int log_ents)
@@ -27,25 +22,12 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 		delay(10);
 	}
 
-	if (useDebug)
-	{
-		//flog.start(log_ents, true);
-	}
-
 	_start_network_services();
 	startOTA();
-	if (useBootClockLog && WiFi.isConnected())
-	{
-		//clklog.start(20, true, useDebug); // Dont need looper. saved only once a boot
-		_store_bootclockLOG();
-	}
+	
 	PRNTL(F("\n >>>>>>>>>> Summary <<<<<<<<<<<<<"));
 	PRNT(F("useSerial:\t\t"));
 	PRNTL(useSerial);
-	PRNT(F("useDebug:\t\t"));
-	PRNTL(useDebug);
-	PRNT(F("BootClockLog:\t\t"));
-	PRNTL(useBootClockLog);
 
 	PRNT(F("useNetworkReset:\t"));
 	PRNTL(useNetworkReset);
@@ -53,8 +35,6 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	PRNTL(ignore_boot_msg);
 	PRNT(F("useFlashP:\t\t"));
 	PRNTL(useFlashP);
-	PRNT(F("debug_level:\t\t"));
-	PRNTL(debug_level);
 	PRNT(F("noNetwork_reset:\t"));
 	PRNTL(noNetwork_reset);
 	PRNT(F("Connected MQTT:\t\t"));
@@ -88,38 +68,30 @@ void myIOT2::looper()
 			sendReset("Reset due to NO NETWoRK");
 		}
 	}
-	// if (useDebug)
-	// {
-	// 	flog.looper(30); /* 30 seconds from last write or 70% of buffer */
-	// }
-	// else
-	// {
-	// 	yield();
-	// }
 }
 
 // ~~~~~~~ Wifi functions ~~~~~~~
 bool myIOT2::_network_looper()
 {
-	// static bool NTPretry = false;
+	static bool NTPretry = false;
 	bool isNetworkOK = WiFi.isConnected() && mqttClient.connected();
 
-	// if (!_NTP_updated())
-	// {
-	// 	if (millis() / 1000 > 60 && NTPretry == false)
-	// 	{
-	// 		NTPretry = true;
-	// 		_startNTP();
-	// 	}
-	// 	else if (millis() / 1000 > 600)
-	// 	{
-	// 		sendReset("NTP_RESET");
-	// 	}
-	// 	else
-	// 	{
-	// 		yield();
-	// 	}
-	// }
+	if (!_NTP_updated())
+	{
+		if (millis() / 1000 > 60 && NTPretry == false)
+		{
+			NTPretry = true;
+			_startNTP();
+		}
+		else if (millis() / 1000 > 600)
+		{
+			sendReset("NTP_RESET");
+		}
+		else
+		{
+			yield();
+		}
+	}
 
 	if (isNetworkOK) /* All good */
 	{
@@ -256,8 +228,8 @@ void myIOT2::_shutdown_wifi()
 	WiFi.useStaticBuffers(true);
 #endif
 	WiFi.mode(WIFI_STA);
-	// WiFi.disconnect(true);
-	delay(200);
+	WiFi.disconnect(true);
+	// delay(200);
 }
 bool myIOT2::_try_rgain_wifi()
 {
@@ -314,10 +286,6 @@ void myIOT2::get_timeStamp(char ret[], time_t t)
 	struct tm *tm = localtime(&t);
 	sprintf(ret, "%04d-%02d-%02d %02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
 }
-bool myIOT2::pingSite(const char *externalSite, uint8_t pings)
-{
-	return Ping.ping(externalSite, pings);
-}
 void myIOT2::convert_epoch2clock(long t1, long t2, char time_str[], char days_str[])
 {
 	uint8_t days = 0;
@@ -354,6 +322,7 @@ bool myIOT2::_timePassed(unsigned int T)
 	bool a = (_nonetwork_clock != 0 && (millis() - _nonetwork_clock) / 1000 > T);
 	return a;
 }
+
 // ~~~~~~~ MQTT functions ~~~~~~~
 bool myIOT2::_startMQTT()
 {
@@ -394,7 +363,7 @@ bool myIOT2::_try_regain_MQTT()
 			if (_timePassed(60)) /* Resets all network */
 			{
 				PRNTL(F("~ MQTT fails, Restarting all network"));
-				//flog.write("MQTT fail. network shutdown", true);
+				// flog.write("MQTT fail. network shutdown", true);
 				_shutdown_wifi();
 				delay(1000);
 				return _start_network_services();
@@ -466,9 +435,7 @@ bool myIOT2::_subMQTT()
 }
 void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 {
-	char incoming_msg[50];
-	// char incoming_msg[length + 5];
-
+	char incoming_msg[30];
 	char msg[200];
 
 	PRNT(F("Message arrived ["));
@@ -495,23 +462,20 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	}
 	else if (strcmp(incoming_msg, "ver") == 0)
 	{
-		sprintf(msg, "ver: IOTlib: [%s], flashLOG[%s]", ver, "flog.VeR");
+		sprintf(msg, "ver: IOTlib: [%s]", ver);
 		pub_msg(msg);
 	}
 	else if (strcmp(incoming_msg, "services") == 0)
 	{
-		sprintf(msg, "Services[#1]: SERIAL: [%d], useDebugLog[%d] , no-networkReset[%d] [%d min]", useSerial, useDebug, useNetworkReset, noNetwork_reset);
-		pub_msg(msg);
-
-		sprintf(msg, "Services[#2]: useBootLog[%d] , ignore_boot_msg[%d], debug_level[%d], useFlashP[%d]",
-				useBootClockLog, ignore_boot_msg, debug_level, useFlashP);
+		sprintf(msg, "Services: SERIAL[%d], no-networkReset[%d] [%d min], ignore_boot_msg[%d], useFlashP[%d]",
+				useSerial, useNetworkReset, noNetwork_reset, ignore_boot_msg, useFlashP);
 		pub_msg(msg);
 	}
 	else if (strcmp(incoming_msg, "help") == 0)
 	{
 		sprintf(msg, "Help: Commands #1 - [status, reset, ota, ver, ver2, help, help2, MCU_type, services, network]");
 		pub_msg(msg);
-		sprintf(msg, "Help: Commands #2 - [del_debuglog, del_bootlog, show_debuglog, show_bootlog, show_flashParam,{update_flash,[key],[value]}]");
+		sprintf(msg, "Help: Commands #2 - [show_flashParam,{update_flash,[key],[value]}]");
 		pub_msg(msg);
 	}
 	else if (strcmp(incoming_msg, "MCU_type") == 0)
@@ -524,17 +488,6 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 		sprintf(msg, "[MCU]: unKnown");
 #endif
 		pub_msg(msg);
-	}
-	else if (strcmp(incoming_msg, "show_debuglog") == 0)
-	{
-		if (useDebug)
-		{
-			// _extract_log(//flog, "debug_log");
-		}
-		else
-		{
-			pub_msg("[DebugLog]: Not supported");
-		}
 	}
 	else if (strcmp(incoming_msg, "show_flashParam") == 0)
 	{
@@ -562,33 +515,6 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 		else
 		{
 			pub_msg("[On-Flash Parameters]: not in use");
-		}
-	}
-	else if (strcmp(incoming_msg, "del_debuglog") == 0)
-	{
-		if (useDebug)
-		{
-			//flog.delog();
-			pub_msg("[debug_log]: file deleted");
-		}
-	}
-	else if (strcmp(incoming_msg, "del_bootlog") == 0)
-	{
-		if (useDebug)
-		{
-			//clklog.delog();
-			pub_msg("[boot_log]: file deleted");
-		}
-	}
-	else if (strcmp(incoming_msg, "show_bootlog") == 0)
-	{
-		if (useBootClockLog)
-		{
-			// _extract_log(clklog, "boot_log", true);
-		}
-		else
-		{
-			pub_msg("[BootLog]: Not supported");
 		}
 	}
 	else if (strcmp(incoming_msg, "network") == 0)
@@ -625,30 +551,20 @@ void myIOT2::_pub_generic(const char *topic, const char *inmsg, bool retain, cha
 	const uint8_t mqtt_overhead_size = 23;
 	const int mqtt_defsize = mqttClient.getBufferSize();
 
-	// Serial.print("DEF_SIZE: ");
-	// Serial.println(mqtt_defsize);
-
 	int x = devname == nullptr ? strlen(topics_sub[0]) + 1 : 0;
-	// char tmpmsg[strlen(inmsg) + x + 8 + 25];
-	char tmpmsg[300];
-
-	// Serial.print("tmep_SIZE: ");
-	// Serial.println(strlen(inmsg) + x + 8 + 25);
+	// char tmpmsg[strlen(inmsg) + x + 8 + 25]; // avoid dynamic allocation
+	char tmpmsg[_maxMQTTmsglen];
 
 	if (!bare)
 	{
-		sprintf(tmpmsg, "[%s] [%s] [#%d] %s", clk, topics_sub[0], _msgcounter++, inmsg);
+		snprintf(tmpmsg, _maxMQTTmsglen, "[%s] [%s] [#%d] %s", clk, topics_sub[0], _msgcounter++, inmsg);
 	}
 	else
 	{
-		sprintf(tmpmsg, "%s", inmsg);
+		snprintf(tmpmsg, _maxMQTTmsglen, "%s", inmsg);
 	}
 
 	x = strlen(tmpmsg) + mqtt_overhead_size + strlen(topic);
-
-	// Serial.print("final_SIZE: ");
-	// Serial.println(x);
-
 	if (x > mqtt_defsize)
 	{
 		mqttClient.setBufferSize(x);
@@ -663,12 +579,10 @@ void myIOT2::_pub_generic(const char *topic, const char *inmsg, bool retain, cha
 void myIOT2::pub_msg(const char *inmsg)
 {
 	_pub_generic(topics_gen_pub[0], inmsg);
-	_write_log(inmsg, 1, topics_gen_pub[0]);
 }
 void myIOT2::pub_noTopic(const char *inmsg, char *Topic, bool retain)
 {
 	_pub_generic(Topic, inmsg, retain, nullptr, true);
-	_write_log(inmsg, 0, Topic);
 }
 void myIOT2::pub_state(const char *inmsg, uint8_t i)
 {
@@ -683,12 +597,10 @@ void myIOT2::pub_state(const char *inmsg, uint8_t i)
 	{
 		mqttClient.publish(topics_pub[1], inmsg, true);
 	}
-	_write_log(inmsg, 2, topics_pub[1]);
 }
 void myIOT2::pub_log(const char *inmsg)
 {
 	_pub_generic(topics_gen_pub[1], inmsg);
-	_write_log(inmsg, 1, topics_gen_pub[1]);
 }
 void myIOT2::pub_debug(const char *inmsg)
 {
@@ -698,7 +610,6 @@ void myIOT2::pub_debug(const char *inmsg)
 void myIOT2::notifyOnline()
 {
 	mqttClient.publish(topics_pub[0], "online", true);
-	_write_log("online", 2, topics_pub[0]);
 }
 uint8_t myIOT2::inline_read(char *inputstr)
 {
@@ -754,32 +665,6 @@ uint8_t myIOT2::_getdataType(const char *y)
 }
 
 // ~~~~~~~~~~ Data Storage ~~~~~~~~~
-void myIOT2::_write_log(const char *inmsg, uint8_t x, const char *topic)
-{
-	char a[strlen(inmsg) + 100];
-
-	if (useDebug && debug_level <= x)
-	{
-		char clk[25];
-		char clk2[20];
-		char days[10];
-		get_timeStamp(clk, 0);
-		convert_epoch2clock(millis() / 1000, 0, clk2, days);
-		sprintf(a, ">>%s<< [uptime: %s %s] [%s] %s", clk, days, clk2, topic, inmsg);
-		//flog.write(a);
-		PRNTL(a);
-	}
-}
-void myIOT2::_store_bootclockLOG()
-{
-	char clk_char[25];
-#if defined(ESP8266)
-	sprintf(clk_char, "%lld", now());
-#elif defined(ESP32)
-	sprintf(clk_char, "%ld", now());
-#endif
-	// clklog.write(clk_char, true);
-}
 void myIOT2::set_pFilenames(const char *fileArray[], uint8_t asize)
 {
 	for (uint8_t i = 0; i < asize; i++)
@@ -816,11 +701,8 @@ void myIOT2::update_vars_flash_parameters(JsonDocument &DOC)
 {
 	useSerial = DOC["useSerial"].as<bool>() | useSerial;
 	useFlashP = DOC["useFlashP"].as<bool>() | useFlashP;
-	useDebug = DOC["useDebugLog"].as<bool>() | useDebug;
-	debug_level = DOC["debug_level"].as<uint8_t>() | debug_level;
 	useNetworkReset = DOC["useNetworkReset"].as<bool>() | useNetworkReset;
 	noNetwork_reset = DOC["noNetwork_reset"].as<uint8_t>() | noNetwork_reset;
-	useBootClockLog = DOC["useBootClockLog"].as<bool>() | useBootClockLog;
 	ignore_boot_msg = DOC["ignore_boot_msg"].as<bool>() | ignore_boot_msg;
 }
 
@@ -935,34 +817,6 @@ void myIOT2::_startFS()
 	LITFS.begin(true);
 #endif
 }
-// void myIOT2::_extract_log(flashLOG &_flog, const char *_title, bool _isTimelog)
-// {
-// 	char clk[25];
-// 	char msg[200];
-// 	get_timeStamp(clk);
-// 	int x = _flog.get_num_saved_records();
-
-// 	sprintf(msg, " \n<<~~~~~~[%s] %s %s : entries [#%d], file-size[%.2f kb] ~~~~~~~~~~>>\n ",
-// 			clk, topics_sub[0], _title, x, (float)(_flog.sizelog() / 1000.0));
-
-// 	pub_debug(msg);
-// 	for (int a = 0; a < x; a++)
-// 	{
-// 		_flog.readline(a, msg);
-// 		if (_isTimelog)
-// 		{
-// 			strcpy(clk, msg);
-// 			get_timeStamp(msg, atol(clk));
-// 		}
-// 		pub_debug(msg);
-// 		PRNTL(msg);
-// 		strcpy(msg, "");
-// 		delay(20);
-// 	}
-// 	pub_msg("[log]: extracted");
-// 	sprintf(msg, " \n<<~~~~~~ %s %s End ~~~~~~~~~~>> ", _title, topics_sub[0]);
-// 	pub_debug(msg);
-// }
 
 // ~~~~~~ Reset and maintability ~~~~~~
 void myIOT2::sendReset(const char *header)
@@ -970,7 +824,6 @@ void myIOT2::sendReset(const char *header)
 	char temp[20 + strlen(header)];
 
 	sprintf(temp, "[%s] - Reset sent", header);
-	_write_log(temp, 2, topics_gen_pub[0]);
 	PRNTL(temp);
 
 	if (header != nullptr)

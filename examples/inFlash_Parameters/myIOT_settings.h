@@ -5,7 +5,7 @@ myIOT2 iot;
 char topics_sub[3][MAX_TOPIC_SIZE];
 char topics_pub[3][MAX_TOPIC_SIZE];
 char topics_gen_pub[3][MAX_TOPIC_SIZE];
-char *parameterFiles[3] = {"/myIOT_param.json", "/myIOT2_topics.json", "/sketch_param.json"}; // <----- Verfy file names
+const char *parameterFiles[3] = {"/myIOT_param.json", "/myIOT2_topics.json", "/sketch_param.json"}; // <----- Verfy file names
 
 void updateTopics_flash(JsonDocument &DOC, char ch_array[][MAX_TOPIC_SIZE], const char *dest_array[], const char *topic, const char *defaulttopic, uint8_t ar_size)
 {
