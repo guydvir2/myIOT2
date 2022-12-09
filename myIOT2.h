@@ -50,7 +50,7 @@ public:
     const char *topics_pub[4] = {nullptr, nullptr, nullptr, nullptr};
     const char *parameter_filenames[4] = {nullptr, nullptr, nullptr, nullptr};
     const char *topics_gen_pub[4] = {nullptr, nullptr, nullptr, nullptr};
-    const char *topics_sub[8] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+    const char *topics_sub[20] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
 
     /*Variables */
     // ~~~~~~ Services ~~~~~~~~~
@@ -91,7 +91,6 @@ private:
     uint8_t _mqtt_counter = 0;
     unsigned int _accum_wifi_not_connected = 0;
     unsigned int _accum_mqtt_not_connected = 0;
-    unsigned int _msgcounter = 0;
 
     // holds status
     bool firstRun = true;

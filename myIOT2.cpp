@@ -557,7 +557,7 @@ void myIOT2::_pub_generic(const char *topic, const char *inmsg, bool retain, cha
 
 	if (!bare)
 	{
-		snprintf(tmpmsg, _maxMQTTmsglen, "[%s] [%s] [#%d] %s", clk, topics_sub[0], _msgcounter++, inmsg);
+		snprintf(tmpmsg, _maxMQTTmsglen, "[%s] [%s] %s", clk, topics_sub[0], inmsg);
 	}
 	else
 	{
