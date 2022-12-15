@@ -1,7 +1,7 @@
 #include "myIOT2.h"
 
 // ~~~~~~ myIOT2 CLASS ~~~~~~~~~~~ //
-myIOT2::myIOT2() : mqttClient(espClient) 
+myIOT2::myIOT2() : mqttClient(espClient)
 {
 }
 void myIOT2::start_services(cb_func funct, const char *ssid, const char *password, const char *mqtt_user, const char *mqtt_passw, const char *mqtt_broker, int log_ents)
@@ -24,7 +24,7 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 
 	_start_network_services();
 	startOTA();
-	
+
 	PRNTL(F("\n >>>>>>>>>> Summary <<<<<<<<<<<<<"));
 	PRNT(F("useSerial:\t\t"));
 	PRNTL(useSerial);
@@ -504,6 +504,8 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 				{
 					pub_debug(parameter_filenames[i]);
 					String tempstr1 = readFile(parameter_filenames[i]);
+					Serial.print("STR:");
+					Serial.println(tempstr1.length());
 					char buff[tempstr1.length() + 1];
 					tempstr1.toCharArray(buff, tempstr1.length() + 1);
 					pub_debug(buff);
@@ -551,7 +553,8 @@ void myIOT2::_pub_generic(const char *topic, const char *inmsg, bool retain, cha
 	const uint8_t mqtt_overhead_size = 23;
 	const int mqtt_defsize = mqttClient.getBufferSize();
 
-	int x = devname == nullptr ? strlen(topics_sub[0]) + 1 : 0;
+	int x = devname == nullptr ? strlen(topics_sub[0]) + 2 : 0;
+	// int totl_len = strlen(inmsg) + x /* devTopic */+ 8 /* clock*/+ mqtt_overhead_size /* mqtt_overh*/ + 10 /*spare*/;
 	// char tmpmsg[strlen(inmsg) + x + 8 + 25]; // avoid dynamic allocation
 	char tmpmsg[_maxMQTTmsglen];
 
@@ -564,7 +567,7 @@ void myIOT2::_pub_generic(const char *topic, const char *inmsg, bool retain, cha
 		snprintf(tmpmsg, _maxMQTTmsglen, "%s", inmsg);
 	}
 
-	x = strlen(tmpmsg) + mqtt_overhead_size + strlen(topic);
+	x = strlen(tmpmsg) + mqtt_overhead_size + strlen(topic); /* everything get into account when diff new buffer size*/
 	if (x > mqtt_defsize)
 	{
 		mqttClient.setBufferSize(x);

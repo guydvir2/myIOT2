@@ -83,7 +83,7 @@ private:
     const uint8_t retryConnectWiFi = 60;    // seconds between fail Wifi reconnect reties
     const uint8_t OTA_upload_interval = 10; // minutes to try OTA
     const uint8_t wdtMaxRetries = 45;       // seconds to bITE
-    static const int _maxMQTTmsglen = 300;
+    static const int _maxMQTTmsglen = 500;
     unsigned long allowOTA_clock = 0;   // clock
     unsigned long _nonetwork_clock = 0; // clock
     unsigned int _nextRetry = 0;
