@@ -26,3 +26,7 @@
 
 #define NONE 1
 
+#define MAX_ESP8266_HEAP 52472
+#define MAX_ESP32_HEAP 343976
+
+

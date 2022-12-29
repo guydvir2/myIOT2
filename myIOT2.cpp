@@ -252,6 +252,7 @@ bool myIOT2::_try_rgain_wifi()
 // ~~~~~~~ NTP & Clock  ~~~~~~~~
 bool myIOT2::_startNTP(const char *ntpServer, const char *ntpServer2)
 {
+	const uint8_t _sec_to_NTP = 25;
 	unsigned long startLoop = millis();
 #if defined(ESP8266)
 	configTime(TZ_Asia_Jerusalem, ntpServer2, ntpServer); // configuring time offset and an NTP server
@@ -259,9 +260,9 @@ bool myIOT2::_startNTP(const char *ntpServer, const char *ntpServer2)
 	configTzTime(TZ_Asia_Jerusalem, ntpServer2, ntpServer);
 #endif
 	PRNT("~ NTP: ");
-	while (!_NTP_updated() && (millis() - startLoop < 20000) && WiFi.isConnected()) /* ESP32 after software reset - doesnt enter here at all*/
+	while (!_NTP_updated() && (millis() - startLoop < _sec_to_NTP * 1000) && WiFi.isConnected()) /* ESP32 after software reset - doesnt enter here at all*/
 	{
-		delay(50);
+		delay(100);
 		PRNT("*");
 	}
 
@@ -475,7 +476,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	{
 		sprintf(msg, "Help: Commands #1 - [status, reset, ota, ver, ver2, help, help2, MCU_type, services, network]");
 		pub_msg(msg);
-		sprintf(msg, "Help: Commands #2 - [show_flashParam,{update_flash,[key],[value]}]");
+		sprintf(msg, "Help: Commands #2 - [show_flashParam, free_mem, {update_flash,[key],[value]}]");
 		pub_msg(msg);
 	}
 	else if (strcmp(incoming_msg, "MCU_type") == 0)
@@ -530,6 +531,24 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 		sprintf(IPadd, "%d.%d.%d.%d", WiFi.localIP()[0], WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3]);
 		sprintf(msg, "Network: uptime[%s %s], localIP[%s], MQTTserver[%s],  RSSI: [%d dBm]", days, clock, IPadd, _mqtt_server, WiFi.RSSI());
 
+		pub_msg(msg);
+	}
+	else if (strcmp(incoming_msg, "free_mem") == 0)
+	{
+		float rmem;
+		unsigned long fmem = ESP.getFreeHeap();
+		char result[10];
+		char result1[10];
+
+#ifdef ESP8266
+		rmem = fmem / MAX_ESP8266_HEAP;
+#endif
+#ifdef ESP32
+		rmem = 100 * (float)(fmem / (float)MAX_ESP32_HEAP);
+#endif
+		dtostrf(rmem, 6, 2, result);
+		dtostrf(fmem / 1000.0, 6, 2, result1);
+		sprintf(msg, "Heap: Remain [%skb] [%s%%]", result1, result);
 		pub_msg(msg);
 	}
 	else
