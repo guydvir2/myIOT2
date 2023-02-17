@@ -199,7 +199,7 @@ bool myIOT2::_startWifi(const char *ssid, const char *password)
 	// in case of reboot - timeOUT to wifi
 	while (WiFi.status() != WL_CONNECTED && (millis() < WIFItimeOut * MS2MINUTES / 60 + startWifiConnection))
 	{
-		delay(200);
+		delay(100);
 		PRNT(".");
 	}
 
@@ -223,13 +223,13 @@ void myIOT2::_shutdown_wifi()
 {
 	PRNTL(F("\n~ Shutting down Wifi"));
 	WiFi.mode(WIFI_OFF); // <---- NEW
-	delay(2000);
+	delay(100);
 #if defined(ESP32)
 	WiFi.useStaticBuffers(true);
 #endif
 	WiFi.mode(WIFI_STA);
 	WiFi.disconnect(true);
-	// delay(200);
+	delay(100);
 }
 bool myIOT2::_try_rgain_wifi()
 {
