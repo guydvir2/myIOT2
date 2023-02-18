@@ -22,8 +22,6 @@
 #include <LittleFS.h>
 #define LITFS LittleFS
 
-class myIOT2
-{
 #define MS2MINUTES 60000
 #ifndef PRNT
 #define PRNT(a)    \
@@ -36,6 +34,8 @@ class myIOT2
     Serial.println(a)
 #endif
 
+class myIOT2
+{
 public:
     WiFiClient espClient;
     PubSubClient mqttClient;
@@ -44,13 +44,13 @@ public:
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 protected:
-    char ver[12] = "iot_v1.95";
+    char ver[12] = "iot_v1.96";
 
 public:
     const char *topics_pub[4] = {nullptr, nullptr, nullptr, nullptr};
     const char *parameter_filenames[4] = {nullptr, nullptr, nullptr, nullptr};
     const char *topics_gen_pub[4] = {nullptr, nullptr, nullptr, nullptr};
-    const char *topics_sub[20] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+    const char *topics_sub[20] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
 
     /*Variables */
     // ~~~~~~ Services ~~~~~~~~~
@@ -68,6 +68,10 @@ public:
     static const uint8_t num_param = 4; // MQTT parameter count
     char inline_param[num_param][20];   // values from user
 
+    inline bool isConnected() const { return isWifiConnected() && isMqttConnected(); };
+    inline bool isWifiConnected() const { return _wifiConnected; };
+    inline bool isMqttConnected() const { return _mqttConnected; };
+
 private:
     // WiFi MQTT broker parameters
     char _ssid[15];
@@ -79,27 +83,33 @@ private:
     cb_func ext_mqtt;
 
     // time interval parameters
-    const uint8_t WIFItimeOut = 30;         // sec try to connect WiFi
+    // const uint8_t WIFItimeOut = 30;         // sec try to connect WiFi
     const uint8_t retryConnectWiFi = 60;    // seconds between fail Wifi reconnect reties
     const uint8_t OTA_upload_interval = 10; // minutes to try OTA
-    const uint8_t wdtMaxRetries = 45;       // seconds to bITE
     static const int _maxMQTTmsglen = 500;
     unsigned long allowOTA_clock = 0;   // clock
-    unsigned long _nonetwork_clock = 0; // clock
-    unsigned int _nextRetry = 0;
-    uint8_t _wifi_counter = 0;
-    uint8_t _mqtt_counter = 0;
-    unsigned int _accum_wifi_not_connected = 0;
-    unsigned int _accum_mqtt_not_connected = 0;
+    
+    ///////
+    bool _wifiConnected = false;
+    bool _connectingToWifi = false;
+    unsigned long _lastWifiConnectiomAttemptMillis = 0;
+    unsigned long _nextWifiConnectionAttemptMillis = 500;
+    unsigned long _wifiReconnectionAttemptDelay = 60 * 1000;
+    /////////
+
+    bool _mqttConnected = false;
+    bool _drasticResetOnConnectionFailures = false;
+    unsigned long _nextMqttConnectionAttemptMillis = 0;
+    unsigned int _failedMQTTConnectionAttemptCount = 0;
+    unsigned int _mqttReconnectionAttemptDelay = 15 * 1000;
+    unsigned int _connectionEstablishedCount = 0; // Incremented before each _connectionEstablishedCallback call
 
     // holds status
     bool firstRun = true;
-    bool _Wifi_and_mqtt_OK = false;
 
 public: /* Functions */
     myIOT2();
     void looper();
-    void startOTA();
     void start_services(cb_func funct, const char *ssid = SSID_ID, const char *password = PASS_WIFI, const char *mqtt_user = MQTT_USER, const char *mqtt_passw = MQTT_PASS, const char *mqtt_broker = MQTT_SERVER1, int log_ents = 100);
 
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -128,26 +138,29 @@ public: /* Functions */
 private:
     // ~~~~~~~~~~~~~~WIFI ~~~~~~~~~~~~~~~~~~~~~
     void _shutdown_wifi();
-    bool _startWifi(const char *ssid, const char *password);
+    void _startWifi(const char *ssid, const char *password);
     bool _network_looper();
     bool _start_network_services();
     bool _startNTP(const char *ntpServer = "pool.ntp.org", const char *ntpServer2 = "il.pool.ntp.org");
     bool _NTP_updated();
-    bool _try_rgain_wifi();
+    // bool _try_rgain_wifi();
+    bool _WiFi_handler();
+    void _onWifiConnect();
+    void _onWifiDisconnect();
 
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    bool _subMQTT();
-    bool _startMQTT();
-    bool _try_regain_MQTT();
-    void _getBootReason_resetKeeper(char *msg);
+    void _setMQTT();
+    bool _connectMQTT();
+    void _subMQTT();
+    bool _handleMQTT();
+
     void _MQTTcb(char *topic, uint8_t *payload, unsigned int length);
     void _pub_generic(const char *topic, const char *inmsg, bool retain = false, char *devname = nullptr, bool bare = false);
 
     // ~~~~~~~ Services  ~~~~~~~~~~~~~~~~~~~~~~~~
     void _startFS();
+    void _startOTA();
     void _acceptOTA();
-    void _feedTheDog();
-    void _store_bootclockLOG();
 
     // ~~~~~~~~~~~~~~ Param ~~~~~~~~~~~~~~~~~~~~~
     uint8_t _getdataType(const char *y);

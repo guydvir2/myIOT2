@@ -8,4 +8,5 @@ void setup()
 void loop()
 {
         iot.looper();
+        delay(100);
 }
