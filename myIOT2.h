@@ -63,12 +63,9 @@ public:
     // ~~~~~~~ end Services ~~~~~~~
 
     uint8_t num_p = 0; // number parameters got in MQTT message
-    uint8_t mqtt_detect_reset = 2;
-
-    static const uint8_t num_param = 4; // MQTT parameter count
+    static const uint8_t num_param = 4; // max MQTT parameters
     char inline_param[num_param][20];   // values from user
 
-    inline bool isConnected() const { return isWifiConnected() && isMqttConnected(); };
     inline bool isWifiConnected() const { return _wifiConnected; };
     inline bool isMqttConnected() const { return _mqttConnected; };
 
@@ -83,29 +80,28 @@ private:
     cb_func ext_mqtt;
 
     // time interval parameters
-    // const uint8_t WIFItimeOut = 30;         // sec try to connect WiFi
-    const uint8_t retryConnectWiFi = 60;    // seconds between fail Wifi reconnect reties
     const uint8_t OTA_upload_interval = 10; // minutes to try OTA
     static const int _maxMQTTmsglen = 500;
     unsigned long allowOTA_clock = 0;   // clock
     
     ///////
+    bool _OTAloaded = false;
     bool _wifiConnected = false;
     bool _connectingToWifi = false;
+    const uint8_t _retryConnectWiFi = 60; // seconds between fail Wifi reconnect reties
     unsigned long _lastWifiConnectiomAttemptMillis = 0;
     unsigned long _nextWifiConnectionAttemptMillis = 500;
-    unsigned long _wifiReconnectionAttemptDelay = 60 * 1000;
     /////////
 
     bool _mqttConnected = false;
-    bool _drasticResetOnConnectionFailures = false;
+    bool _drasticResetOnConnectionFailures = &useNetworkReset;
     unsigned long _nextMqttConnectionAttemptMillis = 0;
     unsigned int _failedMQTTConnectionAttemptCount = 0;
-    unsigned int _mqttReconnectionAttemptDelay = 15 * 1000;
     unsigned int _connectionEstablishedCount = 0; // Incremented before each _connectionEstablishedCallback call
 
     // holds status
-    bool firstRun = true;
+    bool _firstRun = true;
+    bool _summaryDisplayed = false;
 
 public: /* Functions */
     myIOT2();
@@ -125,7 +121,6 @@ public: /* Functions */
     time_t now();
     void get_timeStamp(char ret[], time_t t = 0);
     void convert_epoch2clock(long t1, long t2, char time_str[], char days_str[] = nullptr);
-    bool _timePassed(unsigned int T);
 
     // ~~~~~~~~~~~~~~ Param ~~~~~~~~~~~~~~~~~~~~~
     uint8_t inline_read(char *inputstr);
@@ -137,13 +132,10 @@ public: /* Functions */
 
 private:
     // ~~~~~~~~~~~~~~WIFI ~~~~~~~~~~~~~~~~~~~~~
-    void _shutdown_wifi();
     void _startWifi(const char *ssid, const char *password);
-    bool _network_looper();
     bool _start_network_services();
     bool _startNTP(const char *ntpServer = "pool.ntp.org", const char *ntpServer2 = "il.pool.ntp.org");
     bool _NTP_updated();
-    // bool _try_rgain_wifi();
     bool _WiFi_handler();
     void _onWifiConnect();
     void _onWifiDisconnect();
@@ -161,6 +153,7 @@ private:
     void _startFS();
     void _startOTA();
     void _acceptOTA();
+    void _displaySummary();
 
     // ~~~~~~~~~~~~~~ Param ~~~~~~~~~~~~~~~~~~~~~
     uint8_t _getdataType(const char *y);
