@@ -62,7 +62,7 @@ public:
     uint8_t noNetwork_reset = 4; // minutes
     // ~~~~~~~ end Services ~~~~~~~
 
-    uint8_t num_p = 0; // number parameters got in MQTT message
+    uint8_t num_p = 0;                  // number parameters got in MQTT message
     static const uint8_t num_param = 4; // max MQTT parameters
     char inline_param[num_param][20];   // values from user
 
@@ -81,8 +81,8 @@ private:
 
     // time interval parameters
     const uint8_t OTA_upload_interval = 10; // minutes to try OTA
-    unsigned long allowOTA_clock = 0;   // clock
-    
+    unsigned long allowOTA_clock = 0;       // clock
+
     ///////
     bool _OTAloaded = false;
     bool _wifiConnected = false;
@@ -100,12 +100,13 @@ private:
 
     // holds status
     bool _firstRun = true;
-    bool _summaryDisplayed = false;
 
 public: /* Functions */
     myIOT2();
     void looper();
-    void start_services(cb_func funct, const char *ssid = SSID_ID, const char *password = PASS_WIFI, const char *mqtt_user = MQTT_USER, const char *mqtt_passw = MQTT_PASS, const char *mqtt_broker = MQTT_SERVER1, int log_ents = 100);
+    void start_services(cb_func funct, const char *ssid = SSID_ID, const char *password = PASS_WIFI,
+                        const char *mqtt_user = MQTT_USER, const char *mqtt_passw = MQTT_PASS,
+                        const char *mqtt_broker = MQTT_SERVER1);
 
     // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     void notifyOnline();
@@ -151,7 +152,6 @@ private:
     void _startFS();
     void _startOTA();
     void _acceptOTA();
-    void _displaySummary();
 
     // ~~~~~~~~~~~~~~ Param ~~~~~~~~~~~~~~~~~~~~~
     uint8_t _getdataType(const char *y);

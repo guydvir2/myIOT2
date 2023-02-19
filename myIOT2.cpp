@@ -4,7 +4,8 @@
 myIOT2::myIOT2() : mqttClient(espClient)
 {
 }
-void myIOT2::start_services(cb_func funct, const char *ssid, const char *password, const char *mqtt_user, const char *mqtt_passw, const char *mqtt_broker, int log_ents)
+void myIOT2::start_services(cb_func funct, const char *ssid, const char *password,
+							const char *mqtt_user, const char *mqtt_passw, const char *mqtt_broker)
 {
 	strcpy(_mqtt_server, mqtt_broker);
 	strcpy(_mqtt_user, mqtt_user);
@@ -24,7 +25,6 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 
 	_setMQTT();
 
-	// 	PRNTL(F("\n >>>>>>>>>> Summary <<<<<<<<<<<<<"));
 	PRNT(F("useSerial:\t\t"));
 	PRNTL(useSerial ? "Yes" : "No");
 
