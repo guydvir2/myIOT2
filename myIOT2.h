@@ -56,7 +56,7 @@ public:
     // ~~~~~~ Services ~~~~~~~~~
     bool useSerial = true;
     bool useFlashP = false;
-    bool useNetworkReset = true; // allow reset due to no-network timeout
+    bool useNetworkReset = true; // allow reset due to no-network timeout <---- Consider remove this and use <noNetwork_reset>
     bool useBootClockLog = false;
     bool ignore_boot_msg = false;
     uint8_t noNetwork_reset = 4; // minutes
@@ -81,7 +81,6 @@ private:
 
     // time interval parameters
     const uint8_t OTA_upload_interval = 10; // minutes to try OTA
-    static const int _maxMQTTmsglen = 500;
     unsigned long allowOTA_clock = 0;   // clock
     
     ///////
@@ -133,7 +132,6 @@ public: /* Functions */
 private:
     // ~~~~~~~~~~~~~~WIFI ~~~~~~~~~~~~~~~~~~~~~
     void _startWifi(const char *ssid, const char *password);
-    bool _start_network_services();
     bool _startNTP(const char *ntpServer = "pool.ntp.org", const char *ntpServer2 = "il.pool.ntp.org");
     bool _NTP_updated();
     bool _WiFi_handler();

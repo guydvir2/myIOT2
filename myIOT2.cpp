@@ -24,7 +24,7 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 
 	_setMQTT();
 
-// 	PRNTL(F("\n >>>>>>>>>> Summary <<<<<<<<<<<<<"));
+	// 	PRNTL(F("\n >>>>>>>>>> Summary <<<<<<<<<<<<<"));
 	PRNT(F("useSerial:\t\t"));
 	PRNTL(useSerial ? "Yes" : "No");
 
@@ -36,14 +36,14 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	PRNTL(useFlashP ? "Yes" : "No");
 	PRNT(F("noNetwork_reset:\t"));
 	PRNTL(noNetwork_reset);
-// 	// PRNT(F("Connected MQTT:\t\t"));
-// 	// PRNTL(mqttClient.connected());
-// 	// PRNT(F("Connected WiFi:\t\t"));
-// 	// PRNTL(WiFi.isConnected());
-// 	// PRNT(F("NTP sync:\t\t"));
-// 	// PRNTL(now());
-// 	// PRNT(F("Bootup sec:\t\t"));
-// 	// PRNTL((float)(millis() / 1000.0));
+	// 	// PRNT(F("Connected MQTT:\t\t"));
+	// 	// PRNTL(mqttClient.connected());
+	// 	// PRNT(F("Connected WiFi:\t\t"));
+	// 	// PRNTL(WiFi.isConnected());
+	// 	// PRNT(F("NTP sync:\t\t"));
+	// 	// PRNTL(now());
+	// 	// PRNT(F("Bootup sec:\t\t"));
+	// 	// PRNTL((float)(millis() / 1000.0));
 	PRNT(F("ESP type:\t\t"));
 
 	char a[10];
@@ -53,7 +53,7 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	strcpy(a, "ESP32");
 #endif
 	PRNTL(a);
-// 	PRNTL(F("\n >>>>>>>>>> END  <<<<<<<<<<<<<"));
+	// 	PRNTL(F("\n >>>>>>>>>> END  <<<<<<<<<<<<<"));
 
 	PRNTL(F("\n>>> ~~~~~~~~~~~~~~~ END myIOT2 ~~~~~~~~~~~~~~~ \n"));
 }
@@ -67,7 +67,6 @@ void myIOT2::looper()
 	{
 		return;
 	}
-	// _displaySummary();
 	// if (_network_looper() == false) /* Wifi or MQTT fails causes reset */
 	// {
 	// 	if (_timePassed(noNetwork_reset * 60))
@@ -191,7 +190,6 @@ void myIOT2::_onWifiConnect()
 {
 	char b[50];
 	sprintf(b, ": Connected ,ip : %s \n", WiFi.localIP().toString().c_str());
-	// PRNTL(F(b));
 	// Serial.printf("WiFi: Connected (%fs), ip : %s \n", millis() / 1000.0, WiFi.localIP().toString().c_str());
 	PRNTL(b);
 	if (!_NTP_updated())
@@ -206,12 +204,9 @@ void myIOT2::_onWifiConnect()
 }
 void myIOT2::_onWifiDisconnect()
 {
-	PRNT(F("WiFi! Lost connection "));
-	PRNT(F(millis() / 1000));
+	PRNT(F("WiFi Lost connection "));
+	PRNT(millis() / 1000);
 	PRNTL(F("sec"));
-}
-bool myIOT2::_start_network_services()
-{
 }
 void myIOT2::_startWifi(const char *ssid, const char *password)
 {
@@ -507,8 +502,8 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 				{
 					pub_debug(parameter_filenames[i]);
 					String tempstr1 = readFile(parameter_filenames[i]);
-					Serial.print("STR:");
-					Serial.println(tempstr1.length());
+					// Serial.print("STR:");
+					// Serial.println(tempstr1.length());
 					char buff[tempstr1.length() + 1];
 					tempstr1.toCharArray(buff, tempstr1.length() + 1);
 					pub_debug(buff);
@@ -571,6 +566,7 @@ void myIOT2::_pub_generic(const char *topic, const char *inmsg, bool retain, cha
 {
 	char clk[25];
 	get_timeStamp(clk, 0);
+	const int _maxMQTTmsglen = 350;
 	const uint8_t mqtt_overhead_size = 23;
 	const int mqtt_defsize = mqttClient.getBufferSize();
 
