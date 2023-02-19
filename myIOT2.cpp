@@ -68,46 +68,7 @@ void myIOT2::looper()
 		return;
 	}
 }
-void myIOT2::_displaySummary()
-{
-	if (_summaryDisplayed == false)
-	{
-		_summaryDisplayed = true;
 
-		PRNTL(F("\n >>>>>>>>>> Summary <<<<<<<<<<<<<"));
-		PRNT(F("useSerial:\t\t"));
-		PRNTL(useSerial ? "Yes" : "No");
-
-		PRNT(F("useNetworkReset:\t"));
-		PRNTL(useNetworkReset ? "Yes" : "No");
-		PRNT(F("ignore_boot_msg:\t"));
-		PRNTL(ignore_boot_msg ? "Yes" : "No");
-		PRNT(F("useFlashP:\t\t"));
-		PRNTL(useFlashP ? "Yes" : "No");
-		PRNT(F("noNetwork_reset:\t"));
-		PRNTL(noNetwork_reset);
-		PRNT(F("Connected MQTT:\t\t"));
-		PRNTL(mqttClient.connected() ? "Yes" : "No");
-		PRNT(F("Connected WiFi:\t\t"));
-		PRNTL(WiFi.isConnected() ? "Yes" : "No");
-		PRNT(F("NTP sync:\t\t"));
-		PRNTL(now());
-		PRNT(F("Bootup sec:\t\t"));
-		PRNTL((float)(millis() / 1000.0));
-		PRNT(F("ESP type:\t\t"));
-
-		char a[10];
-#if defined(ESP8266)
-		strcpy(a, "ESP8266");
-#elif defined(ESP32)
-		strcpy(a, "ESP32");
-#endif
-		PRNTL(a);
-		PRNTL(F("\n >>>>>>>>>> END  <<<<<<<<<<<<<"));
-
-		PRNTL(F("\n>>> ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ END myIOT2 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ \n"));
-	}
-}
 // ~~~~~~~ Wifi functions ~~~~~~~
 bool myIOT2::_WiFi_handler()
 {
@@ -906,3 +867,44 @@ void myIOT2::_startOTA()
 
 	ArduinoOTA.begin();
 }
+
+// void myIOT2::_displaySummary()
+// {
+// 	if (_summaryDisplayed == false)
+// 	{
+// 		_summaryDisplayed = true;
+
+// 		PRNTL(F("\n >>>>>>>>>> Summary <<<<<<<<<<<<<"));
+// 		PRNT(F("useSerial:\t\t"));
+// 		PRNTL(useSerial ? "Yes" : "No");
+
+// 		PRNT(F("useNetworkReset:\t"));
+// 		PRNTL(useNetworkReset ? "Yes" : "No");
+// 		PRNT(F("ignore_boot_msg:\t"));
+// 		PRNTL(ignore_boot_msg ? "Yes" : "No");
+// 		PRNT(F("useFlashP:\t\t"));
+// 		PRNTL(useFlashP ? "Yes" : "No");
+// 		PRNT(F("noNetwork_reset:\t"));
+// 		PRNTL(noNetwork_reset);
+// 		PRNT(F("Connected MQTT:\t\t"));
+// 		PRNTL(mqttClient.connected() ? "Yes" : "No");
+// 		PRNT(F("Connected WiFi:\t\t"));
+// 		PRNTL(WiFi.isConnected() ? "Yes" : "No");
+// 		PRNT(F("NTP sync:\t\t"));
+// 		PRNTL(now());
+// 		PRNT(F("Bootup sec:\t\t"));
+// 		PRNTL((float)(millis() / 1000.0));
+// 		PRNT(F("ESP type:\t\t"));
+
+// 		char a[10];
+// #if defined(ESP8266)
+// 		strcpy(a, "ESP8266");
+// #elif defined(ESP32)
+// 		strcpy(a, "ESP32");
+// #endif
+// 		PRNTL(a);
+// 		PRNTL(F("\n >>>>>>>>>> END  <<<<<<<<<<<<<"));
+
+// 		PRNTL(F("\n>>> ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ END myIOT2 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ \n"));
+// 	}
+// }
