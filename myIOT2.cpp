@@ -67,14 +67,6 @@ void myIOT2::looper()
 	{
 		return;
 	}
-	// _displaySummary();
-	// if (_network_looper() == false) /* Wifi or MQTT fails causes reset */
-	// {
-	// 	if (_timePassed(noNetwork_reset * 60))
-	// 	{
-	// 		sendReset("Reset due to NO NETWoRK");
-	// 	}
-	// }
 }
 void myIOT2::_displaySummary()
 {
@@ -209,9 +201,6 @@ void myIOT2::_onWifiDisconnect()
 	PRNT(F("WiFi! Lost connection "));
 	PRNT(F(millis() / 1000));
 	PRNTL(F("sec"));
-}
-bool myIOT2::_start_network_services()
-{
 }
 void myIOT2::_startWifi(const char *ssid, const char *password)
 {
