@@ -452,10 +452,13 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 
 			for (uint8_t i = 0; i < sizeof(parameter_filenames) / sizeof(parameter_filenames[0]); i++)
 			{
+				myJflash jf;
 				if (parameter_filenames[i] != nullptr)
 				{
+					jf.set_filename(parameter_filenames[i]);
 					pub_debug(parameter_filenames[i]);
-					String tempstr1 = readFile(parameter_filenames[i]);
+					// String tempstr1 = readFile(parameter_filenames[i]);
+					String tempstr1 = jf.readFile2String(parameter_filenames[i]);
 					// Serial.print("STR:");
 					// Serial.println(tempstr1.length());
 					char buff[tempstr1.length() + 1];
@@ -646,31 +649,6 @@ void myIOT2::set_pFilenames(const char *fileArray[], uint8_t asize)
 		parameter_filenames[i] = fileArray[i];
 	}
 }
-bool myIOT2::extract_JSON_from_flash(const char *filename, JsonDocument &DOC)
-{
-	_startFS();
-	File readFile = LITFS.open(filename, "r");
-	DeserializationError error = deserializeJson(DOC, readFile);
-	readFile.close();
-
-	PRNT(F("\n>>> "));
-	PRNT(filename);
-
-	if (error)
-	{
-		PRNTL(F(":Read [failed]"));
-		PRNT(F("error:"));
-		PRNTL(error.c_str());
-		Serial.flush();
-		return 0;
-	}
-	else
-	{
-		PRNTL(F(":Read [OK]"));
-		Serial.flush();
-		return 1;
-	}
-}
 void myIOT2::update_vars_flash_parameters(JsonDocument &DOC)
 {
 	useSerial = DOC["useSerial"].as<bool>() | useSerial;
@@ -712,32 +690,22 @@ bool myIOT2::_change_flashP_value(const char *key, const char *new_value, JsonDo
 	}
 	return 0;
 }
-bool myIOT2::_saveFile(const char *filename, JsonDocument &DOC)
-{
-	File writefile = LITFS.open(filename, "w");
-	if (!writefile || (serializeJson(DOC, writefile) == 0))
-	{
-		writefile.close();
-		return 0;
-	}
-	writefile.close();
-	return 1;
-}
 bool myIOT2::_cmdline_flashUpdate(const char *key, const char *new_value)
 {
 	char msg[100];
 	bool succ_chg = false;
 	DynamicJsonDocument myIOT_P(1250); //<------------------ FIX THIS -----------
 
+	myJflash Jflash;
 	for (uint8_t n = 0; n < sizeof(parameter_filenames) / sizeof(parameter_filenames[0]); n++)
 	{
-		if (extract_JSON_from_flash(parameter_filenames[n], myIOT_P))
+		if (Jflash.readFile(myIOT_P, parameter_filenames[n]))
 		{
 			if (myIOT_P.containsKey(key))
 			{
 				if (_change_flashP_value(key, new_value, myIOT_P))
 				{
-					if (_saveFile(parameter_filenames[n], myIOT_P))
+					if (Jflash.writeFile(myIOT_P, parameter_filenames[n]))
 					{
 						succ_chg = true;
 						sprintf(msg, "[Flash]: parameter[%s] updated to[%s] [OK]", key, new_value);
@@ -764,32 +732,6 @@ bool myIOT2::_cmdline_flashUpdate(const char *key, const char *new_value)
 		}
 	}
 	return succ_chg;
-}
-
-String myIOT2::readFile(const char *fileName)
-{
-	_startFS();
-	File file = LITFS.open(fileName, "r");
-
-	if (file)
-	{
-		String t = file.readString();
-		file.close();
-		return t;
-	}
-	else
-	{
-		file.close();
-		return "";
-	}
-}
-void myIOT2::_startFS()
-{
-#if defined(ESP8266)
-	LITFS.begin();
-#elif defined(ESP32)
-	LITFS.begin(true);
-#endif
 }
 
 // ~~~~~~ Reset and maintability ~~~~~~
@@ -867,44 +809,3 @@ void myIOT2::_startOTA()
 
 	ArduinoOTA.begin();
 }
-
-// void myIOT2::_displaySummary()
-// {
-// 	if (_summaryDisplayed == false)
-// 	{
-// 		_summaryDisplayed = true;
-
-// 		PRNTL(F("\n >>>>>>>>>> Summary <<<<<<<<<<<<<"));
-// 		PRNT(F("useSerial:\t\t"));
-// 		PRNTL(useSerial ? "Yes" : "No");
-
-// 		PRNT(F("useNetworkReset:\t"));
-// 		PRNTL(useNetworkReset ? "Yes" : "No");
-// 		PRNT(F("ignore_boot_msg:\t"));
-// 		PRNTL(ignore_boot_msg ? "Yes" : "No");
-// 		PRNT(F("useFlashP:\t\t"));
-// 		PRNTL(useFlashP ? "Yes" : "No");
-// 		PRNT(F("noNetwork_reset:\t"));
-// 		PRNTL(noNetwork_reset);
-// 		PRNT(F("Connected MQTT:\t\t"));
-// 		PRNTL(mqttClient.connected() ? "Yes" : "No");
-// 		PRNT(F("Connected WiFi:\t\t"));
-// 		PRNTL(WiFi.isConnected() ? "Yes" : "No");
-// 		PRNT(F("NTP sync:\t\t"));
-// 		PRNTL(now());
-// 		PRNT(F("Bootup sec:\t\t"));
-// 		PRNTL((float)(millis() / 1000.0));
-// 		PRNT(F("ESP type:\t\t"));
-
-// 		char a[10];
-// #if defined(ESP8266)
-// 		strcpy(a, "ESP8266");
-// #elif defined(ESP32)
-// 		strcpy(a, "ESP32");
-// #endif
-// 		PRNTL(a);
-// 		PRNTL(F("\n >>>>>>>>>> END  <<<<<<<<<<<<<"));
-
-// 		PRNTL(F("\n>>> ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ END myIOT2 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ \n"));
-// 	}
-// }

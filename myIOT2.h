@@ -16,11 +16,8 @@
 #include <ArduinoOTA.h>   // OTA
 #include <PubSubClient.h> // MQTT
 #include <ArduinoJson.h>
+#include <myJflash.h>
 #include "secretsIOT.h"
-
-#include <FS.h>
-#include <LittleFS.h>
-#define LITFS LittleFS
 
 #define MS2MINUTES 60000
 #ifndef PRNT
@@ -44,7 +41,7 @@ public:
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 protected:
-    char ver[12] = "iot_v1.96";
+    char ver[12] = "iot_v2.00";
 
 public:
     const char *topics_pub[4] = {nullptr, nullptr, nullptr, nullptr};
@@ -108,7 +105,7 @@ public: /* Functions */
                         const char *mqtt_user = MQTT_USER, const char *mqtt_passw = MQTT_PASS,
                         const char *mqtt_broker = MQTT_SERVER1);
 
-    // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ~~~~~~~ MQTT ~~~~~~~
     void notifyOnline();
     void pub_msg(const char *inmsg);
     void pub_log(const char *inmsg);
@@ -117,21 +114,18 @@ public: /* Functions */
     void pub_state(const char *inmsg, uint8_t i = 0);
     void pub_noTopic(const char *inmsg, char *Topic, bool retain = false);
 
-    // ~~~~~~~~~~~~~~ Clk ~~~~~~~~~~~~~~~~~~~~~
+    // ~~~~~~~ Clk ~~~~~~~
     time_t now();
     void get_timeStamp(char ret[], time_t t = 0);
     void convert_epoch2clock(long t1, long t2, char time_str[], char days_str[] = nullptr);
 
-    // ~~~~~~~~~~~~~~ Param ~~~~~~~~~~~~~~~~~~~~~
+    // ~~~~~~~ Param ~~~~~~~
     uint8_t inline_read(char *inputstr);
     void set_pFilenames(const char *fileArray[], uint8_t asize);
-
-    bool extract_JSON_from_flash(const char *filename, JsonDocument &DOC);
     void update_vars_flash_parameters(JsonDocument &DOC);
-    String readFile(const char *fileName);
 
 private:
-    // ~~~~~~~~~~~~~~WIFI ~~~~~~~~~~~~~~~~~~~~~
+    // ~~~~~~~WIFI ~~~~~~~
     void _startWifi(const char *ssid, const char *password);
     bool _startNTP(const char *ntpServer = "pool.ntp.org", const char *ntpServer2 = "il.pool.ntp.org");
     bool _NTP_updated();
@@ -139,7 +133,7 @@ private:
     void _onWifiConnect();
     void _onWifiDisconnect();
 
-    // ~~~~~~~ MQTT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ~~~~~~~ MQTT ~~~~~~~
     void _setMQTT();
     bool _connectMQTT();
     void _subMQTT();
@@ -148,15 +142,13 @@ private:
     void _MQTTcb(char *topic, uint8_t *payload, unsigned int length);
     void _pub_generic(const char *topic, const char *inmsg, bool retain = false, char *devname = nullptr, bool bare = false);
 
-    // ~~~~~~~ Services  ~~~~~~~~~~~~~~~~~~~~~~~~
-    void _startFS();
+    // ~~~~~~~ OTA  ~~~~~~~
     void _startOTA();
     void _acceptOTA();
 
-    // ~~~~~~~~~~~~~~ Param ~~~~~~~~~~~~~~~~~~~~~
+    // ~~~~~~~ Param ~~~~~~~
     uint8_t _getdataType(const char *y);
     bool _cmdline_flashUpdate(const char *key, const char *new_value);
     bool _change_flashP_value(const char *key, const char *new_value, JsonDocument &DOC);
-    bool _saveFile(const char *filename, JsonDocument &DOC);
 };
 #endif
