@@ -649,13 +649,28 @@ void myIOT2::set_pFilenames(const char *fileArray[], uint8_t asize)
 		parameter_filenames[i] = fileArray[i];
 	}
 }
-void myIOT2::update_vars_flash_parameters(JsonDocument &DOC)
+bool myIOT2::readJson_inFlash(JsonDocument &DOC, const char *filename)
 {
-	useSerial = DOC["useSerial"].as<bool>() | useSerial;
-	useFlashP = DOC["useFlashP"].as<bool>() | useFlashP;
-	useNetworkReset = DOC["useNetworkReset"].as<bool>() | useNetworkReset;
-	noNetwork_reset = DOC["noNetwork_reset"].as<uint8_t>() | noNetwork_reset;
-	ignore_boot_msg = DOC["ignore_boot_msg"].as<bool>() | ignore_boot_msg;
+	myJflash Jflash(useSerial);
+	return (Jflash.readFile(DOC, filename));
+}
+bool myIOT2::readFlashParameters(JsonDocument &DOC, const char *filename)
+{
+	if (readJson_inFlash(DOC, filename))
+	{
+		useSerial = DOC["useSerial"].as<bool>();
+		useFlashP = DOC["useFlashP"].as<bool>();
+		useNetworkReset = DOC["useNetworkReset"].as<bool>();
+		noNetwork_reset = DOC["noNetwork_reset"].as<uint8_t>();
+		ignore_boot_msg = DOC["ignore_boot_msg"].as<bool>();
+		PRNTL(F("~ Parameters loaded from Flash"));
+		return 1;
+	}
+	else
+	{
+		PRNTL(F("~ Parameters failed to load from Flash. Defaults are used"));
+		return 0;
+	}
 }
 
 bool myIOT2::_change_flashP_value(const char *key, const char *new_value, JsonDocument &DOC)

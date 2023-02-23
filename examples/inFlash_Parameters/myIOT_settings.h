@@ -26,21 +26,18 @@ void update_Parameters_flash()
 
     /* Part A: update filenames of paramter files */
     iot.set_pFilenames(parameterFiles, sizeof(parameterFiles) / sizeof(parameterFiles[0]));
-
-    /* Part B: Read from flash, and update myIOT parameters */
-    iot.extract_JSON_from_flash(iot.parameter_filenames[0], DOC);
-    iot.update_vars_flash_parameters(DOC);
+    iot.readFlashParameters(DOC, iot.parameter_filenames[0]);
     DOC.clear();
 
-    /* Part C: Read Topics from flash, and update myIOT Topics */
-    iot.extract_JSON_from_flash(iot.parameter_filenames[1], DOC); /* extract topics from flash */
+    /* Part B: Read Topics from flash, and update myIOT Topics */
+    iot.readJson_inFlash(DOC, iot.parameter_filenames[1]); /* extract topics from flash */
     updateTopics_flash(DOC, topics_gen_pub, iot.topics_gen_pub, "pub_gen_topics", "myHome/Messages", sizeof(topics_gen_pub) / (sizeof(topics_gen_pub[0])));
     updateTopics_flash(DOC, topics_pub, iot.topics_pub, "pub_topics", "myHome/log", sizeof(topics_pub) / (sizeof(topics_pub[0])));
     updateTopics_flash(DOC, topics_sub, iot.topics_sub, "sub_topics", "myHome/log", sizeof(topics_sub) / (sizeof(topics_sub[0])));
     DOC.clear();
 
-    /* Part D: Read Sketch paramters from flash, and update Sketch */
-    iot.extract_JSON_from_flash(iot.parameter_filenames[2], DOC);
+    /* Part C: Read Sketch paramters from flash, and update Sketch */
+    iot.readJson_inFlash(DOC, iot.parameter_filenames[2]); /* extract parameters from flash */
     update_sketch_parameters_flash();
     DOC.clear();
 }

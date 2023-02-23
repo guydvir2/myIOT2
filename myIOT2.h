@@ -122,7 +122,8 @@ public: /* Functions */
     // ~~~~~~~ Param ~~~~~~~
     uint8_t inline_read(char *inputstr);
     void set_pFilenames(const char *fileArray[], uint8_t asize);
-    void update_vars_flash_parameters(JsonDocument &DOC);
+    bool readFlashParameters(JsonDocument &DOC, const char *filename);
+    bool readJson_inFlash(JsonDocument &DOC, const char *filename);
 
 private:
     // ~~~~~~~WIFI ~~~~~~~
