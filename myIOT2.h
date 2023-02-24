@@ -53,8 +53,6 @@ public:
     // ~~~~~~ Services ~~~~~~~~~
     bool useSerial = true;
     bool useFlashP = false;
-    bool useNetworkReset = true; // allow reset due to no-network timeout <---- Consider remove this and use <noNetwork_reset>
-    bool useBootClockLog = false;
     bool ignore_boot_msg = false;
     uint8_t noNetwork_reset = 4; // minutes
     // ~~~~~~~ end Services ~~~~~~~
@@ -90,7 +88,7 @@ private:
     /////////
 
     bool _mqttConnected = false;
-    bool _drasticResetOnConnectionFailures = &useNetworkReset;
+    // bool _drasticResetOnConnectionFailures = &useNetworkReset;
     unsigned long _nextMqttConnectionAttemptMillis = 0;
     unsigned int _failedMQTTConnectionAttemptCount = 0;
     unsigned int _connectionEstablishedCount = 0; // Incremented before each _connectionEstablishedCallback call
@@ -122,7 +120,7 @@ public: /* Functions */
     // ~~~~~~~ Param ~~~~~~~
     uint8_t inline_read(char *inputstr);
     void set_pFilenames(const char *fileArray[], uint8_t asize);
-    bool readFlashParameters(JsonDocument &DOC, const char *filename);
+    void readFlashParameters(JsonDocument &DOC, const char *filename);
     bool readJson_inFlash(JsonDocument &DOC, const char *filename);
 
 private:
@@ -136,10 +134,9 @@ private:
 
     // ~~~~~~~ MQTT ~~~~~~~
     void _setMQTT();
-    bool _connectMQTT();
     void _subMQTT();
-    bool _handleMQTT();
-
+    bool _connectMQTT();
+    bool _MQTT_handler();
     void _MQTTcb(char *topic, uint8_t *payload, unsigned int length);
     void _pub_generic(const char *topic, const char *inmsg, bool retain = false, char *devname = nullptr, bool bare = false);
 

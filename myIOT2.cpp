@@ -17,33 +17,24 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	if (useSerial)
 	{
 		Serial.begin(115200);
-		PRNT(F("\n\n>>> ~~~~~~~~~~~~~~~ Start myIOT2 "));
+		PRNT(F("\n\n>>> ~~~~~~~ Start myIOT2 "));
 		PRNT(ver);
-		PRNTL(F(" ~~~~~~~~~~~~~~~ "));
+		PRNTL(F(" ~~~~~~~ <<<"));
 		delay(10);
 	}
 
 	_setMQTT();
 
+	PRNTL(F("\n>>> Parameters <<<"));
 	PRNT(F("useSerial:\t\t"));
 	PRNTL(useSerial ? "Yes" : "No");
 
-	PRNT(F("useNetworkReset:\t"));
-	PRNTL(useNetworkReset ? "Yes" : "No");
 	PRNT(F("ignore_boot_msg:\t"));
 	PRNTL(ignore_boot_msg ? "Yes" : "No");
 	PRNT(F("useFlashP:\t\t"));
 	PRNTL(useFlashP ? "Yes" : "No");
 	PRNT(F("noNetwork_reset:\t"));
 	PRNTL(noNetwork_reset);
-	// 	// PRNT(F("Connected MQTT:\t\t"));
-	// 	// PRNTL(mqttClient.connected());
-	// 	// PRNT(F("Connected WiFi:\t\t"));
-	// 	// PRNTL(WiFi.isConnected());
-	// 	// PRNT(F("NTP sync:\t\t"));
-	// 	// PRNTL(now());
-	// 	// PRNT(F("Bootup sec:\t\t"));
-	// 	// PRNTL((float)(millis() / 1000.0));
 	PRNT(F("ESP type:\t\t"));
 
 	char a[10];
@@ -53,9 +44,6 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	strcpy(a, "ESP32");
 #endif
 	PRNTL(a);
-	// 	PRNTL(F("\n >>>>>>>>>> END  <<<<<<<<<<<<<"));
-
-	PRNTL(F("\n>>> ~~~~~~~~~~~~~~~ END myIOT2 ~~~~~~~~~~~~~~~ \n"));
 }
 void myIOT2::looper()
 {
@@ -63,7 +51,7 @@ void myIOT2::looper()
 	{
 		return;
 	}
-	if (_handleMQTT())
+	if (_MQTT_handler())
 	{
 		return;
 	}
@@ -143,7 +131,7 @@ bool myIOT2::_WiFi_handler()
 void myIOT2::_onWifiConnect()
 {
 	char b[50];
-	sprintf(b, ": Connected ,ip : %s \n", WiFi.localIP().toString().c_str());
+	sprintf(b, "\n ~Connected ,ip : %s", WiFi.localIP().toString().c_str());
 	// Serial.printf("WiFi: Connected (%fs), ip : %s \n", millis() / 1000.0, WiFi.localIP().toString().c_str());
 	PRNTL(b);
 	if (!_NTP_updated())
@@ -164,6 +152,7 @@ void myIOT2::_onWifiDisconnect()
 }
 void myIOT2::_startWifi(const char *ssid, const char *password)
 {
+	PRNTL(F("\n>>> WiFi <<<"));
 	PRNT(F("~ Connecting to "));
 	PRNT(ssid);
 
@@ -188,6 +177,7 @@ bool myIOT2::_startNTP(const char *ntpServer, const char *ntpServer2)
 #elif defined(ESP32)
 	configTzTime(TZ_Asia_Jerusalem, ntpServer2, ntpServer);
 #endif
+	PRNTL(F("\n>>> NTP <<<"));
 	PRNT("~ NTP: ");
 	while (!_NTP_updated() && (millis() - startLoop < _sec_to_NTP * 1000) && WiFi.isConnected()) /* ESP32 after software reset - doesnt enter here at all*/
 	{
@@ -197,13 +187,13 @@ bool myIOT2::_startNTP(const char *ntpServer, const char *ntpServer2)
 
 	if (!_NTP_updated())
 	{
-		PRNTL(F("\n ->NTP Update fail"));
+		PRNTL(F("\n~ NTP Update fail"));
 		return 0;
 	}
 	else
 	{
 		PRNTL("");
-		PRNT(F("  ->NTP Updated OK in "));
+		PRNT(F("~ NTP Updated OK in "));
 		PRNT((millis() - startLoop) * 0.001);
 		PRNTL(F("sec"));
 		return 1;
@@ -247,7 +237,7 @@ time_t myIOT2::now()
 }
 
 // ~~~~~~~ MQTT functions ~~~~~~~
-bool myIOT2::_handleMQTT()
+bool myIOT2::_MQTT_handler()
 {
 	unsigned int _mqttReconnectionAttemptDelay = 15 * 1000;
 
@@ -303,12 +293,12 @@ bool myIOT2::_handleMQTT()
 				WiFi.disconnect(true);
 				_nextWifiConnectionAttemptMillis = millis() + 500;
 
-				if (!_drasticResetOnConnectionFailures)
+				if (!(noNetwork_reset > 0))
 				{
 					_failedMQTTConnectionAttemptCount = 0;
 				}
 			}
-			else if (_drasticResetOnConnectionFailures && _failedMQTTConnectionAttemptCount == 12) // Will reset after 12 failed attempt (3 minutes of retry)
+			else if (noNetwork_reset > 0 && _failedMQTTConnectionAttemptCount == 12) // Will reset after 12 failed attempt (3 minutes of retry)
 			{
 				PRNTL(F("MQTT!: Can't connect to broker after too many attempt, resetting board ..."));
 				sendReset("MQTT failure");
@@ -341,9 +331,10 @@ bool myIOT2::_connectMQTT()
 	uint64_t chipid = ESP.getEfuseMac();
 	sprintf(tempname, "ESP32_%04X", (uint16_t)(chipid >> 32));
 #endif
+	PRNTL(F("\n>>> MQTT <<<"));
 	if (mqttClient.connect(tempname, _mqtt_user, _mqtt_pwd, topics_pub[0], 1, true, "offline"))
 	{
-		PRNT(F("~ Connected to MQTT Server: "));
+		PRNT(F("~ MQTT Server: "));
 		PRNTL(_mqtt_server);
 		return 1;
 	}
@@ -374,6 +365,7 @@ void myIOT2::_subMQTT()
 
 	if (_firstRun)
 	{
+		PRNTL(F(">>> ~~~~~~~ END iot2 ~~~~~~~ <<<"));
 		char msg[60];
 		sprintf(msg, "<< PowerON Boot >> IP:[%d.%d.%d.%d] RSSI [%ddB]", WiFi.localIP()[0],
 				WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3], WiFi.RSSI());
@@ -419,8 +411,8 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	}
 	else if (strcmp(incoming_msg, "services") == 0)
 	{
-		sprintf(msg, "Services: SERIAL[%d], no-networkReset[%d] [%d min], ignore_boot_msg[%d], useFlashP[%d]",
-				useSerial, useNetworkReset, noNetwork_reset, ignore_boot_msg, useFlashP);
+		sprintf(msg, "Services: SERIAL[%d], no-networkReset[%d min], ignore_boot_msg[%d], useFlashP[%d]",
+				useSerial, noNetwork_reset, ignore_boot_msg, useFlashP);
 		pub_msg(msg);
 	}
 	else if (strcmp(incoming_msg, "help") == 0)
@@ -452,7 +444,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 
 			for (uint8_t i = 0; i < sizeof(parameter_filenames) / sizeof(parameter_filenames[0]); i++)
 			{
-				myJflash jf;
+				myJflash jf(useSerial);
 				if (parameter_filenames[i] != nullptr)
 				{
 					jf.set_filename(parameter_filenames[i]);
@@ -654,22 +646,19 @@ bool myIOT2::readJson_inFlash(JsonDocument &DOC, const char *filename)
 	myJflash Jflash(useSerial);
 	return (Jflash.readFile(DOC, filename));
 }
-bool myIOT2::readFlashParameters(JsonDocument &DOC, const char *filename)
+void myIOT2::readFlashParameters(JsonDocument &DOC, const char *filename)
 {
 	if (readJson_inFlash(DOC, filename))
 	{
-		useSerial = DOC["useSerial"].as<bool>();
-		useFlashP = DOC["useFlashP"].as<bool>();
-		useNetworkReset = DOC["useNetworkReset"].as<bool>();
-		noNetwork_reset = DOC["noNetwork_reset"].as<uint8_t>();
-		ignore_boot_msg = DOC["ignore_boot_msg"].as<bool>();
+		useSerial = DOC["useSerial"].as<bool>() | true;
+		useFlashP = DOC["useFlashP"].as<bool>() | false;
+		noNetwork_reset = DOC["noNetwork_reset"].as<uint8_t>() | 3;
+		ignore_boot_msg = DOC["ignore_boot_msg"].as<bool>() | false;
 		PRNTL(F("~ Parameters loaded from Flash"));
-		return 1;
 	}
 	else
 	{
 		PRNTL(F("~ Parameters failed to load from Flash. Defaults are used"));
-		return 0;
 	}
 }
 
@@ -711,7 +700,7 @@ bool myIOT2::_cmdline_flashUpdate(const char *key, const char *new_value)
 	bool succ_chg = false;
 	DynamicJsonDocument myIOT_P(1250); //<------------------ FIX THIS -----------
 
-	myJflash Jflash;
+	myJflash Jflash(useSerial);
 	for (uint8_t n = 0; n < sizeof(parameter_filenames) / sizeof(parameter_filenames[0]); n++)
 	{
 		if (Jflash.readFile(myIOT_P, parameter_filenames[n]))

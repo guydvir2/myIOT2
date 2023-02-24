@@ -5,7 +5,7 @@ myIOT2 iot;
 char topics_sub[3][MAX_TOPIC_SIZE];
 char topics_pub[3][MAX_TOPIC_SIZE];
 char topics_gen_pub[3][MAX_TOPIC_SIZE];
-const char *parameterFiles[3] = {"/myIOT_param.json", "/myIOT2_topics.json", "/sketch_param.json"}; // <----- Verfy file names
+const char *parameterFiles[3] ={"/myIOT_param.json", "/myIOT2_topics.json", "/sketch_param.json"};
 
 void updateTopics_flash(JsonDocument &DOC, char ch_array[][MAX_TOPIC_SIZE], const char *dest_array[], const char *topic, const char *defaulttopic, uint8_t ar_size)
 {
@@ -25,21 +25,45 @@ void update_Parameters_flash()
     StaticJsonDocument<1250> DOC;
 
     /* Part A: update filenames of paramter files */
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     iot.set_pFilenames(parameterFiles, sizeof(parameterFiles) / sizeof(parameterFiles[0]));
     iot.readFlashParameters(DOC, iot.parameter_filenames[0]);
     DOC.clear();
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     /* Part B: Read Topics from flash, and update myIOT Topics */
-    iot.readJson_inFlash(DOC, iot.parameter_filenames[1]); /* extract topics from flash */
-    updateTopics_flash(DOC, topics_gen_pub, iot.topics_gen_pub, "pub_gen_topics", "myHome/Messages", sizeof(topics_gen_pub) / (sizeof(topics_gen_pub[0])));
-    updateTopics_flash(DOC, topics_pub, iot.topics_pub, "pub_topics", "myHome/log", sizeof(topics_pub) / (sizeof(topics_pub[0])));
-    updateTopics_flash(DOC, topics_sub, iot.topics_sub, "sub_topics", "myHome/log", sizeof(topics_sub) / (sizeof(topics_sub[0])));
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if (iot.readJson_inFlash(DOC, iot.parameter_filenames[1]))
+    {
+        updateTopics_flash(DOC, topics_gen_pub, iot.topics_gen_pub, "pub_gen_topics", "myHome/Messages", sizeof(topics_gen_pub) / (sizeof(topics_gen_pub[0])));
+        updateTopics_flash(DOC, topics_pub, iot.topics_pub, "pub_topics", "myHome/log", sizeof(topics_pub) / (sizeof(topics_pub[0])));
+        updateTopics_flash(DOC, topics_sub, iot.topics_sub, "sub_topics", "myHome/log", sizeof(topics_sub) / (sizeof(topics_sub[0])));
+    }
+    else /* File not found */
+    {
+        iot.topics_gen_pub[0] = "myHome/Messages";
+        iot.topics_gen_pub[1] = "myHome/log";
+        iot.topics_pub[0] = "myHome/myDevice";
+        iot.topics_pub[0] = "myHome/myDevice/Avail";
+        iot.topics_pub[1] = "myHome/myDevice/State";
+        iot.topics_sub[0] = "myHome/myDevice";
+        iot.topics_sub[1] = "myHome/All";
+    }
     DOC.clear();
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     /* Part C: Read Sketch paramters from flash, and update Sketch */
-    iot.readJson_inFlash(DOC, iot.parameter_filenames[2]); /* extract parameters from flash */
-    update_sketch_parameters_flash();
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if (iot.readJson_inFlash(DOC, iot.parameter_filenames[2]))
+    {
+        update_sketch_parameters_flash();
+    }
+    else
+    {
+        yield();
+    }
     DOC.clear();
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 }
 void addiotnalMQTT(char *incoming_msg, char *_topic)
 {
