@@ -41,7 +41,7 @@ public:
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 protected:
-    char ver[12] = "iot_v2.00";
+    char ver[12] = "iot_v2.01";
 
 public:
     const char *topics_pub[4] = {nullptr, nullptr, nullptr, nullptr};
@@ -88,7 +88,6 @@ private:
     /////////
 
     bool _mqttConnected = false;
-    // bool _drasticResetOnConnectionFailures = &useNetworkReset;
     unsigned long _nextMqttConnectionAttemptMillis = 0;
     unsigned int _failedMQTTConnectionAttemptCount = 0;
     unsigned int _connectionEstablishedCount = 0; // Incremented before each _connectionEstablishedCallback call
@@ -120,7 +119,7 @@ public: /* Functions */
     // ~~~~~~~ Param ~~~~~~~
     uint8_t inline_read(char *inputstr);
     void set_pFilenames(const char *fileArray[], uint8_t asize);
-    void readFlashParameters(JsonDocument &DOC, const char *filename);
+    bool readFlashParameters(JsonDocument &DOC, const char *filename);
     bool readJson_inFlash(JsonDocument &DOC, const char *filename);
 
 private:

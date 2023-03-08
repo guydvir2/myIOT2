@@ -31,9 +31,7 @@ void update_Parameters_local()
 {
     iot.useSerial = true;
     iot.useFlashP = false;
-    iot.useNetworkReset = true;
     iot.noNetwork_reset = 2;
-    iot.useBootClockLog = false;
     iot.ignore_boot_msg = false;
 }
 void addiotnalMQTT(char *incoming_msg, char *_topic)

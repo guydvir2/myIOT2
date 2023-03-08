@@ -646,19 +646,21 @@ bool myIOT2::readJson_inFlash(JsonDocument &DOC, const char *filename)
 	myJflash Jflash(useSerial);
 	return (Jflash.readFile(DOC, filename));
 }
-void myIOT2::readFlashParameters(JsonDocument &DOC, const char *filename)
+bool myIOT2::readFlashParameters(JsonDocument &DOC, const char *filename)
 {
 	if (readJson_inFlash(DOC, filename))
 	{
-		useSerial = DOC["useSerial"].as<bool>() | true;
-		useFlashP = DOC["useFlashP"].as<bool>() | false;
-		noNetwork_reset = DOC["noNetwork_reset"].as<uint8_t>() | 3;
-		ignore_boot_msg = DOC["ignore_boot_msg"].as<bool>() | false;
+		useSerial = DOC["useSerial"] | true;
+		useFlashP = DOC["useFlashP"] | false;
+		noNetwork_reset = DOC["noNetwork_reset"] | 9;
+		ignore_boot_msg = DOC["ignore_boot_msg"] | false;
 		PRNTL(F("~ Parameters loaded from Flash"));
+		return 1;
 	}
 	else
 	{
 		PRNTL(F("~ Parameters failed to load from Flash. Defaults are used"));
+		return 0;
 	}
 }
 
