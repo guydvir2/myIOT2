@@ -41,7 +41,7 @@ public:
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 protected:
-    char ver[12] = "iot_v2.01";
+    char ver[12] = "iot_v2.02";
 
 public:
     const char *topics_pub[4] = {nullptr, nullptr, nullptr, nullptr};
@@ -79,7 +79,6 @@ private:
     unsigned long allowOTA_clock = 0;       // clock
 
     ///////
-    bool _OTAloaded = false;
     bool _wifiConnected = false;
     bool _connectingToWifi = false;
     const uint8_t _retryConnectWiFi = 60; // seconds between fail Wifi reconnect reties
@@ -88,12 +87,13 @@ private:
     /////////
 
     bool _mqttConnected = false;
-    unsigned long _nextMqttConnectionAttemptMillis = 0;
-    unsigned int _failedMQTTConnectionAttemptCount = 0;
     unsigned int _connectionEstablishedCount = 0; // Incremented before each _connectionEstablishedCallback call
+    unsigned int _failedMQTTConnectionAttemptCount = 0;
+    unsigned long _nextMqttConnectionAttemptMillis = 0;
 
     // holds status
     bool _firstRun = true;
+    bool _OTAloaded = false;
 
 public: /* Functions */
     myIOT2();
