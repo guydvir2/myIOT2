@@ -41,13 +41,13 @@ public:
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 protected:
-    char ver[12] = "iot_v2.02";
+    char ver[12] = "iot_v2.03";
 
 public:
-    const char *topics_pub[4] = {nullptr, nullptr, nullptr, nullptr};
-    const char *parameter_filenames[4] = {nullptr, nullptr, nullptr, nullptr};
-    const char *topics_gen_pub[4] = {nullptr, nullptr, nullptr, nullptr};
-    const char *topics_sub[20] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+    const char *topics_pub[4]{};          // = {nullptr, nullptr, nullptr, nullptr};
+    const char *parameter_filenames[4]{}; // = {nullptr, nullptr, nullptr, nullptr};
+    const char *topics_gen_pub[4]{};      //= {nullptr, nullptr, nullptr, nullptr};
+    const char *topics_sub[20]{};         //= {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
 
     /*Variables */
     // ~~~~~~ Services ~~~~~~~~~
@@ -99,8 +99,7 @@ public: /* Functions */
     myIOT2();
     void looper();
     void start_services(cb_func funct, const char *ssid = SSID_ID, const char *password = PASS_WIFI,
-                        const char *mqtt_user = MQTT_USER, const char *mqtt_passw = MQTT_PASS,
-                        const char *mqtt_broker = MQTT_SERVER1);
+                        const char *mqtt_user = MQTT_USER, const char *mqtt_passw = MQTT_PASS,const char *mqtt_broker = MQTT_SERVER1);
 
     // ~~~~~~~ MQTT ~~~~~~~
     void notifyOnline();

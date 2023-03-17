@@ -435,36 +435,35 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	}
 	else if (strcmp(incoming_msg, "show_flashParam") == 0)
 	{
-		if (useFlashP)
-		{
-			char clk[25];
-			get_timeStamp(clk);
-			sprintf(msg, "\n<<~~~~~~ [%s] [%s] On-Flash Parameters ~~~~~>>", clk, topics_sub[0]);
-			pub_debug(msg);
+		// if (useFlashP)
+		// {
+		char clk[25];
+		get_timeStamp(clk);
+		sprintf(msg, "\n<<~~~~~~ [%s] [%s] On-Flash Parameters ~~~~~>>", clk, topics_sub[0]);
+		pub_debug(msg);
 
-			for (uint8_t i = 0; i < sizeof(parameter_filenames) / sizeof(parameter_filenames[0]); i++)
-			{
-				myJflash jf(useSerial);
-				if (parameter_filenames[i] != nullptr)
-				{
-					jf.set_filename(parameter_filenames[i]);
-					pub_debug(parameter_filenames[i]);
-					// String tempstr1 = readFile(parameter_filenames[i]);
-					String tempstr1 = jf.readFile2String(parameter_filenames[i]);
-					// Serial.print("STR:");
-					// Serial.println(tempstr1.length());
-					char buff[tempstr1.length() + 1];
-					tempstr1.toCharArray(buff, tempstr1.length() + 1);
-					pub_debug(buff);
-				}
-			}
-			pub_msg("[On-Flash Parameters]: extracted");
-			pub_debug("<<~~~~~~~~~~ End ~~~~~~~~~~>>");
-		}
-		else
+		for (uint8_t i = 0; i < sizeof(parameter_filenames) / sizeof(parameter_filenames[0]); i++)
 		{
-			pub_msg("[On-Flash Parameters]: not in use");
+			myJflash jf(useSerial);
+			if (parameter_filenames[i] != nullptr)
+			{
+				jf.set_filename(parameter_filenames[i]);
+				pub_debug(parameter_filenames[i]);
+				String tempstr1 = jf.readFile2String(parameter_filenames[i]);
+				// Serial.print("STR:");
+				// Serial.println(tempstr1);
+				char buff[tempstr1.length() + 1];
+				tempstr1.toCharArray(buff, tempstr1.length() + 1);
+				pub_debug(buff);
+			}
 		}
+		pub_msg("[On-Flash Parameters]: extracted");
+		pub_debug("<<~~~~~~~~~~ End ~~~~~~~~~~>>");
+		// }
+		// else
+		// {
+		// 	pub_msg("[On-Flash Parameters]: not in use");
+		// }
 	}
 	else if (strcmp(incoming_msg, "network") == 0)
 	{
@@ -515,7 +514,7 @@ void myIOT2::_pub_generic(const char *topic, const char *inmsg, bool retain, cha
 {
 	char clk[25];
 	get_timeStamp(clk, 0);
-	const int _maxMQTTmsglen = 350;
+	const int _maxMQTTmsglen = 550;
 	const uint8_t mqtt_overhead_size = 23;
 	const int mqtt_defsize = mqttClient.getBufferSize();
 
@@ -651,10 +650,10 @@ bool myIOT2::readFlashParameters(JsonDocument &DOC, const char *filename)
 	if (readJson_inFlash(DOC, filename))
 	{
 		useSerial = DOC["useSerial"];
-		useFlashP = true; // DOC["useFlashP"];
+		useFlashP = true;
 		noNetwork_reset = DOC["noNetwork_reset"];
 		ignore_boot_msg = DOC["ignore_boot_msg"];
-		PRNTL(F("~ Parameters loaded from Flash"));
+		PRNTL(F("~ iot2 Parameters loaded from Flash"));
 		return 1;
 	}
 	else
@@ -663,7 +662,7 @@ bool myIOT2::readFlashParameters(JsonDocument &DOC, const char *filename)
 		useFlashP = false;
 		noNetwork_reset = 9;
 		ignore_boot_msg = false;
-		PRNTL(F("~ Parameters failed to load from Flash. Defaults are used"));
+		PRNTL(F("~ iot2 Parameters failed to load from Flash. Defaults are used"));
 		return 0;
 	}
 }
