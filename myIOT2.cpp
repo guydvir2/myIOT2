@@ -579,6 +579,13 @@ void myIOT2::notifyOnline()
 {
 	mqttClient.publish(topics_pub[0], "online", true);
 }
+void myIOT2::clear_inline_read()
+{
+	for (uint8_t i = 0; i < num_p; i++)
+	{
+		strcpy(inline_param[i], "");
+	}
+}
 uint8_t myIOT2::inline_read(char *inputstr)
 {
 	char *pch;

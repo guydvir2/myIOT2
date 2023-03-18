@@ -41,15 +41,14 @@ public:
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 protected:
-    char ver[12] = "iot_v2.03";
+    char ver[12] = "iot_v2.04";
 
 public:
-    const char *topics_pub[4]{};          // = {nullptr, nullptr, nullptr, nullptr};
-    const char *parameter_filenames[4]{}; // = {nullptr, nullptr, nullptr, nullptr};
-    const char *topics_gen_pub[4]{};      //= {nullptr, nullptr, nullptr, nullptr};
-    const char *topics_sub[20]{};         //= {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+    const char *topics_pub[4]{};
+    const char *topics_sub[20]{};
+    const char *topics_gen_pub[4]{};
+    const char *parameter_filenames[4]{};
 
-    /*Variables */
     // ~~~~~~ Services ~~~~~~~~~
     bool useSerial = true;
     bool useFlashP = false;
@@ -65,7 +64,6 @@ public:
     inline bool isMqttConnected() const { return _mqttConnected; };
 
 private:
-    // WiFi MQTT broker parameters
     char _ssid[15];
     char _wifi_pwd[15];
     char _mqtt_pwd[15];
@@ -78,13 +76,11 @@ private:
     const uint8_t OTA_upload_interval = 10; // minutes to try OTA
     unsigned long allowOTA_clock = 0;       // clock
 
-    ///////
     bool _wifiConnected = false;
     bool _connectingToWifi = false;
     const uint8_t _retryConnectWiFi = 60; // seconds between fail Wifi reconnect reties
     unsigned long _lastWifiConnectiomAttemptMillis = 0;
     unsigned long _nextWifiConnectionAttemptMillis = 500;
-    /////////
 
     bool _mqttConnected = false;
     unsigned int _connectionEstablishedCount = 0; // Incremented before each _connectionEstablishedCallback call
@@ -99,7 +95,7 @@ public: /* Functions */
     myIOT2();
     void looper();
     void start_services(cb_func funct, const char *ssid = SSID_ID, const char *password = PASS_WIFI,
-                        const char *mqtt_user = MQTT_USER, const char *mqtt_passw = MQTT_PASS,const char *mqtt_broker = MQTT_SERVER1);
+                        const char *mqtt_user = MQTT_USER, const char *mqtt_passw = MQTT_PASS, const char *mqtt_broker = MQTT_SERVER1);
 
     // ~~~~~~~ MQTT ~~~~~~~
     void notifyOnline();
@@ -117,6 +113,7 @@ public: /* Functions */
 
     // ~~~~~~~ Param ~~~~~~~
     uint8_t inline_read(char *inputstr);
+    void clear_inline_read();
     void set_pFilenames(const char *fileArray[], uint8_t asize);
     bool readFlashParameters(JsonDocument &DOC, const char *filename);
     bool readJson_inFlash(JsonDocument &DOC, const char *filename);
