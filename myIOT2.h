@@ -41,7 +41,7 @@ public:
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 protected:
-    char ver[12] = "iot_v2.04";
+    char ver[12] = "iot_v2.05";
 
 public:
     const char *topics_pub[4]{};

@@ -249,7 +249,7 @@ bool myIOT2::_MQTT_handler()
 	{
 		_mqttConnected = true;
 		_subMQTT();
-		notifyOnline();
+		// notifyOnline();
 	}
 
 	// Connection lost
@@ -269,6 +269,7 @@ bool myIOT2::_MQTT_handler()
 		// Connect to MQTT broker
 		if (_connectMQTT())
 		{
+			notifyOnline();
 			if (!_firstRun)
 			{
 				sprintf(b, "MQTT: reconnect after [%d] retries", _failedMQTTConnectionAttemptCount);
