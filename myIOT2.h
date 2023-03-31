@@ -121,7 +121,7 @@ public: /* Functions */
 private:
     // ~~~~~~~WIFI ~~~~~~~
     void _startWifi(const char *ssid, const char *password);
-    bool _startNTP(const char *ntpServer = "pool.ntp.org", const char *ntpServer2 = "il.pool.ntp.org");
+    bool _startNTP(const char *ntpServer = "time.nist.gov", const char *ntpServer2 = "il.pool.ntp.org");
     bool _NTP_updated();
     bool _WiFi_handler();
     void _onWifiConnect();

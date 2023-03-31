@@ -497,6 +497,10 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 		sprintf(msg, "Heap: Remain [%skb] [%s%%]", result1, result);
 		pub_msg(msg);
 	}
+	// else if (strcmp(incoming_msg, "topics") == 0)
+	// {
+	// 	sprintf(msg, "Network: uptime[%s %s], localIP[%s], MQTTserver[%s],  RSSI: [%d dBm]", days, clock, IPadd, _mqtt_server, WiFi.RSSI());
+	// }
 	else
 	{
 		num_p = inline_read(incoming_msg);
