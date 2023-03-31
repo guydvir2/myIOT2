@@ -37,11 +37,10 @@ public:
     WiFiClient espClient;
     PubSubClient mqttClient;
 
-    // ~~~~define generic cb function~~~~
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 protected:
-    char ver[12] = "iot_v2.05";
+    char ver[12] = "iot_v2.06";
 
 public:
     const char *topics_pub[4]{};
@@ -132,6 +131,7 @@ private:
     void _subMQTT();
     bool _connectMQTT();
     bool _MQTT_handler();
+    void _concate(const char *array[], char outmsg[]);
     void _MQTTcb(char *topic, uint8_t *payload, unsigned int length);
     void _pub_generic(const char *topic, const char *inmsg, bool retain = false, char *devname = nullptr, bool bare = false);
 

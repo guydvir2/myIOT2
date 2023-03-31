@@ -377,6 +377,20 @@ void myIOT2::_subMQTT()
 		_firstRun = false;
 	}
 }
+void myIOT2::_concate(const char *array[], char outmsg[])
+{
+	uint8_t i = 0;
+	while (array[i] != nullptr)
+	{
+		if (i > 0)
+		{
+			strcat(outmsg, "; ");
+		}
+		strcat(outmsg, array[i]);
+		i++;
+	}
+	return;
+}
 
 void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 {
@@ -487,20 +501,38 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 		char result1[10];
 
 #ifdef ESP8266
-		rmem = fmem / MAX_ESP8266_HEAP;
+		rmem =100* (float)(fmem / (float)MAX_ESP8266_HEAP);
 #endif
 #ifdef ESP32
 		rmem = 100 * (float)(fmem / (float)MAX_ESP32_HEAP);
 #endif
+		Serial.println(rmem);
+		Serial.println(MAX_ESP8266_HEAP);
+		Serial.println(fmem);
 		dtostrf(rmem, 6, 2, result);
 		dtostrf(fmem / 1000.0, 6, 2, result1);
 		sprintf(msg, "Heap: Remain [%skb] [%s%%]", result1, result);
 		pub_msg(msg);
 	}
-	// else if (strcmp(incoming_msg, "topics") == 0)
-	// {
-	// 	sprintf(msg, "Network: uptime[%s %s], localIP[%s], MQTTserver[%s],  RSSI: [%d dBm]", days, clock, IPadd, _mqtt_server, WiFi.RSSI());
-	// }
+	else if (strcmp(incoming_msg, "topics") == 0)
+	{
+		char A[100];
+
+		strcpy(A, "");
+		_concate(topics_pub, A);
+		sprintf(msg, "[Pub_Topics]: %s", A);
+		pub_msg(msg);
+
+		strcpy(A, "");
+		_concate(topics_sub, A);
+		sprintf(msg, "[Sub_Topics]: %s", A);
+		pub_msg(msg);
+
+		strcpy(A, "");
+		_concate(topics_gen_pub, A);
+		sprintf(msg, "[gen-Pub_Topics]: %s", A);
+		pub_msg(msg);
+	}
 	else
 	{
 		num_p = inline_read(incoming_msg);
