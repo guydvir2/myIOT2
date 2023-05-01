@@ -22,7 +22,11 @@
         "ESP8266WiFi": "^1.0",
         "ESP8266mDNS": "^1.2",
         "ArduinoOTA": "^1.0",
-        "external-repo":"https://github.com/guydvir2/myJflash.git"
+        "myJflash": "https://github.com/guydvir2/myJflash.git",
+        "WiFi":"^2.0.0",
+        "Update": "^2.0.0",
+        "ESPmDNS": "^2.0.0",
+        "FS": "^2.0.0"
     },
     "frameworks": "*",
     "platforms": [
