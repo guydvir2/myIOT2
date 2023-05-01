@@ -31,8 +31,8 @@
     Serial.println(a)
 #endif
 
-// class myIOT2
-// {
+class myIOT2
+{
 // public:
 //     WiFiClient espClient;
 //     PubSubClient mqttClient;
