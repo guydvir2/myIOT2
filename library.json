@@ -21,7 +21,8 @@
         "knolleary/PubSubClient": "^2.8",
         "ESP8266WiFi": "^1.0",
         "ESP8266mDNS": "^1.2",
-        "ArduinoOTA": "^1.0"
+        "ArduinoOTA": "^1.0",
+        "external-repo":"https://github.com/guydvir2/myJflash.git"
     },
     "frameworks": "*",
     "platforms": [
