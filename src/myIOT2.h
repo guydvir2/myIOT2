@@ -2,7 +2,7 @@
 #define myIOT2_h
 
 #if defined(ESP8266)
-// #include <ESP8266WiFi.h>
+#include <ESP8266WiFi.h>
 // #include <ESP8266mDNS.h> // OTA libraries
 // #include <TZ.h>
 
