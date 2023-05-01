@@ -3,19 +3,19 @@
 
 #if defined(ESP8266)
 #include <ESP8266WiFi.h>
-// #include <ESP8266mDNS.h> // OTA libraries
-// #include <TZ.h>
+#include <ESP8266mDNS.h> // OTA libraries
+#include <TZ.h>
 
-// #elif defined(ESP32)
+#elif defined(ESP32)
 // #include <WiFi.h>
 // #include <ESPmDNS.h> // OTA libraries
 // #define TZ_Asia_Jerusalem PSTR("IST-2IDT,M3.4.4/26,M10.5.0")
 #endif
 
 // #include <WiFiUdp.h>      // OTA
-// #include <ArduinoOTA.h>   // OTA
-// #include <PubSubClient.h> // MQTT
-// #include <ArduinoJson.h>
+#include <ArduinoOTA.h>   // OTA
+#include <PubSubClient.h> // MQTT
+#include <ArduinoJson.h>
 // #include <myJflash.h>
 // #include "secretsIOT.h"
 
