@@ -20,5 +20,5 @@
         "bblanchon/ArduinoJson": "^6.16.1"
     },
     "frameworks": "*",
-    "platforms": "*"
+    "platforms": ["espressif8266"]
 }
