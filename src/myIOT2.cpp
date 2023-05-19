@@ -333,6 +333,8 @@ bool myIOT2::_connectMQTT()
 	sprintf(tempname, "ESP32_%04X", (uint16_t)(chipid >> 32));
 #endif
 	PRNTL(F("\n>>> MQTT <<<"));
+	Serial.print("off: ");
+	Serial.println(topics_pub[0]);
 	if (mqttClient.connect(tempname, _mqtt_user, _mqtt_pwd, topics_pub[0], 1, true, "offline"))
 	{
 		PRNT(F("~ MQTT Server: "));
@@ -501,7 +503,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 		char result1[10];
 
 #ifdef ESP8266
-		rmem =100* (float)(fmem / (float)MAX_ESP8266_HEAP);
+		rmem = 100 * (float)(fmem / (float)MAX_ESP8266_HEAP);
 #endif
 #ifdef ESP32
 		rmem = 100 * (float)(fmem / (float)MAX_ESP32_HEAP);
@@ -610,6 +612,36 @@ void myIOT2::pub_log(const char *inmsg)
 void myIOT2::pub_debug(const char *inmsg)
 {
 	_pub_generic(topics_gen_pub[2], inmsg, false, nullptr, true);
+}
+void myIOT2::add_subTopic(const char *topic, uint8_t len)
+{
+	char *top = new char[len + 1];
+	strcpy(top, topic);
+	topics_sub[_sub_topic_counter++] = top;
+	// Serial.print(_sub_topic_counter - 1);
+	// Serial.print("#:");
+	// Serial.println(topics_sub[_sub_topic_counter - 1]);
+	// delay(500);
+}
+void myIOT2::add_pubTopic(const char *topic, uint8_t len)
+{
+	char *top = new char[len + 1];
+	strcpy(top, topic);
+	topics_pub[_pub_topic_counter++] = top;
+	// Serial.print(_pub_topic_counter - 1);
+	// Serial.print("#:");
+	// Serial.println(topics_pub[_pub_topic_counter - 1]);
+	// delay(500);
+}
+void myIOT2::add_gen_pubTopic(const char *topic, uint8_t len)
+{
+	char *top = new char[len + 1];
+	strcpy(top, topic);
+	topics_gen_pub[_gen_topic_counter++] = top;
+	// Serial.print(_gen_topic_counter - 1);
+	// Serial.print("#:");
+	// Serial.println(topics_gen_pub[_gen_topic_counter - 1]);
+	// delay(500);
 }
 
 void myIOT2::notifyOnline()

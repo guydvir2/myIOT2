@@ -40,7 +40,7 @@ public:
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 protected:
-    char ver[12] = "iot_v2.1";
+    char ver[12] = "iot_v2.2";
 
 public:
     const char *topics_pub[4]{};
@@ -68,6 +68,9 @@ private:
     char _mqtt_pwd[15];
     char _mqtt_user[15];
     char _mqtt_server[20];
+    uint8_t _sub_topic_counter = 0;
+    uint8_t _pub_topic_counter = 0;
+    uint8_t _gen_topic_counter = 0;
 
     cb_func ext_mqtt;
 
@@ -104,6 +107,9 @@ public: /* Functions */
     void sendReset(const char *header = nullptr);
     void pub_state(const char *inmsg, uint8_t i = 0);
     void pub_noTopic(const char *inmsg, char *Topic, bool retain = false);
+    void add_subTopic(const char *topic, uint8_t len);
+    void add_pubTopic(const char *topic, uint8_t len);
+    void add_gen_pubTopic(const char *topic, uint8_t len);
 
     // ~~~~~~~ Clk ~~~~~~~
     time_t now();
