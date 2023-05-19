@@ -333,8 +333,6 @@ bool myIOT2::_connectMQTT()
 	sprintf(tempname, "ESP32_%04X", (uint16_t)(chipid >> 32));
 #endif
 	PRNTL(F("\n>>> MQTT <<<"));
-	Serial.print("off: ");
-	Serial.println(topics_pub[0]);
 	if (mqttClient.connect(tempname, _mqtt_user, _mqtt_pwd, topics_pub[0], 1, true, "offline"))
 	{
 		PRNT(F("~ MQTT Server: "));
