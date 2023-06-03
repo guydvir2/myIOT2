@@ -40,7 +40,7 @@ public:
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 protected:
-    char ver[12] = "iot_v2.2";
+    char ver[12] = "iot_v2.2b";
 
 public:
     const char *topics_pub[4]{};
@@ -57,7 +57,8 @@ public:
 
     uint8_t num_p = 0;                  // number parameters got in MQTT message
     static const uint8_t num_param = 4; // max MQTT parameters
-    char inline_param[num_param][20];   // values from user
+    static const int mqtt_len = 300;
+    char inline_param[num_param][20]; // values from user
 
     inline bool isWifiConnected() const { return _wifiConnected; };
     inline bool isMqttConnected() const { return _mqttConnected; };
@@ -101,12 +102,12 @@ public: /* Functions */
 
     // ~~~~~~~ MQTT ~~~~~~~
     void notifyOnline();
-    void pub_msg(const char *inmsg);
+    void pub_msg(const char *inmsg, int len = mqtt_len);
     void pub_log(const char *inmsg);
-    void pub_debug(const char *inmsg);
+    void pub_debug(const char *inmsg, int len = mqtt_len);
     void sendReset(const char *header = nullptr);
     void pub_state(const char *inmsg, uint8_t i = 0);
-    void pub_noTopic(const char *inmsg, char *Topic, bool retain = false);
+    void pub_noTopic(const char *inmsg, char *Topic, bool retain = false, int = mqtt_len);
     void add_subTopic(const char *topic, uint8_t len);
     void add_pubTopic(const char *topic, uint8_t len);
     void add_gen_pubTopic(const char *topic, uint8_t len);
@@ -139,7 +140,7 @@ private:
     bool _MQTT_handler();
     void _concate(const char *array[], char outmsg[]);
     void _MQTTcb(char *topic, uint8_t *payload, unsigned int length);
-    void _pub_generic(const char *topic, const char *inmsg, bool retain = false, char *devname = nullptr, bool bare = false);
+    void _pub_generic(const char *topic, const char *inmsg, bool retain = false, char *devname = nullptr, bool bare = false, int len = mqtt_len);
 
     // ~~~~~~~ OTA  ~~~~~~~
     void _startOTA();
