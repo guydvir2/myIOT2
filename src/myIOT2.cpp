@@ -551,9 +551,15 @@ void myIOT2::_pub_generic(const char *topic, const char *inmsg, bool retain, cha
 {
 	char clk[25];
 	get_timeStamp(clk, 0);
-	const int _maxMQTTmsglen = len;
+	const int _maxMQTTmsglen = 220; // len;
 	const uint8_t mqtt_overhead_size = 23;
 	const int mqtt_defsize = mqttClient.getBufferSize();
+
+	// Serial.print("max_size:");
+	// Serial.println(_maxMQTTmsglen);
+
+	// Serial.print("def_size:");
+	// Serial.println(mqtt_defsize);
 
 	int x = devname == nullptr ? strlen(topics_sub[0]) + 2 : 0;
 	// int totl_len = strlen(inmsg) + x /* devTopic */+ 8 /* clock*/+ mqtt_overhead_size /* mqtt_overh*/ + 10 /*spare*/;
@@ -573,16 +579,23 @@ void myIOT2::_pub_generic(const char *topic, const char *inmsg, bool retain, cha
 	if (x > mqtt_defsize)
 	{
 		mqttClient.setBufferSize(x);
-		mqttClient.publish(topic, tmpmsg, retain);
+		mqttClient.publish(topic, "HI", retain);
+		// Serial.print(topic);
+		// Serial.print(": ");
+		// Serial.println(tmpmsg);
 		mqttClient.setBufferSize(mqtt_defsize);
 	}
 	else
 	{
-		mqttClient.publish(topic, tmpmsg, retain);
+		// Serial.print(topic);
+		// Serial.print(": ");
+		// Serial.println(tmpmsg);
+		mqttClient.publish(topic, "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890", retain);
 	}
 }
 void myIOT2::pub_msg(const char *inmsg, int len)
 {
+	// Serial.println(strlen(inmsg));
 	_pub_generic(topics_gen_pub[0], inmsg, NULL, NULL, NULL, len);
 }
 void myIOT2::pub_noTopic(const char *inmsg, char *Topic, bool retain, int len)
