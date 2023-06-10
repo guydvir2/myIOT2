@@ -547,16 +547,18 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 		}
 	}
 }
-void myIOT2::_pub_generic(const char *topic, const char *inmsg, bool retain, char *devname, bool bare, int len)
+void myIOT2::_pub_generic(const char *topic, const char *inmsg, bool retain, char *devname, bool bare)
 {
 	char clk[25];
 	get_timeStamp(clk, 0);
-	const int _maxMQTTmsglen = 220; // len;
+	const int _maxMQTTmsglen = 250;
 	const uint8_t mqtt_overhead_size = 23;
 	const int mqtt_defsize = mqttClient.getBufferSize();
 
-	// Serial.print("max_size:");
-	// Serial.println(_maxMQTTmsglen);
+	Serial.print("max_size:");
+	Serial.println(strlen(inmsg));
+	Serial.print("INMSG:");
+	Serial.println(inmsg);
 
 	// Serial.print("def_size:");
 	// Serial.println(mqtt_defsize);
@@ -579,7 +581,7 @@ void myIOT2::_pub_generic(const char *topic, const char *inmsg, bool retain, cha
 	if (x > mqtt_defsize)
 	{
 		mqttClient.setBufferSize(x);
-		mqttClient.publish(topic, "HI", retain);
+		mqttClient.publish(topic, tmpmsg, retain);
 		// Serial.print(topic);
 		// Serial.print(": ");
 		// Serial.println(tmpmsg);
@@ -590,17 +592,16 @@ void myIOT2::_pub_generic(const char *topic, const char *inmsg, bool retain, cha
 		// Serial.print(topic);
 		// Serial.print(": ");
 		// Serial.println(tmpmsg);
-		mqttClient.publish(topic, "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890", retain);
+		mqttClient.publish(topic, tmpmsg, retain);
 	}
 }
-void myIOT2::pub_msg(const char *inmsg, int len)
+void myIOT2::pub_msg(const char *inmsg)
 {
-	// Serial.println(strlen(inmsg));
-	_pub_generic(topics_gen_pub[0], inmsg, NULL, NULL, NULL, len);
+	_pub_generic(topics_gen_pub[0], inmsg);
 }
-void myIOT2::pub_noTopic(const char *inmsg, char *Topic, bool retain, int len)
+void myIOT2::pub_noTopic(const char *inmsg, char *Topic, bool retain)
 {
-	_pub_generic(Topic, inmsg, retain, nullptr, true, len);
+	_pub_generic(Topic, inmsg, retain, nullptr, true);
 }
 void myIOT2::pub_state(const char *inmsg, uint8_t i)
 {
@@ -620,9 +621,9 @@ void myIOT2::pub_log(const char *inmsg)
 {
 	_pub_generic(topics_gen_pub[1], inmsg);
 }
-void myIOT2::pub_debug(const char *inmsg, int len)
+void myIOT2::pub_debug(const char *inmsg)
 {
-	_pub_generic(topics_gen_pub[2], inmsg, false, nullptr, true, len);
+	_pub_generic(topics_gen_pub[2], inmsg, false, nullptr, true);
 }
 void myIOT2::add_subTopic(const char *topic, uint8_t len)
 {

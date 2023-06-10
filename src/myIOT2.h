@@ -102,12 +102,12 @@ public: /* Functions */
 
     // ~~~~~~~ MQTT ~~~~~~~
     void notifyOnline();
-    void pub_msg(const char *inmsg, int len = mqtt_len);
+    void pub_msg(const char *inmsg);
     void pub_log(const char *inmsg);
-    void pub_debug(const char *inmsg, int len = mqtt_len);
+    void pub_debug(const char *inmsg);
     void sendReset(const char *header = nullptr);
     void pub_state(const char *inmsg, uint8_t i = 0);
-    void pub_noTopic(const char *inmsg, char *Topic, bool retain = false, int = mqtt_len);
+    void pub_noTopic(const char *inmsg, char *Topic, bool retain = false);
     void add_subTopic(const char *topic, uint8_t len);
     void add_pubTopic(const char *topic, uint8_t len);
     void add_gen_pubTopic(const char *topic, uint8_t len);
@@ -140,7 +140,7 @@ private:
     bool _MQTT_handler();
     void _concate(const char *array[], char outmsg[]);
     void _MQTTcb(char *topic, uint8_t *payload, unsigned int length);
-    void _pub_generic(const char *topic, const char *inmsg, bool retain = false, char *devname = nullptr, bool bare = false, int len = mqtt_len);
+    void _pub_generic(const char *topic, const char *inmsg, bool retain = false, char *devname = nullptr, bool bare = false);
 
     // ~~~~~~~ OTA  ~~~~~~~
     void _startOTA();
