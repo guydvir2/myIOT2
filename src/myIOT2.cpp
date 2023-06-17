@@ -132,7 +132,6 @@ void myIOT2::_onWifiConnect()
 {
 	char b[50];
 	sprintf(b, "\n ~Connected ,ip : %s", WiFi.localIP().toString().c_str());
-	// Serial.printf("WiFi: Connected (%fs), ip : %s \n", millis() / 1000.0, WiFi.localIP().toString().c_str());
 	PRNTL(b);
 	if (!_NTP_updated())
 	{
@@ -555,14 +554,6 @@ void myIOT2::_pub_generic(const char *topic, const char *inmsg, bool retain, cha
 	const uint8_t mqtt_overhead_size = 23;
 	const int mqtt_defsize = mqttClient.getBufferSize();
 
-	Serial.print("max_size:");
-	Serial.println(strlen(inmsg));
-	Serial.print("INMSG:");
-	Serial.println(inmsg);
-
-	// Serial.print("def_size:");
-	// Serial.println(mqtt_defsize);
-
 	int x = devname == nullptr ? strlen(topics_sub[0]) + 2 : 0;
 	// int totl_len = strlen(inmsg) + x /* devTopic */+ 8 /* clock*/+ mqtt_overhead_size /* mqtt_overh*/ + 10 /*spare*/;
 	// char tmpmsg[strlen(inmsg) + x + 8 + 25]; // avoid dynamic allocation
@@ -582,9 +573,6 @@ void myIOT2::_pub_generic(const char *topic, const char *inmsg, bool retain, cha
 	{
 		mqttClient.setBufferSize(x);
 		mqttClient.publish(topic, tmpmsg, retain);
-		// Serial.print(topic);
-		// Serial.print(": ");
-		// Serial.println(tmpmsg);
 		mqttClient.setBufferSize(mqtt_defsize);
 	}
 	else
@@ -625,20 +613,23 @@ void myIOT2::pub_debug(const char *inmsg)
 {
 	_pub_generic(topics_gen_pub[2], inmsg, false, nullptr, true);
 }
-void myIOT2::add_subTopic(const char *topic, uint8_t len)
+void myIOT2::add_subTopic(const char *topic)
 {
+	uint8_t len = strlen(topic);
 	char *top = new char[len + 1];
 	strcpy(top, topic);
 	topics_sub[_sub_topic_counter++] = top;
 }
-void myIOT2::add_pubTopic(const char *topic, uint8_t len)
+void myIOT2::add_pubTopic(const char *topic)
 {
+	uint8_t len = strlen(topic);
 	char *top = new char[len + 1];
 	strcpy(top, topic);
 	topics_pub[_pub_topic_counter++] = top;
 }
-void myIOT2::add_gen_pubTopic(const char *topic, uint8_t len)
+void myIOT2::add_gen_pubTopic(const char *topic)
 {
+	uint8_t len = strlen(topic);
 	char *top = new char[len + 1];
 	strcpy(top, topic);
 	topics_gen_pub[_gen_topic_counter++] = top;
