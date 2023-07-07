@@ -1,6 +1,6 @@
 {
     "name": "myIOT2",
-    "version": "2.1",
+    "version": "2.3",
     "description": "MQTT & WiFi IOT projects ESP32/8266",
     "keywords": "planet, happiness, people",
     "repository": {
@@ -10,12 +10,12 @@
     "authors": [
         {
             "name": "guyDvir",
-            "email": "",
+            "email": "guydvir.tech@gmail.com",
             "url": ""
         }
     ],
     "license": "MIT",
-    "homepage": "https://www.helloworld.org/",
+    "homepage": "https://github.com/guydvir2/myIOT2.git",
     "dependencies": {
         "bblanchon/ArduinoJson": "^6.16.1",
         "knolleary/PubSubClient": "^2.8",

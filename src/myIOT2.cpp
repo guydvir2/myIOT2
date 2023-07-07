@@ -839,7 +839,7 @@ void myIOT2::_acceptOTA()
 void myIOT2::_startOTA()
 {
 	allowOTA_clock = millis();
-	ArduinoOTA.setPort(8266);
+	// ArduinoOTA.setPort(8266); default port is 3232. 8266 was on ArduinoIDE
 	ArduinoOTA.setHostname(topics_sub[0]);
 	ArduinoOTA.onStart([]()
 					   {
