@@ -19,7 +19,7 @@
     "dependencies": {
         "bblanchon/ArduinoJson": "^6.16.1",
         "knolleary/PubSubClient": "^2.8",
-        "myJflash": "https://github.com/guydvir2/myJflash.git"
+        "myJflash": "https://github.com/guydvir2/myJflash.git#v0.1"
     },
     "frameworks": "*",
     "platforms": [
