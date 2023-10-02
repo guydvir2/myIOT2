@@ -85,7 +85,6 @@ bool myIOT2::_WiFi_handler()
 	{
 		if (WiFi.status() == WL_CONNECT_FAILED || millis() - _lastWifiConnectiomAttemptMillis >= _retryConnectWiFi * MS2MINUTES)
 		{
-			// Serial.printf("WiFi! Connection attempt failed, delay expired. (%fs). \n", millis() / 1000.0);
 			PRNTL("WiFi! Connection attempt failed, delay expired.");
 			WiFi.disconnect(true);
 
@@ -548,8 +547,6 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 }
 void myIOT2::_pub_generic(const char *topic, const char *inmsg, bool retain, char *devname, bool bare)
 {
-	char clk[25];
-	get_timeStamp(clk, 0);
 	const int _maxMQTTmsglen = 250;
 	const uint8_t mqtt_overhead_size = 23;
 	const int mqtt_defsize = mqttClient.getBufferSize();
@@ -561,6 +558,8 @@ void myIOT2::_pub_generic(const char *topic, const char *inmsg, bool retain, cha
 
 	if (!bare)
 	{
+		char clk[25];
+		get_timeStamp(clk, 0);
 		snprintf(tmpmsg, _maxMQTTmsglen, "[%s] [%s] %s", clk, topics_sub[0], inmsg);
 	}
 	else
@@ -577,9 +576,6 @@ void myIOT2::_pub_generic(const char *topic, const char *inmsg, bool retain, cha
 	}
 	else
 	{
-		// Serial.print(topic);
-		// Serial.print(": ");
-		// Serial.println(tmpmsg);
 		mqttClient.publish(topic, tmpmsg, retain);
 	}
 }

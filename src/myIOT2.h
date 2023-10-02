@@ -42,10 +42,10 @@ public:
 protected:
     char ver[12] = "iot_v2.3";
 
-public:
-    const char *topics_pub[4]{};
-    const char *topics_sub[20]{};
-    const char *topics_gen_pub[4]{};
+public:                              /* ~~ These are must have topics, and order counts ~~ */
+    const char *topics_pub[4]{};     /* myHome/DebName/Avail */
+    const char *topics_sub[20]{};    /* myHome/DebName */
+    const char *topics_gen_pub[4]{}; /* myHome/Messages; myHome/log; myHome/debug */
     const char *parameter_filenames[4]{};
 
     // ~~~~~~ Services ~~~~~~~~~
