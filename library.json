@@ -1,6 +1,6 @@
 {
     "name": "myIOT2",
-    "version": "2.3",
+    "version": "2.4",
     "description": "MQTT & WiFi IOT projects ESP32/8266",
     "keywords": "planet, happiness, people",
     "repository": {

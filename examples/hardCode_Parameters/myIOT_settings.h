@@ -54,6 +54,7 @@ void addiotnalMQTT(char *incoming_msg, char *_topic)
     }
 
 }
+
 void startIOTservices()
 {
     updateTopics_local();

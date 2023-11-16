@@ -24,6 +24,8 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	}
 
 	_setMQTT();
+	_startNTP();
+	_startOTA();
 
 	PRNTL(F("\n>>> Parameters <<<"));
 	PRNT(F("useSerial:\t\t"));
@@ -55,6 +57,20 @@ void myIOT2::looper()
 	{
 		return;
 	}
+	if (_firstRun && _NTP_updated() == true && isMqttConnected())
+	{
+		PRNTL(F(">>> ~~~~~~~ END iot2 ~~~~~~~ <<<"));
+		char msg[100];
+		char buf[10];
+		dtostrf(millis() * 0.001, 5, 2, buf);
+		sprintf(msg, "<< PowerON Boot >> IP:[%d.%d.%d.%d] RSSI [%d dB], boot duration: [%s sec]", WiFi.localIP()[0],
+				WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3], WiFi.RSSI(), buf);
+		if (!ignore_boot_msg)
+		{
+			pub_log(msg);
+		}
+		_firstRun = false;
+	}
 }
 
 // ~~~~~~~ Wifi functions ~~~~~~~
@@ -67,6 +83,7 @@ bool myIOT2::_WiFi_handler()
 		WiFi.disconnect(true);
 		_nextWifiConnectionAttemptMillis = millis() + 500;
 		firstLoopCall = false;
+		PRNTL(F("~ WiFi Start services"));
 		return true;
 	}
 
@@ -130,17 +147,8 @@ bool myIOT2::_WiFi_handler()
 void myIOT2::_onWifiConnect()
 {
 	char b[50];
-	sprintf(b, "\n ~Connected ,ip : %s", WiFi.localIP().toString().c_str());
+	sprintf(b, "\n~ Connected ,ip : %s", WiFi.localIP().toString().c_str());
 	PRNTL(b);
-	if (!_NTP_updated())
-	{
-		_startNTP();
-	}
-	if (!_OTAloaded)
-	{
-		_startOTA();
-		_OTAloaded = true;
-	}
 }
 void myIOT2::_onWifiDisconnect()
 {
@@ -168,34 +176,13 @@ bool myIOT2::_NTP_updated()
 }
 bool myIOT2::_startNTP(const char *ntpServer, const char *ntpServer2)
 {
-	const uint8_t _sec_to_NTP = 25;
-	unsigned long startLoop = millis();
 #if defined(ESP8266)
 	configTime(TZ_Asia_Jerusalem, ntpServer2, ntpServer); // configuring time offset and an NTP server
 #elif defined(ESP32)
 	configTzTime(TZ_Asia_Jerusalem, ntpServer2, ntpServer);
 #endif
-	PRNTL(F("\n>>> NTP <<<"));
-	PRNT("~ NTP: ");
-	while (!_NTP_updated() && (millis() - startLoop < _sec_to_NTP * 1000) && WiFi.isConnected()) /* ESP32 after software reset - doesnt enter here at all*/
-	{
-		delay(100);
-		PRNT("*");
-	}
-
-	if (!_NTP_updated())
-	{
-		PRNTL(F("\n~ NTP Update fail"));
-		return 0;
-	}
-	else
-	{
-		PRNTL("");
-		PRNT(F("~ NTP Updated OK in "));
-		PRNT((millis() - startLoop) * 0.001);
-		PRNTL(F("sec"));
-		return 1;
-	}
+	PRNTL(F("~ NTP and timezone set"));
+	return 1;
 }
 void myIOT2::get_timeStamp(char ret[], time_t t)
 {
@@ -247,15 +234,11 @@ bool myIOT2::_MQTT_handler()
 	{
 		_mqttConnected = true;
 		_subMQTT();
-		// notifyOnline();
 	}
 
 	// Connection lost
 	else if (!isMqttConnected && _mqttConnected)
 	{
-		// sprintf(b, "MQTT! Lost connection (%fs). \n", millis() / 1000.0);
-		// PRNTL(F(b));
-		// Serial.printf("MQTT: Retrying to connect in %i seconds. \n", _mqttReconnectionAttemptDelay / 1000);
 		PRNTL(F("MQTT: Retrying to connect"));
 		_nextMqttConnectionAttemptMillis = millis() + _mqttReconnectionAttemptDelay;
 	}
@@ -264,7 +247,6 @@ bool myIOT2::_MQTT_handler()
 	else if (isWifiConnected() && _nextMqttConnectionAttemptMillis > 0 && millis() >= _nextMqttConnectionAttemptMillis)
 	{
 		char b[50];
-		// Connect to MQTT broker
 		if (_connectMQTT())
 		{
 			notifyOnline();
@@ -320,6 +302,7 @@ void myIOT2::_setMQTT()
 	mqttClient.setServer(_mqtt_server, 1883);
 	mqttClient.setKeepAlive(30);
 	mqttClient.setCallback(std::bind(&myIOT2::_MQTTcb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+	PRNTL(F("~ MQTT broker set"));
 }
 bool myIOT2::_connectMQTT()
 {
@@ -361,19 +344,6 @@ void myIOT2::_subMQTT()
 		}
 	}
 	PRNTL(F("±±±±±±±±±±±±±±±±±±±±±±±±±\n"));
-
-	if (_firstRun)
-	{
-		PRNTL(F(">>> ~~~~~~~ END iot2 ~~~~~~~ <<<"));
-		char msg[60];
-		sprintf(msg, "<< PowerON Boot >> IP:[%d.%d.%d.%d] RSSI [%ddB]", WiFi.localIP()[0],
-				WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3], WiFi.RSSI());
-		if (!ignore_boot_msg)
-		{
-			pub_log(msg);
-		}
-		_firstRun = false;
-	}
 }
 void myIOT2::_concate(const char *array[], char outmsg[])
 {
@@ -448,35 +418,33 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	}
 	else if (strcmp(incoming_msg, "show_flashParam") == 0)
 	{
-		// if (useFlashP)
-		// {
-		char clk[25];
-		get_timeStamp(clk);
-		sprintf(msg, "\n<<~~~~~~ [%s] [%s] On-Flash Parameters ~~~~~>>", clk, topics_sub[0]);
-		pub_debug(msg);
-
-		for (uint8_t i = 0; i < sizeof(parameter_filenames) / sizeof(parameter_filenames[0]); i++)
+		if (useFlashP)
 		{
-			myJflash jf(useSerial);
-			if (parameter_filenames[i] != nullptr)
+			char clk[25];
+			get_timeStamp(clk);
+			sprintf(msg, "\n<<~~~~~~ [%s] [%s] On-Flash Parameters ~~~~~>>", clk, topics_sub[0]);
+			pub_debug(msg);
+
+			for (uint8_t i = 0; i < sizeof(parameter_filenames) / sizeof(parameter_filenames[0]); i++)
 			{
-				jf.set_filename(parameter_filenames[i]);
-				pub_debug(parameter_filenames[i]);
-				String tempstr1 = jf.readFile2String(parameter_filenames[i]);
-				// Serial.print("STR:");
-				// Serial.println(tempstr1);
-				char buff[tempstr1.length() + 1];
-				tempstr1.toCharArray(buff, tempstr1.length() + 1);
-				pub_debug(buff);
+				myJflash jf(useSerial);
+				if (parameter_filenames[i] != nullptr)
+				{
+					jf.set_filename(parameter_filenames[i]);
+					pub_debug(parameter_filenames[i]);
+					String tempstr1 = jf.readFile2String(parameter_filenames[i]);
+					char buff[tempstr1.length() + 1];
+					tempstr1.toCharArray(buff, tempstr1.length() + 1);
+					pub_debug(buff);
+				}
 			}
+			pub_msg("[On-Flash Parameters]: extracted");
+			pub_debug("<<~~~~~~~~~~ End ~~~~~~~~~~>>");
 		}
-		pub_msg("[On-Flash Parameters]: extracted");
-		pub_debug("<<~~~~~~~~~~ End ~~~~~~~~~~>>");
-		// }
-		// else
-		// {
-		// 	pub_msg("[On-Flash Parameters]: not in use");
-		// }
+		else
+		{
+			pub_msg("[On-Flash Parameters]: not in use");
+		}
 	}
 	else if (strcmp(incoming_msg, "network") == 0)
 	{
@@ -487,7 +455,8 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 		unsigned long t = (long)(millis() / 1000);
 		convert_epoch2clock(t, 0, clock, days);
 		sprintf(IPadd, "%d.%d.%d.%d", WiFi.localIP()[0], WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3]);
-		sprintf(msg, "Network: uptime[%s %s], localIP[%s], MQTTserver[%s],  RSSI: [%d dBm]", days, clock, IPadd, _mqtt_server, WiFi.RSSI());
+		sprintf(msg, "Network: uptime[%s %s], localIP[%s], MQTTserver[%s],  RSSI: [%d dBm]",
+				days, clock, IPadd, _mqtt_server, WiFi.RSSI());
 
 		pub_msg(msg);
 	}
@@ -504,9 +473,6 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 #ifdef ESP32
 		rmem = 100 * (float)(fmem / (float)MAX_ESP32_HEAP);
 #endif
-		Serial.println(rmem);
-		Serial.println(MAX_ESP8266_HEAP);
-		Serial.println(fmem);
 		dtostrf(rmem, 6, 2, result);
 		dtostrf(fmem / 1000.0, 6, 2, result1);
 		sprintf(msg, "Heap: Remain [%skb] [%s%%]", result1, result);
@@ -880,4 +846,5 @@ void myIOT2::_startOTA()
 	}
 
 	ArduinoOTA.begin();
+	PRNTL(F("~ OTA set"));
 }

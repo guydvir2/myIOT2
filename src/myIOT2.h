@@ -40,7 +40,7 @@ public:
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 protected:
-    char ver[12] = "iot_v2.3";
+    char ver[12] = "iot_v2.4";
 
 public:                              /* ~~ These are must have topics, and order counts ~~ */
     const char *topics_pub[4]{};     /* myHome/DebName/Avail */
@@ -92,7 +92,6 @@ private:
 
     // holds status
     bool _firstRun = true;
-    bool _OTAloaded = false;
 
 public: /* Functions */
     myIOT2();
