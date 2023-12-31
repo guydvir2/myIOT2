@@ -4,11 +4,11 @@
 #define MQTT_PASS "kupelu9e"
 #define MQTT_SERVER1 "192.168.2.100"
 
-// #define SSID_ID "dvirz"
+// #define SSID_ID "dvirz2"
 // #define PASS_WIFI "GdSd13100301"
 // #define MQTT_USER "guy"
 // #define MQTT_PASS "kupelu9e"
-// #define MQTT_SERVER1 "192.168.0.10"
+// #define MQTT_SERVER1 "192.168.0.5"
 
 #define tok "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"
 
