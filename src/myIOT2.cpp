@@ -389,20 +389,20 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	}
 	else if (strcmp(incoming_msg, "ver") == 0)
 	{
-		sprintf(msg, "ver: IOTlib: [%s]", ver);
+		sprintf(msg, "[ver]: IOTlib: [%s]", ver);
 		pub_msg(msg);
 	}
 	else if (strcmp(incoming_msg, "services") == 0)
 	{
-		sprintf(msg, "Services: SERIAL[%d], no-networkReset[%d min], ignore_boot_msg[%d], useFlashP[%d]",
-				useSerial, noNetwork_reset, ignore_boot_msg, useFlashP);
+		sprintf(msg, "[Services]: SERIAL[%s], no-networkReset[%d min], ignore_boot_msg[%s], useFlashP[%s]",
+				useSerial ? "Yes" : "No", noNetwork_reset, ignore_boot_msg ? "Yes" : "No", useFlashP ? "Yes" : "No");
 		pub_msg(msg);
 	}
 	else if (strcmp(incoming_msg, "help") == 0)
 	{
-		sprintf(msg, "Help: Commands #1 - [status, reset, ota, ver, ver2, help, help2, MCU_type, services, network]");
+		sprintf(msg, "[Help]: Commands #1 - [status, reset, ota, ver, ver2, help, help2, MCU_type, services, network]");
 		pub_msg(msg);
-		sprintf(msg, "Help: Commands #2 - [show_flashParam, free_mem, {update_flash,[key],[value]}]");
+		sprintf(msg, "[Help]: Commands #2 - [show_flashParam, free_mem, topics, {update_flash,[key],[value]}]");
 		pub_msg(msg);
 	}
 	else if (strcmp(incoming_msg, "MCU_type") == 0)
@@ -455,7 +455,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 		unsigned long t = (long)(millis() / 1000);
 		convert_epoch2clock(t, 0, clock, days);
 		sprintf(IPadd, "%d.%d.%d.%d", WiFi.localIP()[0], WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3]);
-		sprintf(msg, "Network: uptime[%s %s], localIP[%s], MQTTserver[%s],  RSSI: [%d dBm]",
+		sprintf(msg, "[Network]: uptime[%s %s], localIP[%s], MQTTserver[%s],  RSSI: [%d dBm]",
 				days, clock, IPadd, _mqtt_server, WiFi.RSSI());
 
 		pub_msg(msg);
@@ -475,7 +475,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 #endif
 		dtostrf(rmem, 6, 2, result);
 		dtostrf(fmem / 1000.0, 6, 2, result1);
-		sprintf(msg, "Heap: Remain [%skb] [%s%%]", result1, result);
+		sprintf(msg, "[Heap]: Remain [%skb] [%s%%]", result1, result);
 		pub_msg(msg);
 	}
 	else if (strcmp(incoming_msg, "topics") == 0)
@@ -513,24 +513,23 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 }
 void myIOT2::_pub_generic(const char *topic, const char *inmsg, bool retain, char *devname, bool bare)
 {
-	const int _maxMQTTmsglen = 250;
 	const uint8_t mqtt_overhead_size = 23;
 	const int mqtt_defsize = mqttClient.getBufferSize();
 
 	int x = devname == nullptr ? strlen(topics_sub[0]) + 2 : 0;
 	// int totl_len = strlen(inmsg) + x /* devTopic */+ 8 /* clock*/+ mqtt_overhead_size /* mqtt_overh*/ + 10 /*spare*/;
 	// char tmpmsg[strlen(inmsg) + x + 8 + 25]; // avoid dynamic allocation
-	char tmpmsg[_maxMQTTmsglen];
+	char tmpmsg[mqtt_len];
 
 	if (!bare)
 	{
 		char clk[25];
 		get_timeStamp(clk, 0);
-		snprintf(tmpmsg, _maxMQTTmsglen, "[%s] [%s] %s", clk, topics_sub[0], inmsg);
+		snprintf(tmpmsg, mqtt_len, "[%s] [%s] %s", clk, topics_sub[0], inmsg);
 	}
 	else
 	{
-		snprintf(tmpmsg, _maxMQTTmsglen, "%s", inmsg);
+		snprintf(tmpmsg, mqtt_len, "%s", inmsg);
 	}
 
 	x = strlen(tmpmsg) + mqtt_overhead_size + strlen(topic); /* everything get into account when diff new buffer size*/

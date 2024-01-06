@@ -40,7 +40,7 @@ public:
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 protected:
-    char ver[12] = "iot_v2.4";
+    char ver[12] = "iot_v2.5";
 
 public:                              /* ~~ These are must have topics, and order counts ~~ */
     const char *topics_pub[4]{};     /* myHome/DebName/Avail */
@@ -57,7 +57,7 @@ public:                              /* ~~ These are must have topics, and order
 
     uint8_t num_p = 0;                  // number parameters got in MQTT message
     static const uint8_t num_param = 4; // max MQTT parameters
-    static const int mqtt_len = 300;
+    const int mqtt_len = 300;
     char inline_param[num_param][20]; // values from user
 
     inline bool isWifiConnected() const { return _wifiConnected; };
