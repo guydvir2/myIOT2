@@ -581,6 +581,14 @@ void myIOT2::add_subTopic(const char *topic)
 	strcpy(top, topic);
 	topics_sub[_sub_topic_counter++] = top;
 }
+void myIOT2::add_subTopic(const char *topic[], uint8_t n)
+{
+		for (uint8_t x = 0; x < n; x++)
+	{
+		add_subTopic(topic[x]);
+	}
+
+}
 void myIOT2::add_pubTopic(const char *topic)
 {
 	uint8_t len = strlen(topic);
@@ -588,12 +596,27 @@ void myIOT2::add_pubTopic(const char *topic)
 	strcpy(top, topic);
 	topics_pub[_pub_topic_counter++] = top;
 }
+void myIOT2::add_pubTopic(const char *topic[], uint8_t n)
+{
+		for (uint8_t x = 0; x < n; x++)
+	{
+		add_pubTopic(topic[x]);
+	}
+
+}
 void myIOT2::add_gen_pubTopic(const char *topic)
 {
 	uint8_t len = strlen(topic);
 	char *top = new char[len + 1];
 	strcpy(top, topic);
 	topics_gen_pub[_gen_topic_counter++] = top;
+}
+void myIOT2::add_gen_pubTopic(const char *topic[], uint8_t n)
+{
+	for (uint8_t x = 0; x < n; x++)
+	{
+		add_gen_pubTopic(topic[x]);
+	}
 }
 
 void myIOT2::notifyOnline()

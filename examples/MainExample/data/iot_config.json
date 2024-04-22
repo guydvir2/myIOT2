@@ -1,0 +1,5 @@
+{
+    "useSerial": true,
+    "noNetwork_reset": 5,
+    "ignore_boot_msg": false
+}

@@ -40,7 +40,7 @@ public:
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 protected:
-    char ver[12] = "iot_v2.5";
+    char ver[12] = "iot_v2.6";
 
 public:                              /* ~~ These are must have topics, and order counts ~~ */
     const char *topics_pub[4]{};     /* myHome/DebName/Avail */
@@ -108,8 +108,11 @@ public: /* Functions */
     void pub_state(const char *inmsg, uint8_t i = 0);
     void pub_noTopic(const char *inmsg, char *Topic, bool retain = false);
     void add_subTopic(const char *topic);
+    void add_subTopic(const char *topic[], uint8_t n);
     void add_pubTopic(const char *topic);
+    void add_pubTopic(const char *topic[], uint8_t n);
     void add_gen_pubTopic(const char *topic);
+    void add_gen_pubTopic(const char *topic[], uint8_t n);
 
     // ~~~~~~~ Clk ~~~~~~~
     time_t now();
