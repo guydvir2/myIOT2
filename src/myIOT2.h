@@ -40,11 +40,11 @@ public:
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 protected:
-    char ver[12] = "iot_v2.6";
+    char ver[12] = "iot_v2.61";
 
 public:                              /* ~~ These are must have topics, and order counts ~~ */
-    const char *topics_pub[4]{};     /* myHome/DebName/Avail */
-    const char *topics_sub[20]{};    /* myHome/DebName */
+    const char *topics_pub[4]{};     /* myHome/DevName/Avail */
+    const char *topics_sub[20]{};    /* myHome/DevName */
     const char *topics_gen_pub[4]{}; /* myHome/Messages; myHome/log; myHome/debug */
     const char *parameter_filenames[4]{};
 
@@ -93,6 +93,12 @@ private:
     // holds status
     bool _firstRun = true;
 
+    uint8_t _countCriteria;
+    uint8_t bootcounter = 0;
+    bool _rstSft_OK = false;
+    bool _rstSft_Final = false;
+    bool _use_rstSft = false;
+
 public: /* Functions */
     myIOT2();
     void looper();
@@ -100,6 +106,13 @@ public: /* Functions */
                         const char *mqtt_user = MQTT_USER, const char *mqtt_passw = MQTT_PASS, const char *mqtt_broker = MQTT_SERVER1);
 
     // ~~~~~~~ MQTT ~~~~~~~
+    void strtClk_rstSft(uint8_t n = 3);
+    bool getResult_rstStf();
+    void loop_rstSft(uint8_t time_criteria = 15);
+    void _write_rstSft(uint8_t value, const char *key = "counter", const char *fname = "/bootcounter.JSON");
+    void _failure_rstSft();
+    uint8_t _read_rstSft(const char *key = "counter", const char *fname = "/bootcounter.JSON");
+
     void notifyOnline();
     void pub_msg(const char *inmsg);
     void pub_log(const char *inmsg);
@@ -152,5 +165,6 @@ private:
     uint8_t _getdataType(const char *y);
     bool _cmdline_flashUpdate(const char *key, const char *new_value);
     bool _change_flashP_value(const char *key, const char *new_value, JsonDocument &DOC);
+    void _endRun_notofications();
 };
 #endif

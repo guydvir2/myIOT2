@@ -23,29 +23,11 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 		delay(10);
 	}
 
+	_failure_rstSft(); // In case of boot error
 	_setMQTT();
 	_startNTP();
 	_startOTA();
-
-	PRNTL(F("\n>>> Parameters <<<"));
-	PRNT(F("useSerial:\t\t"));
-	PRNTL(useSerial ? "Yes" : "No");
-
-	PRNT(F("ignore_boot_msg:\t"));
-	PRNTL(ignore_boot_msg ? "Yes" : "No");
-	PRNT(F("useFlashP:\t\t"));
-	PRNTL(useFlashP ? "Yes" : "No");
-	PRNT(F("noNetwork_reset:\t"));
-	PRNTL(noNetwork_reset);
-	PRNT(F("ESP type:\t\t"));
-
-	char a[10];
-#if defined(ESP8266)
-	strcpy(a, "ESP8266");
-#elif defined(ESP32)
-	strcpy(a, "ESP32");
-#endif
-	PRNTL(a);
+	_endRun_notofications();
 }
 void myIOT2::looper()
 {
@@ -71,6 +53,8 @@ void myIOT2::looper()
 		}
 		_firstRun = false;
 	}
+
+	loop_rstSft(); // Safety reset looper
 }
 
 // ~~~~~~~ Wifi functions ~~~~~~~
@@ -583,11 +567,10 @@ void myIOT2::add_subTopic(const char *topic)
 }
 void myIOT2::add_subTopic(const char *topic[], uint8_t n)
 {
-		for (uint8_t x = 0; x < n; x++)
+	for (uint8_t x = 0; x < n; x++)
 	{
 		add_subTopic(topic[x]);
 	}
-
 }
 void myIOT2::add_pubTopic(const char *topic)
 {
@@ -598,11 +581,10 @@ void myIOT2::add_pubTopic(const char *topic)
 }
 void myIOT2::add_pubTopic(const char *topic[], uint8_t n)
 {
-		for (uint8_t x = 0; x < n; x++)
+	for (uint8_t x = 0; x < n; x++)
 	{
 		add_pubTopic(topic[x]);
 	}
-
 }
 void myIOT2::add_gen_pubTopic(const char *topic)
 {
@@ -869,4 +851,106 @@ void myIOT2::_startOTA()
 
 	ArduinoOTA.begin();
 	PRNTL(F("~ OTA set"));
+}
+void myIOT2::_endRun_notofications()
+{
+	PRNTL(F("\n>>> Parameters <<<"));
+	PRNT(F("useSerial:\t\t"));
+	PRNTL(useSerial ? "Yes" : "No");
+
+	PRNT(F("ignore_boot_msg:\t"));
+	PRNTL(ignore_boot_msg ? "Yes" : "No");
+	PRNT(F("useFlashP:\t\t"));
+	PRNTL(useFlashP ? "Yes" : "No");
+	PRNT(F("noNetwork_reset:\t"));
+	PRNTL(noNetwork_reset);
+	PRNT(F("ESP type:\t\t"));
+
+	char a[10];
+#if defined(ESP8266)
+	strcpy(a, "ESP8266");
+#elif defined(ESP32)
+	strcpy(a, "ESP32");
+#endif
+	PRNTL(a);
+	PRNT(F("Use Reset_Safety:\t"));
+	PRNTL(_use_rstSft ? "Yes" : "No");
+	if (_use_rstSft)
+	{
+		PRNT(F("Reset_Safety Counter:\t"));
+		PRNTL(this->bootcounter);
+		PRNT(F("Reset_Safety Boot-Mode:\t"));
+		PRNTL(getResult_rstStf() ? "Normal" : "Failure");
+	}
+
+	PRNTL(F(">>> END <<<\n"));
+}
+void myIOT2::strtClk_rstSft(uint8_t n)
+{
+	_use_rstSft = true;
+	this->_countCriteria = n;
+	this->bootcounter = _read_rstSft();
+	if (this->bootcounter < this->_countCriteria)
+	{
+		_rstSft_OK = true;
+	}
+	_write_rstSft(++this->bootcounter);
+}
+bool myIOT2::getResult_rstStf()
+{
+	return this->bootcounter < this->_countCriteria;
+}
+void myIOT2::loop_rstSft(uint8_t time_criteria)
+{
+	if (_use_rstSft && millis() > time_criteria * 1000 && this->bootcounter != 0)
+	{
+		_write_rstSft(0);
+		this->bootcounter = 0;
+		_rstSft_OK = true;
+	}
+}
+void myIOT2::_write_rstSft(uint8_t value, const char *key, const char *fname)
+{
+	StaticJsonDocument<100> doc;
+	myJflash bootCounter(this->useSerial);
+
+	doc[key] = value;
+	bootCounter.writeFile(doc, fname);
+}
+uint8_t myIOT2::_read_rstSft(const char *key, const char *fname)
+{
+	StaticJsonDocument<100> doc;
+	myJflash bootCounter(this->useSerial);
+
+	bootCounter.readFile(doc, fname);
+	this->bootcounter = doc[key].as<uint8_t>();
+	return this->bootcounter;
+}
+void myIOT2::_failure_rstSft()
+{
+	if (!getResult_rstStf())
+	{
+		char temp2[40];
+		char tempname[20];
+		_sub_topic_counter = 0;
+		_pub_topic_counter = 0;
+		_gen_topic_counter = 0;
+
+#if defined(ESP8266)
+		sprintf(tempname, "ESP_%s", String(ESP.getChipId()).c_str());
+#elif defined(ESP32)
+		uint64_t chipid = ESP.getEfuseMac();
+		sprintf(tempname, "ESP32_%04X", (uint16_t)(chipid >> 32));
+#endif
+
+		add_gen_pubTopic("myIOT/Messages");
+		add_gen_pubTopic("myIOT/log");
+
+		sprintf(temp2, "myIOT/%s", tempname);
+		add_subTopic(temp2);
+		add_subTopic("myIOT/All");
+		sprintf(temp2, "myIOT/%s/Avail", tempname);
+
+		add_pubTopic(temp2);
+	}
 }
