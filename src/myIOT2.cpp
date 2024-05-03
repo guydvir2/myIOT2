@@ -41,20 +41,12 @@ void myIOT2::looper()
 	}
 	if (_firstRun && _NTP_updated() == true && isMqttConnected())
 	{
-		PRNTL(F(">>> ~~~~~~~ END iot2 ~~~~~~~ <<<"));
-		char msg[100];
-		char buf[10];
-		dtostrf(millis() * 0.001, 5, 2, buf);
-		sprintf(msg, "<< PowerON Boot >> IP:[%d.%d.%d.%d] RSSI [%d dB], boot duration: [%s sec]", WiFi.localIP()[0],
-				WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3], WiFi.RSSI(), buf);
-		if (!ignore_boot_msg)
-		{
-			pub_log(msg);
-		}
-		_firstRun = false;
+		_pub_succ_connectivity();
 	}
-
-	loop_rstSft(); // Safety reset looper
+	if (_use_rstSft)
+	{
+		loop_rstSft(); // Safety reset looper
+	}
 }
 
 // ~~~~~~~ Wifi functions ~~~~~~~
@@ -343,7 +335,20 @@ void myIOT2::_concate(const char *array[], char outmsg[])
 	}
 	return;
 }
-
+void myIOT2::_pub_succ_connectivity()
+{
+	PRNTL(F(">>> ~~~~~~~ END iot2 ~~~~~~~ <<<"));
+	char buf[10];
+	char msg[100];
+	dtostrf(millis() * 0.001, 5, 2, buf);
+	sprintf(msg, "<< PowerON Boot >> IP:[%d.%d.%d.%d] RSSI [%d dB], boot duration: [%s sec]", WiFi.localIP()[0],
+			WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3], WiFi.RSSI(), buf);
+	if (!ignore_boot_msg)
+	{
+		pub_log(msg);
+	}
+	_firstRun = false;
+}
 void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 {
 	char incoming_msg[30];
@@ -532,7 +537,7 @@ void myIOT2::pub_msg(const char *inmsg)
 {
 	_pub_generic(topics_gen_pub[0], inmsg);
 }
-void myIOT2::pub_noTopic(const char *inmsg, char *Topic, bool retain)
+void myIOT2::pub_noTopic(const char *inmsg, const char *Topic, bool retain)
 {
 	_pub_generic(Topic, inmsg, retain, nullptr, true);
 }
@@ -902,11 +907,12 @@ bool myIOT2::getResult_rstStf()
 }
 void myIOT2::loop_rstSft(uint8_t time_criteria)
 {
-	if (_use_rstSft && millis() > time_criteria * 1000 && this->bootcounter != 0)
+	if (millis() > time_criteria * 1000 && this->bootcounter != 0)
 	{
 		_write_rstSft(0);
 		this->bootcounter = 0;
 		_rstSft_OK = true;
+		PRNTL(F("Rest_Safety Reset"));
 	}
 }
 void myIOT2::_write_rstSft(uint8_t value, const char *key, const char *fname)

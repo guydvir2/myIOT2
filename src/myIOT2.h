@@ -119,7 +119,7 @@ public: /* Functions */
     void pub_debug(const char *inmsg);
     void sendReset(const char *header = nullptr);
     void pub_state(const char *inmsg, uint8_t i = 0);
-    void pub_noTopic(const char *inmsg, char *Topic, bool retain = false);
+    void pub_noTopic(const char *inmsg, const char *Topic, bool retain = false);
     void add_subTopic(const char *topic);
     void add_subTopic(const char *topic[], uint8_t n);
     void add_pubTopic(const char *topic);
@@ -156,6 +156,7 @@ private:
     void _concate(const char *array[], char outmsg[]);
     void _MQTTcb(char *topic, uint8_t *payload, unsigned int length);
     void _pub_generic(const char *topic, const char *inmsg, bool retain = false, char *devname = nullptr, bool bare = false);
+    void _pub_succ_connectivity();
 
     // ~~~~~~~ OTA  ~~~~~~~
     void _startOTA();
