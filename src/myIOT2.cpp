@@ -934,7 +934,7 @@ uint8_t myIOT2::_read_rstSft(const char *key, const char *fname)
 }
 void myIOT2::_failure_rstSft()
 {
-	if (!getResult_rstStf())
+	if (!getResult_rstStf() && _use_rstSft)
 	{
 		char temp2[40];
 		char tempname[20];
