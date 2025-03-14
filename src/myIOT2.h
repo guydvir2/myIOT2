@@ -147,6 +147,7 @@ private:
     bool _WiFi_handler();
     void _onWifiConnect();
     void _onWifiDisconnect();
+    void _loop_cycle(int loop_cycle=300);
 
     // ~~~~~~~ MQTT ~~~~~~~
     void _setMQTT();
@@ -156,6 +157,7 @@ private:
     void _add_topic(const char *topic, const char **topicArray, uint8_t &counter);
     void _concate(const char *array[], char outmsg[]);
     void _MQTTcb(char *topic, uint8_t *payload, unsigned int length);
+    void _pub_telemetry();
     void _pub_generic(const char *topic, const char *inmsg, bool retain = false, char *devname = nullptr, bool bare = false);
     void _pub_succ_connectivity();
 
