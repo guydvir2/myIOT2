@@ -40,7 +40,7 @@ public:
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 protected:
-    char ver[12] = "iot_v2.61";
+    char ver[12] = "iot_v2.7";
 
 public:                              /* ~~ These are must have topics, and order counts ~~ */
     const char *topics_pub[4]{};     /* myHome/DevName/Avail */
@@ -153,6 +153,7 @@ private:
     void _subMQTT();
     bool _connectMQTT();
     bool _MQTT_handler();
+    void _add_topic(const char *topic, const char **topicArray, uint8_t &counter);
     void _concate(const char *array[], char outmsg[]);
     void _MQTTcb(char *topic, uint8_t *payload, unsigned int length);
     void _pub_generic(const char *topic, const char *inmsg, bool retain = false, char *devname = nullptr, bool bare = false);

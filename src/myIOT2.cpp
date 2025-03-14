@@ -128,9 +128,9 @@ void myIOT2::_onWifiConnect()
 }
 void myIOT2::_onWifiDisconnect()
 {
-	PRNT(F("WiFi Lost connection "));
-	PRNT(millis() / 1000);
-	PRNTL(F("sec"));
+	char b[50];
+    sprintf(b, "WiFi Lost connection at %lu sec", millis() / 1000);
+    PRNTL(b);
 }
 void myIOT2::_startWifi(const char *ssid, const char *password)
 {
@@ -160,7 +160,7 @@ bool myIOT2::_startNTP(const char *ntpServer, const char *ntpServer2)
 	PRNTL(F("~ NTP and timezone set"));
 	return 1;
 }
-void myIOT2::get_timeStamp(char ret[], time_t t)
+void myIOT2::get_timeStamp(char ret[], time_t t) 
 {
 	if (t == 0)
 	{
@@ -563,12 +563,20 @@ void myIOT2::pub_debug(const char *inmsg)
 {
 	_pub_generic(topics_gen_pub[2], inmsg, false, nullptr, true);
 }
+void myIOT2::_add_topic(const char *topic, const char **topicArray, uint8_t &counter)
+{
+    uint8_t len = strlen(topic);
+    char *top = new char[len + 1];
+    strcpy(top, topic);
+    topicArray[counter++] = top;
+}
 void myIOT2::add_subTopic(const char *topic)
 {
-	uint8_t len = strlen(topic);
-	char *top = new char[len + 1];
-	strcpy(top, topic);
-	topics_sub[_sub_topic_counter++] = top;
+	// uint8_t len = strlen(topic);
+	// char *top = new char[len + 1];
+	// strcpy(top, topic);
+	// topics_sub[_sub_topic_counter++] = top;
+	_add_topic(topic, topics_sub, _sub_topic_counter);
 }
 void myIOT2::add_subTopic(const char *topic[], uint8_t n)
 {
@@ -579,10 +587,12 @@ void myIOT2::add_subTopic(const char *topic[], uint8_t n)
 }
 void myIOT2::add_pubTopic(const char *topic)
 {
-	uint8_t len = strlen(topic);
-	char *top = new char[len + 1];
-	strcpy(top, topic);
-	topics_pub[_pub_topic_counter++] = top;
+	// uint8_t len = strlen(topic);
+	// char *top = new char[len + 1];
+	// strcpy(top, topic);
+	// topics_pub[_pub_topic_counter++] = top;
+	_add_topic(topic, topics_pub, _pub_topic_counter);
+
 }
 void myIOT2::add_pubTopic(const char *topic[], uint8_t n)
 {
@@ -593,10 +603,12 @@ void myIOT2::add_pubTopic(const char *topic[], uint8_t n)
 }
 void myIOT2::add_gen_pubTopic(const char *topic)
 {
-	uint8_t len = strlen(topic);
-	char *top = new char[len + 1];
-	strcpy(top, topic);
-	topics_gen_pub[_gen_topic_counter++] = top;
+	// uint8_t len = strlen(topic);
+	// char *top = new char[len + 1];
+	// strcpy(top, topic);
+	// topics_gen_pub[_gen_topic_counter++] = top;
+	_add_topic(topic, topics_gen_pub, _gen_topic_counter);
+
 }
 void myIOT2::add_gen_pubTopic(const char *topic[], uint8_t n)
 {
