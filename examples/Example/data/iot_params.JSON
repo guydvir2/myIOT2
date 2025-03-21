@@ -1,0 +1,6 @@
+{
+    "useSerial": true,
+    "useFlashP": true,
+    "noNetwork_reset": 10,
+    "ignore_boot_msg": false
+}

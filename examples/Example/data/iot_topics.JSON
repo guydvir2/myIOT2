@@ -1,0 +1,15 @@
+{
+    "gen_pubTopic": [
+        "DvirHome/Messages",
+        "DvirHome/log",
+        "DvirHome/debug"
+    ],
+    "subTopic": [
+        "DvirHome/FlashCoded",
+        "DvirHome/All"
+    ],
+    "pubTopic": [
+        "DvirHome/FlashCoded/Avail",
+        "DvirHome/FlashCoded/State"
+    ]
+}
