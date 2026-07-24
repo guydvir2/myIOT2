@@ -33,22 +33,7 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	// UART and were silently lost (that's the garbled boot noise you saw).
 	loadPersistedNetworkConfig();
 
-	// SerialCapture only starts here — the handful of lines printed above
-	// (banner, credential-load diagnostics) aren't captured even if
-	// terminalEnabled turns out to be true, since we don't know that until
-	// loadPersistedNetworkConfig() has actually read it from flash. Minor,
-	// deliberate gap — not worth a separate early flash read just for one
-	// flag.
-	SerialCapture::enabled = _terminalEnabled;
-	if (_terminalEnabled)
-	{
-		SerialCapture::begin();
-		SerialCapture::restoreFromRTC();
-		if (useSerial)
-			PRNTL(SerialCapture::isActive()
-					  ? F("~ myIOT2: web terminal buffer allocated OK")
-					  : F("~ myIOT2: web terminal ENABLED but buffer allocation FAILED (heap pressure?)"));
-	}
+	// SerialCapture managed by WebPortal
 
 	// Reset-safety was previously only turned on if the app called
 	// strtClk_rstSft() itself in code — no persisted/portal equivalent
@@ -819,17 +804,6 @@ bool myIOT2::setTimezone(const char *value)
 	strlcpy(_timezone, value, sizeof(_timezone));
 	return true;
 }
-void myIOT2::setTerminalEnabled(bool value)
-{
-	_terminalEnabled = value;
-	SerialCapture::enabled = value;
-	// Note: this does NOT retroactively allocate the ring buffer if it
-	// wasn't already allocated at boot — that only happens once, in
-	// start_services(), based on the persisted flag at boot time. Toggling
-	// this live mid-session before a reboot won't start capturing until
-	// the buffer actually exists; see start_services() for the allocation
-	// point.
-}
 bool myIOT2::setResetSafetyThreshold(uint8_t value)
 {
 	if (value == 0 || value > 20)
@@ -856,7 +830,6 @@ bool myIOT2::persistConfig()
 	doc["ota_enabled"] = _otaEnabled;
 	doc["device_name"] = _deviceName;
 	doc["timezone"] = _timezone;
-	doc["terminal_enabled"] = _terminalEnabled;
 	doc["reset_safety_config"] = _resetSafetyConfig;
 	doc["reset_safety_threshold"] = _resetSafetyThreshold;
 	doc["ignore_boot_msg"] = ignore_boot_msg;
@@ -925,7 +898,6 @@ bool myIOT2::loadPersistedNetworkConfig()
 	if (doc["timezone"].is<JsonVariant>())
 		allOk &= setTimezone(doc["timezone"]);
 	if (doc["terminal_enabled"].is<JsonVariant>())
-		_terminalEnabled = doc["terminal_enabled"];
 	if (doc["reset_safety_config"].is<JsonVariant>())
 		_resetSafetyConfig = doc["reset_safety_config"];
 	if (doc["reset_safety_threshold"].is<JsonVariant>())
