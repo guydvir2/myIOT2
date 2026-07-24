@@ -20,16 +20,15 @@
 #include <ArduinoJson.h>
 #include <myJflash.h>
 #include "secretsIOT.h"
-#include "SerialCapture.h"
 
 #define MS2MINUTES 60000
 
-// Force our PRNT/PRNTL to win over myJflash's version — ours also feeds SerialCapture.
+// Force our PRNT/PRNTL to win over myJflash's version.
 #undef PRNT
 #undef PRNTL
 
-#define PRNT(a)  do { if (useSerial) Serial.print(a);   SerialCapture::append(a);     } while (0)
-#define PRNTL(a) do { if (useSerial) Serial.println(a); SerialCapture::appendLine(a); } while (0)
+#define PRNT(a)  do { if (useSerial) Serial.print(a);   } while (0)
+#define PRNTL(a) do { if (useSerial) Serial.println(a); } while (0)
 
 class myIOT2
 {
@@ -101,11 +100,6 @@ public:
     inline void    setResetSafetyConfig(bool value)      { _resetSafetyConfig = value; }
     bool setResetSafetyThreshold(uint8_t value);  // 1-20; rejects 0
 
-    // ~~~ Web terminal ~~~
-    // Off by default — zero cost when off. Feeds SerialCapture ring buffer.
-    inline bool isTerminalEnabled() const      { return _terminalEnabled; }
-    void setTerminalEnabled(bool value);        // also flips SerialCapture::enabled
-
     // ~~~ Topic persistence ~~~
     // pubAvail + subCmd are required; all others may be "".
     // topicsReady() = false means MQTT stays idle until topics are configured.
@@ -156,7 +150,6 @@ private:
     bool _use_rstSft = false;
 
     bool _otaEnabled = false;
-    bool _terminalEnabled = false;
     bool _resetSafetyConfig = false;
     uint8_t _resetSafetyThreshold = 3;
     bool _topicsReady = false;
