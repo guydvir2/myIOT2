@@ -38,7 +38,7 @@ public:
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 protected:
-    char ver[12] = "iot_v3.0";
+    char ver[12] = "iot_v3.0.1";
 
 public:
     // Topic arrays — [0] is always the primary slot; extras fill upward.
@@ -129,6 +129,9 @@ private:
 
     const uint8_t OTA_upload_interval = 10;  // minutes
     unsigned long allowOTA_clock = 0;
+    char _telemetryTopic[40]{};
+    unsigned long _telemetryTimer = 0;
+    time_t _bootTime = 0;
 
     bool _wifiConnected = false;
     bool _connectingToWifi = false;
@@ -199,6 +202,7 @@ public:
     bool readJson_inFlash(JsonDocument &DOC, const char *filename);
 
 private:
+    void _publishTelemetry();
     void _startWifi(const char *ssid, const char *password);
     bool _startNTP(const char *ntpServer = "time.nist.gov", const char *ntpServer2 = "il.pool.ntp.org");
     bool _NTP_updated();

@@ -62,6 +62,12 @@ void myIOT2::start_services(cb_func funct, const char *ssid, const char *passwor
 	_startNTP();
 	_startOTA();
 	_endRun_notofications();
+
+#if defined(ESP8266)
+	snprintf(_telemetryTopic, sizeof(_telemetryTopic), "iot2_directory/ESP_%06X", (unsigned)(ESP.getChipId() & 0xFFFFFF));
+#elif defined(ESP32)
+	snprintf(_telemetryTopic, sizeof(_telemetryTopic), "iot2_directory/ESP_%06X", (unsigned)(ESP.getEfuseMac() & 0xFFFFFF));
+#endif
 }
 void myIOT2::looper()
 {
@@ -85,6 +91,11 @@ void myIOT2::looper()
 	if (_use_rstSft)
 	{
 		loop_rstSft(); // Safety reset looper
+	}
+	if (isMqttConnected() && _telemetryTimer > 0 && (millis() - _telemetryTimer) >= 300000UL)
+	{
+		_telemetryTimer = millis();
+		_publishTelemetry();
 	}
 }
 
@@ -266,6 +277,7 @@ bool myIOT2::_MQTT_handler()
 		if (_connectMQTT())
 		{
 			notifyOnline();
+			_publishTelemetry();
 			if (!_firstRun)
 			{
 				sprintf(b, "MQTT: reconnect after [%d] retries", _failedMQTTConnectionAttemptCount);
@@ -386,8 +398,56 @@ void myIOT2::_pub_succ_connectivity()
 	if (!ignore_boot_msg)
 	{
 		pub_log(msg);
+		// Log all registered topics in one message
+		char tmsg[250] = "Topics> ";
+		for (uint8_t i = 0; i < 7 && topics_pub[i]; i++) {
+			if (i > 0) strncat(tmsg, " | ", sizeof(tmsg) - strlen(tmsg) - 1);
+			strncat(tmsg, "P:", sizeof(tmsg) - strlen(tmsg) - 1);
+			strncat(tmsg, topics_pub[i], sizeof(tmsg) - strlen(tmsg) - 1);
+		}
+		for (uint8_t i = 0; i < 6 && topics_sub[i]; i++) {
+			strncat(tmsg, " | S:", sizeof(tmsg) - strlen(tmsg) - 1);
+			strncat(tmsg, topics_sub[i], sizeof(tmsg) - strlen(tmsg) - 1);
+		}
+		for (uint8_t i = 0; i < 3 && topics_gen_pub[i]; i++) {
+			strncat(tmsg, " | G:", sizeof(tmsg) - strlen(tmsg) - 1);
+			strncat(tmsg, topics_gen_pub[i], sizeof(tmsg) - strlen(tmsg) - 1);
+		}
+		pub_log(tmsg);
 	}
+	_bootTime = now();
+	_telemetryTimer = millis();
 	_firstRun = false;
+}
+void myIOT2::_publishTelemetry()
+{
+	if (!_telemetryTopic[0] || !isMqttConnected()) return;
+
+	JsonDocument doc;
+	char ipStr[16];
+	snprintf(ipStr, sizeof(ipStr), "%d.%d.%d.%d",
+		WiFi.localIP()[0], WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3]);
+
+	doc["ip"]          = ipStr;
+	doc["deviceName"]  = _deviceName[0] ? _deviceName : "unnamed";
+	doc["mainTopic"]   = topics_sub[0] ? topics_sub[0] : "";
+	doc["ssid"]        = _ssid;
+	doc["rssi"]        = WiFi.RSSI();
+	doc["ver"]         = ver;
+
+	if (_bootTime > 0) {
+		char ts[24];
+		get_timeStamp(ts, _bootTime);
+		doc["bootTime"] = ts;
+	}
+	char lastSeen[24];
+	get_timeStamp(lastSeen, now());
+	doc["lastSeen"]    = lastSeen;
+	doc["uptime"]      = (unsigned long)(millis() / 1000UL);
+
+	char payload[300];
+	serializeJson(doc, payload, sizeof(payload));
+	mqttClient.publish(_telemetryTopic, payload, true); // retained
 }
 void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 {
