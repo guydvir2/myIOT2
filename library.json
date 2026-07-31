@@ -1,4 +1,29 @@
 {
-  "name": "myIOT2",
-  "version": "0.0.0+20260728212817"
+    "name": "myIOT2",
+    "version": "3.0",
+    "description": "MQTT & WiFi IOT projects ESP32/8266",
+    "keywords": "planet, happiness, people",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/guydvir2/myIOT2.git"
+    },
+    "authors": [
+        {
+            "name": "guyDvir",
+            "email": "guydvir.tech@gmail.com",
+            "url": ""
+        }
+    ],
+    "license": "MIT",
+    "homepage": "https://github.com/guydvir2/myIOT2.git",
+    "dependencies": {
+        "bblanchon/ArduinoJson": "^7.4.3",
+        "knolleary/PubSubClient": "^2.8",
+        "myJflash": "https://github.com/guydvir2/myJflash.git#v0.1b"
+    },
+    "frameworks": "*",
+    "platforms": [
+        "espressif8266",
+        "espressif32"
+    ]
 }
