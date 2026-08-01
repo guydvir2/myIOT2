@@ -38,7 +38,7 @@ public:
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 protected:
-    char ver[12] = "iot_v3.0.1";
+    char ver[12] = "iot_v3.0.2";
 
 public:
     // Topic arrays — [0] is always the primary slot; extras fill upward.

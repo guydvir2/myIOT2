@@ -468,9 +468,10 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 
 	if (strcmp(incoming_msg, "ota") == 0)
 	{
+		_otaEnabled = true;
+		allowOTA_clock = millis();
 		sprintf(msg, "OTA allowed for %d seconds", OTA_upload_interval * MS2MINUTES / 1000);
 		pub_msg(msg);
-		allowOTA_clock = millis();
 	}
 	else if (strcmp(incoming_msg, "reset") == 0)
 	{
@@ -957,7 +958,6 @@ bool myIOT2::loadPersistedNetworkConfig()
 		allOk &= setDeviceName(doc["device_name"]);
 	if (doc["timezone"].is<JsonVariant>())
 		allOk &= setTimezone(doc["timezone"]);
-	if (doc["terminal_enabled"].is<JsonVariant>())
 	if (doc["reset_safety_config"].is<JsonVariant>())
 		_resetSafetyConfig = doc["reset_safety_config"];
 	if (doc["reset_safety_threshold"].is<JsonVariant>())
