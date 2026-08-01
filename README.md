@@ -1,70 +1,80 @@
-# myIOT2 v3 + WebPortal v0.1
+# myIOT2 v3
 
-ESP8266/ESP32 IoT base platform with a built-in web configuration portal.
+ESP8266/ESP32 IoT base platform. Handles WiFi, MQTT, NTP, OTA and flash
+persistence so a device sketch can be about the device.
 
-## What it does
+Self-contained. No UI, no web server, no external library beyond the three
+dependencies below. It runs alone.
 
-- WiFi, MQTT, NTP, OTA — managed automatically
-- Web portal served locally — no cloud, no internet dependency
-- Configure network, MQTT, topics from any browser on the local network
-- Serial capture — view device logs in the browser terminal tab
-- Reset safety — detects and survives reboot loops
+## Features
+
+- WiFi and MQTT connection management with automatic reconnect
+- NTP time sync, POSIX timezone support
+- OTA updates, time-windowed and off by default
+- Config and MQTT topics persisted to flash (LittleFS via myJflash)
+- Reset safety — detects reboot loops and falls back to a known-good state
 - AP mode fallback — reconfigure credentials without reflashing
+- Optional log sink — mirror log output to any `Print` object
 
-## Project structure
+## Install
 
-```
-lib/
-  myIOT2/         — core IoT platform
-  WebPortal/      — web config portal (optional)
-  SerialCapture/  — serial log capture (optional)
-src/
-  main.cpp        — your device sketch
-reference_examples/
-  example_myIOT2_WebPortal.cpp  — full feature example
+PlatformIO, pinned to a tag:
+
+```ini
+lib_deps =
+    https://github.com/guydvir2/myIOT2.git#v3.0.2
 ```
 
-## Getting started
+## Setup
 
-1. Copy `lib/myIOT2/secretsIOT_example.h` to `lib/myIOT2/secretsIOT.h`
-2. Fill in your WiFi and MQTT credentials
-3. Copy `reference_examples/example_myIOT2_WebPortal.cpp` to `src/main.cpp`
-4. Build and flash
-5. Open browser at device IP — portal is at port 80
+Copy `secretsIOT_example.h` to `secretsIOT.h` and fill in your defaults.
+`secretsIOT.h` is gitignored and must never be committed.
 
-## First boot
+Minimal sketch:
 
-On first boot with no saved topics, MQTT stays idle but WiFi and the portal come up normally. Set your topics in the **Topics** tab and save — device reboots and MQTT connects.
+```cpp
+#include <myIOT2.h>
+
+myIOT2 iot;
+
+void mqttCallback(char *msg, char *topic)
+{
+    iot.inline_read(msg);   // splits msg into iot.inline_param[0..3]
+}
+
+void setup()
+{
+    iot.start_services(mqttCallback);
+}
+
+void loop()
+{
+    iot.looper();
+}
+```
+
+## Log sink
+
+Log output goes to Serial. A sketch may additionally mirror it to any
+`Print`-derived object by assigning the sink pointer:
+
+```cpp
+iotLogSink = &myPrintObject;
+```
+
+Null by default, meaning Serial only. myIOT2 does not know or care what is
+attached. Cost when unused is one null pointer test per log line.
 
 ## Dependencies
 
-- ArduinoJson >= 7.0
-- PubSubClient
-- [myJflash](https://github.com/guydvir2/myJflash)
+- ArduinoJson ^7.4.3
+- PubSubClient ^2.8
+- myJflash
 
-## WebPortal features
+## Versioning
 
-| Tab | What it does |
-|-----|-------------|
-| Status | Live connection indicators, device parameters, custom data rows |
-| Network | WiFi, MQTT credentials, device name, timezone |
-| Topics | MQTT topic table (6 standard + 5 extra pub/sub) |
-| Behavior | OTA, serial, reset safety, terminal |
-| Terminal | Live serial log (when terminal enabled) |
-| Maintenance | Reboot, AP mode, delete credentials/topics |
-
-## Portal buttons (Controls section)
-
-Define up to 4 buttons in your sketch — toggle or momentary, with custom labels and callbacks:
-
-```cpp
-portal.setButton(0, "Arm Alarm",  true,  onAlarmToggle);  // toggle
-portal.setButton(1, "Open",       false, onOpen);          // momentary
-```
-
-## AP mode
-
-Press **Switch to AP mode** in the Maintenance tab. Connect to `ESP_XXXXXX` on your phone/laptop, then open `192.168.4.1` in the browser to reconfigure credentials.
+The version string in `myIOT2.h` (`ver[]`), the `version` field in
+`library.json`, and the git tag must always agree.
 
 ## License
 

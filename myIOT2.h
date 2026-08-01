@@ -2,7 +2,8 @@
 #define myIOT2_h
 
 // myIOT2 v3 — ESP8266/ESP32 IoT base platform
-// Handles WiFi, MQTT, NTP, OTA, flash persistence, and serial capture.
+// Handles WiFi, MQTT, NTP, OTA and flash persistence.
+// Log output goes to Serial, plus an optional user-supplied Print sink.
 
 #if defined(ESP8266)
 #include <ESP8266WiFi.h>
@@ -23,12 +24,18 @@
 
 #define MS2MINUTES 60000
 
+inline Print *iotLogSink = nullptr;
+
 // Force our PRNT/PRNTL to win over myJflash's version.
 #undef PRNT
 #undef PRNTL
 
-#define PRNT(a)  do { if (useSerial) Serial.print(a);   } while (0)
-#define PRNTL(a) do { if (useSerial) Serial.println(a); } while (0)
+// Defined here in myIOT2.h so the macro applies inside myIOT2.cpp itself —
+// that is what makes the library's own boot/WiFi/MQTT output reach the sink.
+// Defining it in a consumer's header cannot work: a macro only affects
+// translation units that include that header, and myIOT2.cpp does not.
+#define PRNT(a)  do { if (useSerial) Serial.print(a);   if (iotLogSink) iotLogSink->print(a);   } while (0)
+#define PRNTL(a) do { if (useSerial) Serial.println(a); if (iotLogSink) iotLogSink->println(a); } while (0)
 
 class myIOT2
 {

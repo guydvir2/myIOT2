@@ -1,8 +1,8 @@
 {
     "name": "myIOT2",
-    "version": "3.0",
-    "description": "MQTT & WiFi IOT projects ESP32/8266",
-    "keywords": "planet, happiness, people",
+    "version": "3.0.2",
+    "description": "ESP8266/ESP32 IoT base platform — WiFi, MQTT, NTP, OTA and flash persistence. Self-contained, no external portal or UI dependency.",
+    "keywords": "iot, mqtt, wifi, esp8266, esp32, ota, ntp",
     "repository": {
         "type": "git",
         "url": "https://github.com/guydvir2/myIOT2.git"
