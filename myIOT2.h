@@ -1,3 +1,4 @@
+// Updated: 2026-08-05
 #ifndef myIOT2_h
 #define myIOT2_h
 
@@ -45,18 +46,16 @@ public:
     typedef void (*cb_func)(char *msg1, char *_topic);
 
 protected:
-    char ver[12] = "iot_v3.0.2";
+    char ver[12] = "iot_v3.1.0";
 
 public:
     // Topic arrays — [0] is always the primary slot; extras fill upward.
     const char *topics_pub[7]{};      // pub[0]=Avail, pub[1]=State, pub[2..6]=extra
     const char *topics_sub[6]{};      // sub[0]=Cmd, sub[1..5]=extra
     const char *topics_gen_pub[3]{};  // gen[0]=Messages, gen[1]=Log, gen[2]=Debug
-    const char *parameter_filenames[4]{};
 
     // ~~~ Runtime flags ~~~
     bool useSerial = true;
-    bool useFlashP = false;
     bool ignore_boot_msg = false;
     uint8_t noNetwork_reset = 4;  // minutes before resetting if no network
 
@@ -73,6 +72,7 @@ public:
     inline const char *getSsid()       const { return _ssid; }
     inline const char *getWifiPwd()    const { return _wifi_pwd; }
     inline const char *getMqttServer() const { return _mqtt_server; }
+    inline uint16_t getMqttPort() const { return _mqttPort; }
     inline const char *getMqttUser()   const { return _mqtt_user; }
     inline const char *getMqttPwd()    const { return _mqtt_pwd; }
     inline const char *getDeviceName() const { return _deviceName; }
@@ -82,6 +82,7 @@ public:
     bool setSsid(const char *value);
     bool setWifiPwd(const char *value);
     bool setMqttServer(const char *value);
+    bool setMqttPort(uint16_t value);   // 1-65535; rejects 0
     bool setMqttUser(const char *value);
     bool setMqttPwd(const char *value);
     bool setDeviceName(const char *value);
@@ -111,6 +112,10 @@ public:
     // pubAvail + subCmd are required; all others may be "".
     // topicsReady() = false means MQTT stays idle until topics are configured.
     inline bool topicsReady() const { return _topicsReady; }
+
+    // Library version string, e.g. "iot_v3.0.2". Exposed so the app (or the
+    // web portal, via the app) can display it without touching `ver` directly.
+    inline const char *getVersion() const { return ver; }
     bool persistTopics(const char *pubAvail, const char *pubState, const char *subCmd,
                        const char *genMessages, const char *genLog, const char *genDebug,
                        const char *extraPub1="", const char *extraPub2="", const char *extraPub3="",
@@ -118,6 +123,12 @@ public:
                        const char *extraSub1="", const char *extraSub2="", const char *extraSub3="",
                        const char *extraSub4="", const char *extraSub5="");
     bool loadPersistedTopics();
+    void clearTopics();    // free all registered topics and reset counters (RAM only)
+
+    // Call after registering topics by hand (add_pubTopic/add_subTopic/...).
+    // Validates the required slots, marks topics ready, and starts MQTT.
+    // Without this, hand-registered topics sit in RAM and MQTT never runs.
+    bool commitTopics();
 
 private:
     char _ssid[32];
@@ -125,6 +136,7 @@ private:
     char _mqtt_pwd[64];
     char _mqtt_user[32];
     char _mqtt_server[40];
+    uint16_t _mqttPort = 1883;
     char _deviceName[32]{};
     char _timezone[48] = "IST-2IDT,M3.4.4/26,M10.5.0";
 
@@ -163,6 +175,10 @@ private:
     bool _resetSafetyConfig = false;
     uint8_t _resetSafetyThreshold = 3;
     bool _topicsReady = false;
+
+    // Single place that owns raw-LittleFS deletion: mounts, verifies, removes.
+    // Treats "file already absent" as success so callers get a truthful result.
+    bool _deleteFlashFile(const char *fname);
 
 public:
     myIOT2();
@@ -204,8 +220,6 @@ public:
     // ~~~ Flash parameters ~~~
     uint8_t inline_read(char *inputstr);
     void clear_inline_read();
-    void set_pFilenames(const char *fileArray[], uint8_t asize);
-    bool readFlashParameters(JsonDocument &DOC, const char *filename);
     bool readJson_inFlash(JsonDocument &DOC, const char *filename);
 
 private:
@@ -226,9 +240,6 @@ private:
     void _pub_succ_connectivity();
     void _startOTA();
     void _acceptOTA();
-    uint8_t _getdataType(const char *y);
-    bool _cmdline_flashUpdate(const char *key, const char *new_value);
-    bool _change_flashP_value(const char *key, const char *new_value, JsonDocument &DOC);
     void _endRun_notofications();
 };
 #endif

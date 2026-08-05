@@ -1,3 +1,4 @@
+// Updated: 2026-08-05
 #include "myIOT2.h"
 
 // ~~~~~~ myIOT2 CLASS ~~~~~~~~~~~ //
@@ -327,7 +328,7 @@ bool myIOT2::_MQTT_handler()
 }
 void myIOT2::_setMQTT()
 {
-	mqttClient.setServer(_mqtt_server, 1883);
+	mqttClient.setServer(_mqtt_server, _mqttPort);
 	mqttClient.setKeepAlive(30);
 	mqttClient.setCallback(std::bind(&myIOT2::_MQTTcb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 	PRNTL(F("~ MQTT broker set"));
@@ -345,7 +346,9 @@ bool myIOT2::_connectMQTT()
 	if (mqttClient.connect(tempname, _mqtt_user, _mqtt_pwd, topics_pub[0], 1, true, "offline"))
 	{
 		PRNT(F("~ MQTT Server: "));
-		PRNTL(_mqtt_server);
+		PRNT(_mqtt_server);
+		PRNT(F(":"));
+		PRNTL(_mqttPort);
 		return 1;
 	}
 	else
@@ -484,15 +487,15 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	}
 	else if (strcmp(incoming_msg, "services") == 0)
 	{
-		sprintf(msg, "[Services]: SERIAL[%s], no-networkReset[%d min], ignore_boot_msg[%s], useFlashP[%s]",
-				useSerial ? "Yes" : "No", noNetwork_reset, ignore_boot_msg ? "Yes" : "No", useFlashP ? "Yes" : "No");
+		sprintf(msg, "[Services]: SERIAL[%s], no-networkReset[%d min], ignore_boot_msg[%s]",
+				useSerial ? "Yes" : "No", noNetwork_reset, ignore_boot_msg ? "Yes" : "No");
 		pub_msg(msg);
 	}
 	else if (strcmp(incoming_msg, "help") == 0)
 	{
 		sprintf(msg, "[Help]: Commands #1 - [status, reset, ota, ver, ver2, help, help2, MCU_type, services, network]");
 		pub_msg(msg);
-		sprintf(msg, "[Help]: Commands #2 - [show_flashParam, free_mem, topics, {update_flash,[key],[value]}]");
+		sprintf(msg, "[Help]: Commands #2 - [free_mem, topics]");
 		pub_msg(msg);
 	}
 	else if (strcmp(incoming_msg, "MCU_type") == 0)
@@ -505,36 +508,6 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 		sprintf(msg, "[MCU]: unKnown");
 #endif
 		pub_msg(msg);
-	}
-	else if (strcmp(incoming_msg, "show_flashParam") == 0)
-	{
-		if (useFlashP)
-		{
-			char clk[25];
-			get_timeStamp(clk);
-			sprintf(msg, "\n<<~~~~~~ [%s] [%s] On-Flash Parameters ~~~~~>>", clk, topics_sub[0]);
-			pub_debug(msg);
-
-			for (uint8_t i = 0; i < sizeof(parameter_filenames) / sizeof(parameter_filenames[0]); i++)
-			{
-				myJflash jf(useSerial);
-				if (parameter_filenames[i] != nullptr)
-				{
-					jf.set_filename(parameter_filenames[i]);
-					pub_debug(parameter_filenames[i]);
-					String tempstr1 = jf.readFile2String(parameter_filenames[i]);
-					char buff[tempstr1.length() + 1];
-					tempstr1.toCharArray(buff, tempstr1.length() + 1);
-					pub_debug(buff);
-				}
-			}
-			pub_msg("[On-Flash Parameters]: extracted");
-			pub_debug("<<~~~~~~~~~~ End ~~~~~~~~~~>>");
-		}
-		else
-		{
-			pub_msg("[On-Flash Parameters]: not in use");
-		}
 	}
 	else if (strcmp(incoming_msg, "network") == 0)
 	{
@@ -591,14 +564,7 @@ void myIOT2::_MQTTcb(char *topic, uint8_t *payload, unsigned int length)
 	{
 		num_p = inline_read(incoming_msg);
 
-		if (num_p > 1 && strcmp(inline_param[0], "update_flash") == 0 && useFlashP)
-		{
-			_cmdline_flashUpdate(inline_param[1], inline_param[2]);
-		}
-		else
-		{
-			ext_mqtt(incoming_msg, topic);
-		}
+		ext_mqtt(incoming_msg, topic);
 	}
 }
 void myIOT2::_pub_generic(const char *topic, const char *inmsg, bool retain, char *devname, bool bare)
@@ -672,6 +638,12 @@ void myIOT2::pub_debug(const char *inmsg)
 }
 void myIOT2::add_subTopic(const char *topic)
 {
+	if (_sub_topic_counter >= (sizeof(topics_sub) / sizeof(topics_sub[0])))
+	{
+		PRNT(F("~ myIOT2: topic slots full, ignoring: "));
+		PRNTL(topic);
+		return;
+	}
 	uint8_t len = strlen(topic);
 	char *top = new char[len + 1];
 	strcpy(top, topic);
@@ -686,6 +658,12 @@ void myIOT2::add_subTopic(const char *topic[], uint8_t n)
 }
 void myIOT2::add_pubTopic(const char *topic)
 {
+	if (_pub_topic_counter >= (sizeof(topics_pub) / sizeof(topics_pub[0])))
+	{
+		PRNT(F("~ myIOT2: topic slots full, ignoring: "));
+		PRNTL(topic);
+		return;
+	}
 	uint8_t len = strlen(topic);
 	char *top = new char[len + 1];
 	strcpy(top, topic);
@@ -700,6 +678,12 @@ void myIOT2::add_pubTopic(const char *topic[], uint8_t n)
 }
 void myIOT2::add_gen_pubTopic(const char *topic)
 {
+	if (_gen_topic_counter >= (sizeof(topics_gen_pub) / sizeof(topics_gen_pub[0])))
+	{
+		PRNT(F("~ myIOT2: topic slots full, ignoring: "));
+		PRNTL(topic);
+		return;
+	}
 	uint8_t len = strlen(topic);
 	char *top = new char[len + 1];
 	strcpy(top, topic);
@@ -738,80 +722,12 @@ uint8_t myIOT2::inline_read(char *inputstr)
 	}
 	return i;
 }
-uint8_t myIOT2::_getdataType(const char *y)
-{
-	/* Return values:
-	0 - error
-	1 - bool
-	2 - string
-	3 - float
-	4 - int
-	*/
-
-	int i = atoi(y);
-	float f = atof(y);
-
-	if (isAlpha(y[0]))
-	{
-		if (strcmp(y, "true") == 0 || strcmp(y, "false") == 0)
-		{
-			return 1;
-		}
-		else
-		{
-			return 2;
-		}
-		return 0;
-	}
-	else
-	{
-		if (i != f)
-		{
-			return 3;
-		}
-		else
-		{
-			return 4;
-		}
-		return 0;
-	}
-}
-
 // ~~~~~~~~~~ Data Storage ~~~~~~~~~
-void myIOT2::set_pFilenames(const char *fileArray[], uint8_t asize)
-{
-	for (uint8_t i = 0; i < asize; i++)
-	{
-		parameter_filenames[i] = fileArray[i];
-	}
-}
 bool myIOT2::readJson_inFlash(JsonDocument &DOC, const char *filename)
 {
 	myJflash Jflash(useSerial);
 	return (Jflash.readFile(DOC, filename));
 }
-bool myIOT2::readFlashParameters(JsonDocument &DOC, const char *filename)
-{
-	if (readJson_inFlash(DOC, filename))
-	{
-		useSerial = DOC["useSerial"];
-		useFlashP = true;
-		noNetwork_reset = DOC["noNetwork_reset"];
-		ignore_boot_msg = DOC["ignore_boot_msg"];
-		PRNTL(F("~ iot2 Parameters loaded from Flash"));
-		return 1;
-	}
-	else
-	{
-		useSerial = true;
-		useFlashP = false;
-		noNetwork_reset = 9;
-		ignore_boot_msg = false;
-		PRNTL(F("~ iot2 Parameters failed to load from Flash. Defaults are used"));
-		return 0;
-	}
-}
-
 // ~~~~~~ Credential setters ~~~~~~
 // Each rejects (returns false) rather than truncates on oversized input —
 // a web form or MQTT command sending a too-long value is a caller error we
@@ -835,6 +751,13 @@ bool myIOT2::setMqttServer(const char *value)
 	if (!value || strlen(value) >= sizeof(_mqtt_server))
 		return false;
 	strlcpy(_mqtt_server, value, sizeof(_mqtt_server));
+	return true;
+}
+bool myIOT2::setMqttPort(uint16_t value)
+{
+	if (value == 0)
+		return false;
+	_mqttPort = value;
 	return true;
 }
 bool myIOT2::setMqttUser(const char *value)
@@ -874,7 +797,7 @@ bool myIOT2::setResetSafetyThreshold(uint8_t value)
 }
 
 // ~~~~~~ Network config persistence ~~~~~~
-// Separate file from parameter_filenames — ssid/mqtt_* were never
+// Separate config file — ssid/mqtt_* were never
 // flash-backed before (they only ever came from start_services()'s compiled
 // defaults), so this is a new store, not a change to the existing one.
 // JsonDocument is comfortably sized for 5 short string fields —
@@ -886,6 +809,7 @@ bool myIOT2::persistConfig()
 	doc["ssid"] = _ssid;
 	doc["wifi_pwd"] = _wifi_pwd;
 	doc["mqtt_server"] = _mqtt_server;
+	doc["mqtt_port"] = _mqttPort;
 	doc["mqtt_user"] = _mqtt_user;
 	doc["mqtt_pwd"] = _mqtt_pwd;
 	doc["ota_enabled"] = _otaEnabled;
@@ -894,18 +818,10 @@ bool myIOT2::persistConfig()
 	doc["reset_safety_config"] = _resetSafetyConfig;
 	doc["reset_safety_threshold"] = _resetSafetyThreshold;
 	doc["ignore_boot_msg"] = ignore_boot_msg;
-	doc["use_flash_p"] = useFlashP;
 	doc["no_network_reset"] = noNetwork_reset;
 
-	// TEMP DIAGNOSTIC — remove once persistence is confirmed working.
-	if (useSerial)
-	{
-		PRNT(F("~ myIOT2: about to persist: "));
-		serializeJson(doc, Serial);
-		PRNTL("");
-		if (doc.overflowed())
-			PRNTL(F("~ myIOT2: WARNING — JsonDocument overflowed, one or more fields were dropped!"));
-	}
+	if (useSerial && doc.overflowed())
+		PRNTL(F("~ myIOT2: WARNING — JsonDocument overflowed, one or more fields were dropped!"));
 
 	myJflash Jflash(useSerial);
 	bool ok = Jflash.writeFile(doc, "/netconfig.JSON");
@@ -926,16 +842,6 @@ bool myIOT2::loadPersistedNetworkConfig()
 		return false; // no file yet — expected on first boot, not an error
 	}
 
-	// TEMP DIAGNOSTIC — remove once persistence is confirmed working.
-	// Prints exactly what was read back, so a silently-dropped field (JSON
-	// capacity overflow) or a stale/corrupt file is visible on next boot
-	// instead of just "it didn't take effect."
-	if (useSerial)
-	{
-		PRNT(F("~ myIOT2: netconfig.JSON contents: "));
-		serializeJson(doc, Serial);
-		PRNTL("");
-	}
 
 	// Routed through the same setters as any other caller, so a hand-edited
 	// or corrupted flash file gets the same length validation as a web form
@@ -948,6 +854,8 @@ bool myIOT2::loadPersistedNetworkConfig()
 		allOk &= setWifiPwd(doc["wifi_pwd"]);
 	if (doc["mqtt_server"].is<JsonVariant>())
 		allOk &= setMqttServer(doc["mqtt_server"]);
+	if (doc["mqtt_port"].is<JsonVariant>())
+		allOk &= setMqttPort(doc["mqtt_port"]);
 	if (doc["mqtt_user"].is<JsonVariant>())
 		allOk &= setMqttUser(doc["mqtt_user"]);
 	if (doc["mqtt_pwd"].is<JsonVariant>())
@@ -964,8 +872,6 @@ bool myIOT2::loadPersistedNetworkConfig()
 		allOk &= setResetSafetyThreshold(doc["reset_safety_threshold"]);
 	if (doc["ignore_boot_msg"].is<JsonVariant>())
 		ignore_boot_msg = doc["ignore_boot_msg"];
-	if (doc["use_flash_p"].is<JsonVariant>())
-		useFlashP = doc["use_flash_p"];
 	if (doc["no_network_reset"].is<JsonVariant>())
 		noNetwork_reset = doc["no_network_reset"];
 
@@ -1094,82 +1000,6 @@ bool myIOT2::loadPersistedTopics()
 	return true;
 }
 
-bool myIOT2::_change_flashP_value(const char *key, const char *new_value, JsonDocument &DOC)
-{
-	uint8_t s = _getdataType(new_value);
-	if (s == 1)
-	{
-		if (strcmp(new_value, "true") == 0)
-		{
-			DOC[key] = true;
-		}
-		else
-		{
-			DOC[key] = false;
-		}
-		return 1;
-	}
-	else if (s == 2)
-	{
-		DOC[key] = new_value;
-		return 1;
-	}
-	else if (s == 3)
-	{
-		DOC[key] = (float)atof(new_value);
-		return 1;
-	}
-	else if (s == 4)
-	{
-		DOC[key] = (int)atoi(new_value);
-		return 1;
-	}
-	return 0;
-}
-bool myIOT2::_cmdline_flashUpdate(const char *key, const char *new_value)
-{
-	char msg[100];
-	bool succ_chg = false;
-	JsonDocument myIOT_P; //<------------------ FIX THIS -----------
-
-	myJflash Jflash(useSerial);
-	for (uint8_t n = 0; n < sizeof(parameter_filenames) / sizeof(parameter_filenames[0]); n++)
-	{
-		if (Jflash.readFile(myIOT_P, parameter_filenames[n]))
-		{
-			if (myIOT_P[key].is<JsonVariant>())
-			{
-				if (_change_flashP_value(key, new_value, myIOT_P))
-				{
-					if (Jflash.writeFile(myIOT_P, parameter_filenames[n]))
-					{
-						succ_chg = true;
-						sprintf(msg, "[Flash]: parameter[%s] updated to[%s] [OK]", key, new_value);
-					}
-					else
-					{
-						succ_chg = false;
-						sprintf(msg, "[Flash]: parameter[%s] [Failed] to updated. Save file error", key);
-					}
-				}
-				else
-				{
-					succ_chg = false;
-					sprintf(msg, "[Flash]: parameter[%s] replace [Failed]", key);
-				}
-				pub_msg(msg);
-			}
-		}
-		else if (n == 1)
-		{
-			succ_chg = false;
-			sprintf(msg, "[Flash]: parameter[%s] [NOT FOUND]", key);
-			pub_msg(msg);
-		}
-	}
-	return succ_chg;
-}
-
 // ~~~~~~ Reset and maintability ~~~~~~
 void myIOT2::sendReset(const char *header)
 {
@@ -1256,8 +1086,6 @@ void myIOT2::_endRun_notofications()
 
 	PRNT(F("ignore_boot_msg:\t"));
 	PRNTL(ignore_boot_msg ? "Yes" : "No");
-	PRNT(F("useFlashP:\t\t"));
-	PRNTL(useFlashP ? "Yes" : "No");
 	PRNT(F("noNetwork_reset:\t"));
 	PRNTL(noNetwork_reset);
 	PRNT(F("ESP type:\t\t"));
@@ -1350,22 +1178,101 @@ void myIOT2::_failure_rstSft()
 
 		add_pubTopic(temp2);
 		_topicsReady = true; // this fallback set is itself valid and complete enough for MQTT to run
+
+		// Loud on purpose: because _topicsReady is now true, start_services() skips
+		// loadPersistedTopics() AND the app's own commitTopics() block is skipped
+		// too. The device runs on myIOT/<chip> topics, not the ones you configured
+		// — easy to mistake for a topic-persistence bug.
+		PRNTL(F("~ myIOT2: *** RESET-SAFETY FALLBACK ACTIVE ***"));
+		PRNT(F("~ myIOT2: crash-loop detected, recovery cmd topic: "));
+		PRNTL(topics_sub[0]);
+		PRNTL(F("~ myIOT2: configured topics are IGNORED until a clean boot"));
 	}
 }
+bool myIOT2::_deleteFlashFile(const char *fname)
+{
+    // myJflash locals call LittleFS.end() in their destructor, so the FS is
+    // usually unmounted by the time we get here. Mount explicitly and verify.
+    if (!LittleFS.begin())
+    {
+        PRNT(F("~ myIOT2: flash mount failed, cannot delete "));
+        PRNTL(fname);
+        return false;
+    }
+
+    // Nothing to remove is not a failure — the caller asked for the file to be
+    // gone, and it is gone. Reporting false here produced spurious HTTP 500s.
+    if (!LittleFS.exists(fname))
+    {
+        PRNT(F("~ myIOT2: "));
+        PRNT(fname);
+        PRNTL(F(" not present, nothing to delete"));
+        return true;
+    }
+
+    bool ok = LittleFS.remove(fname);
+    PRNT(F("~ myIOT2: "));
+    PRNT(fname);
+    PRNTL(ok ? F(" deleted") : F(" delete FAILED"));
+    return ok;
+}
+
+void myIOT2::clearTopics()
+{
+    // add_*Topic() allocates with new char[], so these must be freed or the
+    // heap leaks on every delete/reconfigure cycle.
+    for (uint8_t i = 0; i < (sizeof(topics_pub) / sizeof(topics_pub[0])); i++)
+    {
+        delete[] (char *)topics_pub[i];
+        topics_pub[i] = nullptr;
+    }
+    for (uint8_t i = 0; i < (sizeof(topics_sub) / sizeof(topics_sub[0])); i++)
+    {
+        delete[] (char *)topics_sub[i];
+        topics_sub[i] = nullptr;
+    }
+    for (uint8_t i = 0; i < (sizeof(topics_gen_pub) / sizeof(topics_gen_pub[0])); i++)
+    {
+        delete[] (char *)topics_gen_pub[i];
+        topics_gen_pub[i] = nullptr;
+    }
+
+    _pub_topic_counter = 0;
+    _sub_topic_counter = 0;
+    _gen_topic_counter = 0;
+    _topicsReady = false;
+
+    PRNTL(F("~ myIOT2: topic table cleared from RAM"));
+}
+
+bool myIOT2::commitTopics()
+{
+    // Same required-slot contract loadPersistedTopics() enforces.
+    if (topics_pub[0] == nullptr || topics_sub[0] == nullptr)
+    {
+        PRNTL(F("~ myIOT2: commitTopics rejected — need pub[0] (Avail) and sub[0] (Cmd)"));
+        return false;
+    }
+
+    _topicsReady = true;
+    _setMQTT();
+    PRNTL(F("~ myIOT2: topics committed from code — MQTT starting"));
+    return true;
+}
+
 bool myIOT2::deleteConfig()
 {
-    LittleFS.begin();
-    bool ok = LittleFS.remove("/netconfig.JSON");
-    PRNTL(ok ? F("~ myIOT2: netconfig.JSON deleted") : F("~ myIOT2: failed to delete netconfig.JSON"));
-    return ok;
+    return _deleteFlashFile("/netconfig.JSON");
 }
 
 bool myIOT2::deleteTopics()
 {
-    _topicsReady = false;
-    LittleFS.begin();
-    bool ok = LittleFS.remove("/topics.JSON");
-    PRNTL(ok ? F("~ myIOT2: topics.JSON deleted") : F("~ myIOT2: failed to delete topics.JSON"));
+    bool ok = _deleteFlashFile("/topics.JSON");
+
+    // Clear RAM regardless of file outcome. Leaving stale pointers in place is
+    // what made the portal keep displaying deleted topics.
+    clearTopics();
+
     return ok;
 }
 
